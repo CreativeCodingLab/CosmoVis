@@ -1,5 +1,7 @@
 # CosmoVis
 
+![screenshot of cosmovis](screenshot.png)
+
 Requirements
 - Python 3 (built with version 3.7.3)
 - Packages: eventlet, yt-4.0, trident, flask_socketio
