@@ -4,7 +4,7 @@
 
 Requirements
 - Python 3 (built with version 3.7.3)
-- Packages: eventlet, yt-4.0, trident, flask_socketio
+- Packages: eventlet, yt-4.0, trident, flask_socketio, mpi4py
 
 To run
 - In the terminal, cd into the CosmoVis folder and type `python cosmo-serv.py`
