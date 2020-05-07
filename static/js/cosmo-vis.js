@@ -10,7 +10,7 @@ var d = new THREE.Vector3();
 var id;
 var mouseMesh;
 var raycaster
-var pointclouds = []
+// var pointclouds = []
 var boxOfGasPoints
 var boxOfDMPoints
 var boxOfBHPoints
@@ -40,15 +40,201 @@ var edges = []
 var skewers = []
 var field_list
 var drawSkewers = false
-var gasCoordLookup, dmCoordLookup, starCoordLookup, bhCoordLookup
+var gasCoordLookup = [], dmCoordLookup = [], starCoordLookup = [], bhCoordLookup = []
 var gasMinCol, gasMaxCol, dmMinCol, dmMaxCol, starMinCol, starMaxCol, bhMinCol, bhMaxCol
 var line
 var lines = []
 var container_hover
 var brusher
 
+var fileCount = 0
+var renderCount = 1
+
+function loadData(){
+      
+    //Point Cloud Rendering
+    for(i=fileCount;i<renderCount;i++){
+        fileCount = i+1;
+        d3.json('static/data/gas/gasLookup-sub16.' + i + '.json').then(function(d){
+            gasCoordLookup.push(d)
+            if(fileCount==renderCount){
+                plotPoints()
+            }
+        })
+        d3.json('static/data/dm/dmLookup-sub16.'+i+'.json').then(function(d){
+            dmCoordLookup.push(d)
+            if(fileCount==renderCount){
+                plotPoints()
+            }
+        })
+        d3.json('static/data/stars/starsLookup-sub16.' + i + '.json').then(function(d){
+            starCoordLookup.push(d)
+            if(fileCount==renderCount){
+                plotPoints()
+            }
+        })
+        d3.json('static/data/bh/bhLookup-sub16.'+ i +'.json').then(function(d){
+            bhCoordLookup.push(d)
+            if(fileCount==renderCount){
+                plotPoints()
+            }
+        })   
+        
+    }
+    
+    // Volume Rendering
+    
+    // d3.json('static/data/temp.json').then(function(d){
+        
+    //     // var data = [].concat.apply([], d)
+    //     // var d = [].concat.apply([], data)
+    //     // console.log(d)
+
+    //     // camera.zoom = 5;
+    //     // camera.position.y = 5;
+    //     // camera.position.z = -5;
+    //     // camera.updateProjectionMatrix();
+    //     size = 128
+    //     arr = new Float32Array(size * size * size)
+        
+    //     for(x=0;x<size;x++){
+    //         for(y=0;y<size;y++){
+    //             for(z=0;z<size;z++){
+    //                 arr[ x + y * size + z * size * size ] = d[x][y][z]
+    //             }
+    //         }
+    //     }
+
+    //     camera.position.set(size, size, size)
+    //     camera.lookAt(size/2,  size/2,  size/2)
+    //     camera.updateProjectionMatrix()
+    //     controls.target.set( size/2,  size/2,  size/2 );
+
+
+    //     console.log(arr)
+    //     function updateUniforms() {
+
+	// 		material.uniforms[ "u_clim" ].value.set( volconfig.clim1, volconfig.clim2 );
+	// 		material.uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
+	// 		material.uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
+	// 		material.uniforms[ "u_cmdata" ].value = cmtextures[ volconfig.colormap ];
+
+	// 		render();
+
+	// 	}
+    //     var gui = new dat.GUI()
+
+    //     // The gui for interaction
+    //     volconfig = { clim1: 0, clim2: 300000, renderstyle: 'mip', isothreshold: 700, colormap: 'viridis' };
+    //     gui.add( volconfig, 'clim1', 0, 300000, 0.01 ).onChange( updateUniforms );
+    //     gui.add( volconfig, 'clim2', 0, 300000, 0.01 ).onChange( updateUniforms );
+    //     gui.add( volconfig, 'colormap', { gray: 'gray', viridis: 'viridis' } ).onChange( updateUniforms );
+    //     gui.add( volconfig, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( updateUniforms );
+    //     gui.add( volconfig, 'isothreshold', 0, 30000, 0.01 ).onChange( updateUniforms );
+        
+    //     var texture = new THREE.DataTexture3D( arr, size, size, size)
+    //     texture.format = THREE.RedFormat
+    //     texture.type = THREE.FloatType
+    //     texture.minFilter = texture.magFilter = THREE.LinearFilter
+    //     texture.unpackAlignment = 1
+    //     var shader = THREE.VolumeRenderShader1;
+    //     var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+
+
+    //     cmtextures = {
+    //         gray: new THREE.TextureLoader().load( 'static/textures/cm_gray.png', render ),
+    //         viridis: new THREE.TextureLoader().load( 'static/textures/cm_viridis.png', render )
+
+    //     };
+
+    
+    //     // Material
+
+    //     uniforms[ "u_data" ].value = texture;
+    //     uniforms[ "u_size" ].value.set( size, size, size );
+    //     uniforms[ "u_clim" ].value.set( volconfig.clim1, volconfig.clim2 );
+    //     uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
+    //     uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
+    //     uniforms[ "u_cmdata" ].value = cmtextures[ volconfig.colormap ];
+        
+    //     // uniforms[ "u_clim" ].value.set( 0 , 1000 );
+    //     // uniforms[ "u_renderstyle" ].value = 0; // 0: MIP, 1: ISO
+    //     // uniforms[ "u_renderthreshold" ].value = 900; // For ISO renderstyle
+    //     // uniforms[ "u_cmdata" ].value = cmtextures.viridis;
+
+    //     material = new THREE.ShaderMaterial( {
+    //         uniforms: uniforms,
+    //         vertexShader: shader.vertexShader,
+    //         fragmentShader: shader.fragmentShader,
+    //         clipping: false,
+    //         side: THREE.BackSide // The volume shader uses the backface as its "reference point"
+    //     } );
+
+    //     // THREE.Mesh
+    //     var geometry = new THREE.BoxGeometry( size, size, size );
+    //     geometry.translate( size / 2, size / 2, size / 2 );
+
+    //     var mesh = new THREE.Mesh( geometry, material );
+    //     scene.add( mesh );
+
+    //     render();
+
+    // })
+    
+}
+
+function updateRenderCount(count){
+    renderCount = count
+    
+    if(renderCount>fileCount){
+        loadData()
+    }
+
+    gasAttr = document.getElementById('gas_select').value
+    bhAttr = document.getElementById('bh_select').value
+    
+    requestPoints('PartType0',gasAttr,renderCount)
+    requestPoints('PartType5',bhAttr,renderCount)
+    
+    plotPoints()
+
+}
+
+function animate() {
+        
+    requestAnimationFrame( animate )
+    materialGas.uniforms.zoom.value = camera.zoom
+    materialDarkMatter.uniforms.zoom.value = camera.zoom
+    materialStar.uniforms.zoom.value = camera.zoom
+    materialBlackHole.uniforms.zoom.value = camera.zoom        
+}
+
+function render() {
+
+    requestAnimationFrame( render );
+    controls.update()
+    renderer.render( scene, camera );
+
+};
+
 function round(value, decimals) {
     return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+}
+
+
+const times = [];
+let fps;
+
+function refreshLoop() {
+    window.requestAnimationFrame(() => {
+        const now = performance.now();
+        while (times.length > 0 && times[0] <= now - 1000) {
+        times.shift();
+        }
+        times.push(now);
+        fps = times.length;
+        refreshLoop();
+    });
 }
 
 function toggleDrawSkewerMode(){
@@ -244,211 +430,276 @@ function toggleBlendMode(num){
 
 function plotPoints(){
     
-    let n_g = gasCoordLookup.length
-    let n_d = dmCoordLookup.length
-    let n_s = starCoordLookup.length
-    let n_b = bhCoordLookup.length
+    if(gasCoordLookup){
+        gasAttr = document.getElementById('gas_select').value
+        
+        var n_g = 0
+        // for(i=0;i<gasCoordLookup.length;i++){
+        //     n_g += gasCoordLookup[i].length
+        // }        
 
-
-    var gasgeometry = new THREE.BufferGeometry();
-    var gasPositions = new Float32Array( n_g * 3 );
-    var gasAttribute = new Float32Array( n_g * 1 );
-
-    var dmgeometry = new THREE.BufferGeometry();
-    var dmPositions = new Float32Array( n_d * 3 );
-    var dmAttribute = new Float32Array( n_d * 1 );
-
-    var stargeometry = new THREE.BufferGeometry();
-    var starPositions = new Float32Array( n_s * 3 );
-    var starAttribute = new Float32Array( n_s * 1 );
-
-    var bhgeometry = new THREE.BufferGeometry();
-    var bhPositions = new Float32Array( n_b * 3 );
-    var bhAttribute = new Float32Array( n_b * 1 );
-
-
-    gasAttr = document.getElementById('gas_select').value
-    // dmAttr = document.getElementById('dm_select').value
-    // starAttr = document.getElementById('star_select').value
-    bhAttr = document.getElementById('bh_select').value
-
-    if(gasParticles.length > 0){
-        let count = 0
-        for (i = 0; i < gasParticles.length; i++){
-            if(gasParticles[i].attribute == gasAttr){
-                for (j = 0; j < gasParticles[i].id.length; j++) {
-                    let pos = gasCoordLookup[count];
-                    let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
-                    
-                    //let attr = (gasParticles[i].attr[j]-gasParticles[i].min)/(gasParticles[i].max-gasParticles[i].min)
-                    let attr = gasParticles[i].attr[j]
-                    
-                    vertex.toArray( gasPositions, count * 3 );
-                    gasAttribute[count] = attr;
-                    count+=1
-                }
+        for(i=0;i<renderCount;i++){
+            if(gasCoordLookup[i]){
+                n_g += gasCoordLookup[i].length
             }
         }
+
+        var gasgeometry = new THREE.BufferGeometry();
+        var gasPositions = new Float32Array( n_g * 3 );
+        var gasAttribute = new Float32Array( n_g * 1 );
+        if(gasParticles.length > 0){
+            let count = 0
+            for (i = 0; i < gasParticles.length; i++){
+            //     if(gasParticles[i].attribute == gasAttr){
+            //         for (j = 0; j < gasParticles[i].attr.length; j++) {
+                
+                if(gasParticles[i].attribute == gasAttr){
+                    // for (j = 0; j < gasParticles[i].attr.length; j++) {
+                    l = gasCoordLookup[gasParticles[i].i-1].length
+                    for(j=0;j<l;j++){
+                        let pos = gasCoordLookup[gasParticles[i].i-1][j];
+                        let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
+                        
+                        //let attr = (gasParticles[i].attr[j]-gasParticles[i].min)/(gasParticles[i].max-gasParticles[i].min)
+                        let attr = gasParticles[i].attr[j]
+                        
+                        vertex.toArray( gasPositions, count * 3 );
+                        gasAttribute[count] = attr;
+                        count+=1
+                    }
+                }
+            }
         
-        scene.remove(boxOfGasPoints)
-        gasgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( gasPositions, 3 ).onUpload( disposeArray ));
-        gasgeometry.addAttribute( 'gasAttribute', new THREE.Float32BufferAttribute( gasAttribute, 1 ).onUpload( disposeArray ));
-        boxOfGasPoints = new THREE.Points( gasgeometry, materialGas );
-        boxOfGasPoints.layers.set(0)
-        pointclouds.push(boxOfGasPoints)
-        scene.add( boxOfGasPoints );
-    }
-    else{
-        for(i=0;i<gasCoordLookup.length;i++){
-            let pos = gasCoordLookup[i];
-            let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
-            vertex.toArray( gasPositions, i * 3 );
-            gasAttribute[i] = 1.0;
-        }   
-        scene.remove(boxOfGasPoints)
-        gasgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( gasPositions, 3 ).onUpload( disposeArray ));
-        gasgeometry.addAttribute( 'gasAttribute', new THREE.Float32BufferAttribute( gasAttribute, 1 ).onUpload( disposeArray ));
-        boxOfGasPoints = new THREE.Points( gasgeometry, materialGas );
-        boxOfGasPoints.layers.set(0)
-        pointclouds.push(boxOfGasPoints)
-        scene.add( boxOfGasPoints );
+            
+            scene.remove(boxOfGasPoints)
+            gasgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( gasPositions, 3 ).onUpload( disposeArray ));
+            gasgeometry.addAttribute( 'gasAttribute', new THREE.Float32BufferAttribute( gasAttribute, 1 ).onUpload( disposeArray ));
+            boxOfGasPoints = new THREE.Points( gasgeometry, materialGas );
+            boxOfGasPoints.layers.set(0)
+            // pointclouds.push(boxOfGasPoints)
+            scene.add( boxOfGasPoints );
+        }
+        else{
+            count = 0
+            for(i=0;i<gasCoordLookup.length;i++){
+                l = gasCoordLookup[i].length
+                for(j=0;j<l;j++){
+                    let pos = gasCoordLookup[i][j];
+                    let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
+                    vertex.toArray( gasPositions, count * 3 );
+                    gasAttribute[count] = 1.0;
+                    count+=1
+                }
+                
+            }   
+            scene.remove(boxOfGasPoints)
+            gasgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( gasPositions, 3 ).onUpload( disposeArray ));
+            gasgeometry.addAttribute( 'gasAttribute', new THREE.Float32BufferAttribute( gasAttribute, 1 ).onUpload( disposeArray ));
+            boxOfGasPoints = new THREE.Points( gasgeometry, materialGas );
+            boxOfGasPoints.layers.set(0)
+            // pointclouds.push(boxOfGasPoints)
+            scene.add( boxOfGasPoints );
+        }
     }
 
-    if (dmParticles.length > 0){
-        let count = 0
-        for (i = 0; i < dmParticles.length; i++){
-            if (dmParticles[i].attribute == dmAttr){
-                for (j = 0; j < dmParticles[i].id.length; j++){
-                    let pos = dmCoordLookup[count];
+    if(dmCoordLookup){
+        let n_d = 0
+        // for(i=0;i<dmCoordLookup.length;i++){
+        for(i=0;i<renderCount;i++){
+            if(dmCoordLookup[i]){
+                n_d += dmCoordLookup[i].length
+            }
+            
+        }
+        var dmgeometry = new THREE.BufferGeometry();
+        var dmPositions = new Float32Array( n_d * 3 );
+        var dmAttribute = new Float32Array( n_d * 1 );
+        if (dmParticles.length > 0){
+            let count = 0
+            for (i = 0; i < dmParticles.length; i++){
+                if (dmParticles[i].attribute == dmAttr){
+                    for (j = 0; j < dmParticles[i].attr.length; j++){
+                        let pos = dmCoordLookup[count];
+                        let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
+                        let attr = (dmParticles[i].attr[j]-dmParticles[i].min)/(dmParticles[i].max-dmParticles[i].min)
+                        vertex.toArray( dmPositions, count * 3 );
+                        dmAttribute[count] = 1.0;
+                        count+=1
+                    }
+                
+                    // let u = dmParticles[i]
+                    // var vertex = new THREE.Vector3( u.x, u.y, u.z )
+                    // var attr = dmParticles[i][dmAttr]
+                    // vertex.toArray( dmPositions, i * 3 );
+                    // // attr.toArray( dmAttribute, i * 1 )
+                    // dmAttribute[i] = attr;
+                }
+            }
+            scene.remove(boxOfDMPoints)
+            dmgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( dmPositions, 3 ).onUpload( disposeArray ));
+            dmgeometry.addAttribute( 'dmAttribute', new THREE.Float32BufferAttribute( dmAttribute, 1 ).onUpload( disposeArray ));
+            boxOfDMPoints = new THREE.Points( dmgeometry, materialDarkMatter );
+            boxOfDMPoints.layers.set(1)
+            // pointclouds.push(boxOfDMPoints)
+            scene.add( boxOfDMPoints );
+        }
+        else{
+            count = 0
+            for(i=0;i<dmCoordLookup.length;i++){
+                l = dmCoordLookup[i].length
+                for(j=0;j<l;j++){
+                    let pos = dmCoordLookup[i][j];
                     let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
-                    let attr = (dmParticles[i].attr[j]-dmParticles[i].min)/(dmParticles[i].max-dmParticles[i].min)
                     vertex.toArray( dmPositions, count * 3 );
                     dmAttribute[count] = 1.0;
-                    count+=1
+                    count += 1
                 }
-            
-                // let u = dmParticles[i]
-                // var vertex = new THREE.Vector3( u.x, u.y, u.z )
-                // var attr = dmParticles[i][dmAttr]
-                // vertex.toArray( dmPositions, i * 3 );
-                // // attr.toArray( dmAttribute, i * 1 )
-                // dmAttribute[i] = attr;
+            }   
+            scene.remove(boxOfDMPoints)
+            dmgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( dmPositions, 3 ).onUpload( disposeArray ));
+            dmgeometry.addAttribute( 'dmAttribute', new THREE.Float32BufferAttribute( dmAttribute, 1 ).onUpload( disposeArray ));
+            boxOfDMPoints = new THREE.Points( dmgeometry, materialDarkMatter );
+            boxOfDMPoints.layers.set(1)
+            // pointclouds.push(boxOfDMPoints)
+            scene.add( boxOfDMPoints );
+        }
+    }
+    
+    if(starCoordLookup){
+        
+        let n_s = 0
+        // for(i=0;i<starCoordLookup.length;i++){
+        for(i=0;i<renderCount;i++){
+            if(starCoordLookup[i]){
+                n_s += starCoordLookup[i].length
             }
         }
-        scene.remove(boxOfDMPoints)
-        dmgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( dmPositions, 3 ).onUpload( disposeArray ));
-        dmgeometry.addAttribute( 'dmAttribute', new THREE.Float32BufferAttribute( dmAttribute, 1 ).onUpload( disposeArray ));
-        boxOfDMPoints = new THREE.Points( dmgeometry, materialDarkMatter );
-        boxOfDMPoints.layers.set(1)
-        pointclouds.push(boxOfDMPoints)
-        scene.add( boxOfDMPoints );
-    }
-    else{
-        for(i=0;i<dmCoordLookup.length;i++){
-            let pos = dmCoordLookup[i];
-            let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
-            vertex.toArray( dmPositions, i * 3 );
-            dmAttribute[i] = 1.0;
-        }   
-        scene.remove(boxOfDMPoints)
-        dmgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( dmPositions, 3 ).onUpload( disposeArray ));
-        dmgeometry.addAttribute( 'dmAttribute', new THREE.Float32BufferAttribute( dmAttribute, 1 ).onUpload( disposeArray ));
-        boxOfDMPoints = new THREE.Points( dmgeometry, materialDarkMatter );
-        boxOfDMPoints.layers.set(1)
-        pointclouds.push(boxOfDMPoints)
-        scene.add( boxOfDMPoints );
-    }
-
-    if(starParticles.length > 0){
-        let count = 0;
-        for (i = 0; i < starParticles.length; i++){
-            if(starParticles[i].attribute == starAttr){
-                for (j = 0; j < starParticles[i].id.length; j++){
-                    let pos = starCoordLookup[count];
-                    let vertex = new THREE.Vector3( pos[1][0], pos[1][1], pos[1][2],6 )
-                    let attr = (starParticles[i].attr[j]-starParticles[i].min)/(starParticles[i].max-starParticles[i].min)
+        // console.log(n_s)
+        var stargeometry = new THREE.BufferGeometry();
+        var starPositions = new Float32Array( n_s * 3 );
+        var starAttribute = new Float32Array( n_s * 1 );
+        if(starParticles.length > 0){
+            let count = 0;
+            for (i = 0; i < starParticles.length; i++){
+                if(starParticles[i].attribute == starAttr){
+                    for (j = 0; j < starParticles[i].id.length; j++){
+                        let pos = starCoordLookup[count];
+                        let vertex = new THREE.Vector3( pos[1][0], pos[1][1], pos[1][2],6 )
+                        let attr = (starParticles[i].attr[j]-starParticles[i].min)/(starParticles[i].max-starParticles[i].min)
+                        vertex.toArray( starPositions, count * 3 );
+                        starAttribute[count] = 1.0;
+                        count+=1
+                    }
+                    // let u = starParticles[i]
+                    // var vertex = new THREE.Vector3( u.x, u.y, u.z )
+                    // var attr = u[starAttr]
+                    // vertex.toArray( starPositions, i * 3 );
+                    // starAttribute[i] = attr;
+                }
+            }
+    
+            scene.remove(boxOfStarPoints)
+            stargeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ));
+            stargeometry.addAttribute( 'starAttribute', new THREE.Float32BufferAttribute( starAttribute, 1 ).onUpload( disposeArray ));
+            boxOfStarPoints = new THREE.Points( stargeometry, materialStar );
+            boxOfStarPoints.layers.set(2)
+            // pointclouds.push(boxOfStarPoints)
+            scene.add( boxOfStarPoints );
+        }
+        else{
+            count = 0
+            // console.log('stars')
+            for(i=0;i<starCoordLookup.length;i++){
+                l = starCoordLookup[i].length
+                for(j=0;j<l;j++){
+                    let pos = starCoordLookup[i][j];
+                    let vertex = new THREE.Vector3( pos[0], pos[1], pos[2])
                     vertex.toArray( starPositions, count * 3 );
                     starAttribute[count] = 1.0;
-                    count+=1
+                    count += 1
                 }
-                // let u = starParticles[i]
-                // var vertex = new THREE.Vector3( u.x, u.y, u.z )
-                // var attr = u[starAttr]
-                // vertex.toArray( starPositions, i * 3 );
-                // starAttribute[i] = attr;
-            }
+            }   
+            scene.remove(boxOfStarPoints)
+            stargeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ));
+            stargeometry.addAttribute( 'starAttribute', new THREE.Float32BufferAttribute( starAttribute, 1 ).onUpload( disposeArray ));
+            boxOfStarPoints = new THREE.Points( stargeometry, materialStar );
+            boxOfStarPoints.layers.set(2)
+            // pointclouds.push(boxOfStarPoints)
+            scene.add( boxOfStarPoints );
         }
-
-        scene.remove(boxOfStarPoints)
-        stargeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ));
-        stargeometry.addAttribute( 'starAttribute', new THREE.Float32BufferAttribute( starAttribute, 1 ).onUpload( disposeArray ));
-        boxOfStarPoints = new THREE.Points( stargeometry, materialStar );
-        boxOfStarPoints.layers.set(2)
-        pointclouds.push(boxOfStarPoints)
-        scene.add( boxOfStarPoints );
     }
-    else{
-        for(i=0;i<starCoordLookup.length;i++){
-            let pos = starCoordLookup[i];
-            let vertex = new THREE.Vector3( pos[1][0], pos[1][1], pos[1][2],6 )
-            vertex.toArray( starPositions, i * 3 );
-            starAttribute[i] = 1.0;
-        }   
-        scene.remove(boxOfStarPoints)
-        stargeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ));
-        stargeometry.addAttribute( 'starAttribute', new THREE.Float32BufferAttribute( starAttribute, 1 ).onUpload( disposeArray ));
-        boxOfStarPoints = new THREE.Points( stargeometry, materialStar );
-        boxOfStarPoints.layers.set(2)
-        pointclouds.push(boxOfStarPoints)
-        scene.add( boxOfStarPoints );
-    }
-
-    if(bhParticles.length > 0){
-        let count = 0
-        for (i = 0; i < bhParticles.length; i++){
-            if(bhParticles[i].attribute == bhAttr){
-                for (j = 0; j < bhParticles[i].id.length; j++){
-                    let pos = bhCoordLookup[count];
-                    let vertex = new THREE.Vector3( pos[1][0], pos[1][1], pos[1][2],6 )
-                    let attr = (bhParticles[i].attr[j]-bhParticles[i].min)/(bhParticles[i].max-bhParticles[i].min)
-                    vertex.toArray( bhPositions, count * 3 );
-                    bhAttribute[count] = attr;
-                    count+=1
-                }
-                // let u = bhParticles[i]
-                // var vertex = new THREE.Vector3( u.x, u.y, u.z )
-                // var attr = bhParticles[i][bhAttr]
-                // vertex.toArray( bhPositions, i * 3 );
-                // // attr.toArray( bhAttribute, i * 1)
-                // bhAttribute[i] = attr;
+    
+    if(bhCoordLookup){
+        bhAttr = document.getElementById('bh_select').value
+        let n_b = 0
+        // for(i=0;i<bhCoordLookup.length;i++){
+        for(i=0;i<renderCount;i++){
+            if(bhCoordLookup[i]){
+                n_b += bhCoordLookup[i].length
             }
             
-    
         }
-        scene.remove(boxOfBHPoints)
-        bhgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( bhPositions, 3 ).onUpload( disposeArray ));
-        bhgeometry.addAttribute( 'bhAttribute', new THREE.Float32BufferAttribute( bhAttribute, 1 ).onUpload( disposeArray ));
-
-        boxOfBHPoints = new THREE.Points( bhgeometry, materialBlackHole );
-        boxOfBHPoints.layers.set(3)
-        pointclouds.push(boxOfBHPoints)
-        scene.add( boxOfBHPoints );
+        var bhgeometry = new THREE.BufferGeometry();
+        var bhPositions = new Float32Array( n_b * 3 );
+        var bhAttribute = new Float32Array( n_b * 1 );
+        if(bhParticles.length > 0){
+            let count = 0
+            for (i = 0; i < bhParticles.length; i++){
+                if(bhParticles[i].attribute == bhAttr){
+                    l = bhCoordLookup[bhParticles[i].i-1].length
+                    // for (j = 0; j < bhParticles[i].attr.length; j++){
+                    for (j = 0; j < l; j++){
+                        let pos = bhCoordLookup[bhParticles[i].i-1][j];
+                        // console.log(pos)
+                        let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
+                        // let attr = (bhParticles[i].attr[j]-bhParticles[i].min)/(bhParticles[i].max-bhParticles[i].min)
+                        let attr = bhParticles[i].attr[j]
+                        
+                        vertex.toArray( bhPositions, count * 3 );
+                        bhAttribute[count] = attr;
+                        count+=1
+                    }
+                    // let u = bhParticles[i]
+                    // var vertex = new THREE.Vector3( u.x, u.y, u.z )
+                    // var attr = bhParticles[i][bhAttr]
+                    // vertex.toArray( bhPositions, i * 3 );
+                    // // attr.toArray( bhAttribute, i * 1)
+                    // bhAttribute[i] = attr;
+                }
+                
+        
+            }
+            scene.remove(boxOfBHPoints)
+            bhgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( bhPositions, 3 ).onUpload( disposeArray ));
+            bhgeometry.addAttribute( 'bhAttribute', new THREE.Float32BufferAttribute( bhAttribute, 1 ).onUpload( disposeArray ));
+    
+            boxOfBHPoints = new THREE.Points( bhgeometry, materialBlackHole );
+            boxOfBHPoints.layers.set(3)
+            // pointclouds.push(boxOfBHPoints)
+            scene.add( boxOfBHPoints );
+        }
+        else{
+            count = 0
+            for(i=0;i<bhCoordLookup.length;i++){
+                l = bhCoordLookup[i].length
+                for(j=0;j<l;j++){
+                    let pos = bhCoordLookup[i][j];
+                    let vertex = new THREE.Vector3( pos[0], pos[1], pos[2] )
+                    vertex.toArray( bhPositions, count * 3 );
+                    bhAttribute[count] = 1.0;
+                    count += 1
+                }
+            }   
+            scene.remove(boxOfBHPoints)
+            bhgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( bhPositions, 3 ).onUpload( disposeArray ));
+            bhgeometry.addAttribute( 'bhAttribute', new THREE.Float32BufferAttribute( bhAttribute, 1 ).onUpload( disposeArray ));
+            boxOfBHPoints = new THREE.Points( bhgeometry, materialBlackHole );
+            boxOfBHPoints.layers.set(3)
+            // pointclouds.push(boxOfBHPoints)
+            scene.add( boxOfBHPoints );
+        }
     }
-    else{
-        for(i=0;i<bhCoordLookup.length;i++){
-            let pos = bhCoordLookup[i];
-            let vertex = new THREE.Vector3( pos[1][0], pos[1][1], pos[1][2],6 )
-            vertex.toArray( bhPositions, i * 3 );
-            bhAttribute[i] = 1.0;
-        }   
-        scene.remove(boxOfBHPoints)
-        bhgeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( bhPositions, 3 ).onUpload( disposeArray ));
-        bhgeometry.addAttribute( 'bhAttribute', new THREE.Float32BufferAttribute( bhAttribute, 1 ).onUpload( disposeArray ));
-        boxOfBHPoints = new THREE.Points( bhgeometry, materialBlackHole );
-        boxOfBHPoints.layers.set(3)
-        pointclouds.push(boxOfBHPoints)
-        scene.add( boxOfBHPoints );
-    }
+    
 
 
     function disposeArray() {
@@ -751,6 +1002,7 @@ function downloadSpectra(){
 
 $(document).ready(function(){
 
+
     $(".container").hover(function(){
         container_hover = true;
         }, function(){
@@ -765,12 +1017,20 @@ $(document).ready(function(){
         
         
         THREE.Cache.enabled = true
+        canvas = document.createElement('canvas')
+        context = canvas.getContext('webgl2', { alpha: false })
         
         scene = new THREE.Scene();
         scene.background = new THREE.Color("rgb(4,6,23)")
 
-        var size = 8.47;
-        var divisions = 10;
+
+        // const axis = new THREE.AxesHelper(100);
+        // const grid = new THREE.GridHelper(20, 20); // size 10, division 10
+        // scene.add(axis);
+        // scene.add(grid);
+
+        // var size = 8.47;
+        // var divisions = 10;
 
         // var gridHelper = new THREE.GridHelper( size, divisions, new THREE.Color( 0x000000 ), new THREE.Color( 0x000000 ) );
         // gridHelper.position.set(0,-8.47/2,8.47/2)
@@ -785,9 +1045,9 @@ $(document).ready(function(){
         // scene.add( gridHelper2 );
         
         // scene.fog = new THREE.FogExp2( 0x000000, 0.1 );
-        var aspect = window.innerWidth / window.innerHeight;
+        // var aspect = window.innerWidth / window.innerHeight;
         // camera = new THREE.PerspectiveCamera( 90, aspect, 0.0001, 400);
-        camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.00001, 400 );
+        camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.00001, 4000 );
         
         camera.layers.enable(0);
         camera.layers.enable(1);
@@ -796,7 +1056,7 @@ $(document).ready(function(){
         camera.layers.enable(4);
         
 
-        renderer = new THREE.WebGLRenderer();
+        renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context });
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
         renderer.antialias = true;
@@ -805,18 +1065,24 @@ $(document).ready(function(){
         renderer.sortPoints = true;
         renderer.gammaFactor = 2.2;
         renderer.gammaOutput = true;
-        renderer.logarithmicDepthBuffer = true
+        renderer.logarithmicDepthBuffer = false
         
-        camera.position.set(8.47, 8.47, 8.47)
-        
-        camera.zoom = 60
+        // camera.position.set(8.47, 8.47, 8.47)
+        camera.position.set(128, 128, 128)
+
+        camera.zoom = 6
         // camera.lookAt(0,0,0)
         camera.updateProjectionMatrix();
 
         
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         // edges.right_edge[0]-edges.left_edge[0], edges.right_edge[1]-edges.left_edge[1], edges.right_edge[2]-edges.left_edge[2]
-        controls.target.set( 8.47/2, 8.47/2, 8.47/2 );
+        // controls.target.set( 8.47/2, 8.47/2, 8.47/2 );
+
+        controls.target.set( 64, 64, 64 );
+
+        controls.update()
+
         // controls.enableDamping = true
         // controls.dampingFactor = 0.07;
 
@@ -880,9 +1146,16 @@ $(document).ready(function(){
         bmxc = document.querySelector("#bhMaxCol")
         bmxc.addEventListener('change',changeColor,false);
 
+        document.getElementById('morePoints').addEventListener('click', function(event){
+            updateRenderCount(renderCount+1)
+        })
+
+        document.getElementById('lessPoints').addEventListener('click', function(event){
+            updateRenderCount(renderCount-1)
+        })
         
         // document.addEventListener('mousemove', onMouseMove, false)
-
+        refreshLoop();
         loadData()
     }
     
@@ -1066,7 +1339,7 @@ $(document).ready(function(){
                     div = document.getElementById(id)
                     id = 'skewer-coords-pt1-range-' + idx + ''
                     id_range = "p1-range-" + idx + ''
-                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.001" value="0.0"></div></div>')
+                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
                     div = document.getElementById(id)
                     id = "skewer-coords-point1-" + idx + ''
                     div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x,3) + ', ' + round(point1.y,3) + ', ' + round(point1.z,3) + ' )</div>')
@@ -1076,7 +1349,7 @@ $(document).ready(function(){
                     div = document.getElementById(id)
                     id = 'skewer-coords-pt2-range-' + idx + ''
                     id_range = "p2-range-" + idx + ''
-                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.001" value="0.0"></div></div>')
+                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
                     div = document.getElementById(id)
                     id = "skewer-coords-point2-" + idx + ''
                     div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x,3) + ', ' + round(point2.y,3) + ', ' + round(point2.z,3) + ' ) </div>')
@@ -1260,7 +1533,7 @@ $(document).ready(function(){
             vertexShader:   document.getElementById( 'vertexshader-gas' ).textContent,
             fragmentShader: document.getElementById( 'fragmentshader-gas' ).textContent,
 
-            blending:       THREE.CustomBlending,
+            blending:       THREE.AdditiveBlending,
             blendEquation: THREE.AddEquation, //default
             blendSrc: THREE.OneFactor,
             blendDst: THREE.ZeroFactor,
@@ -1395,42 +1668,29 @@ $(document).ready(function(){
     }
 
     
-    function animate() {
-        
-        requestAnimationFrame( animate )
-        materialGas.uniforms.zoom.value = camera.zoom
-        materialDarkMatter.uniforms.zoom.value = camera.zoom
-        materialStar.uniforms.zoom.value = camera.zoom
-        materialBlackHole.uniforms.zoom.value = camera.zoom
-
-    }
-
-    function render() {
-
-        requestAnimationFrame( render );
-        controls.update()
-        renderer.render( scene, camera );
-
-    };
     
-    function loadData(){
 
-        d3.json('static/data/gasLookup-min.json').then(function(d){
-            gasCoordLookup = d
-            plotPoints()
-        })
-        d3.json('static/data/dmLookup-min.json').then(function(d){
-            dmCoordLookup = d
-            plotPoints()
-        })
-        d3.json('static/data/starLookup.json').then(function(d){
-            starCoordLookup = d
-        })
-        d3.json('static/data/bhLookup.json').then(function(d){
-            bhCoordLookup = d
-        })
 
-    }
+    // function loadData(){
+        
+    //     for(i=0;i<12;i++){
+    //         d3.json('static/data/gas/gasLookup-sub16.'+ i + '.json').then(function(d){
+    //             gasCoordLookup.push(d)
+    //             plotPoints()
+    //         })
+    //     }
+    //     d3.json('static/data/dmLookup-min.json').then(function(d){
+    //         dmCoordLookup = d
+    //         plotPoints()
+    //     })
+    //     d3.json('static/data/starLookup.json').then(function(d){
+    //         starCoordLookup = d
+    //     })
+    //     d3.json('static/data/bhLookup.json').then(function(d){
+    //         bhCoordLookup = d
+    //     })
+
+    // }
 
 
     function onWindowResize(){
@@ -1441,16 +1701,16 @@ $(document).ready(function(){
         // renderer.setSize( window.innerWidth, window.innerHeight );
         resizeRendererToDisplaySize(renderer)
         function resizeRendererToDisplaySize(renderer) {
-            const canvas = renderer.domElement;
-            const pixelRatio = window.devicePixelRatio;
-            const width  = window.innerWidth  * pixelRatio | 0;
-            const height = window.innerHeight * pixelRatio | 0;
-            const needResize = canvas.width !== width || canvas.height !== height;
-            if (needResize) {
-              renderer.setSize(width, height);
-            }
-            return needResize;
-          }
+        const canvas = renderer.domElement;
+        const pixelRatio = window.devicePixelRatio;
+        const width  = window.innerWidth  * pixelRatio | 0;
+        const height = window.innerHeight * pixelRatio | 0;
+        const needResize = canvas.width !== width || canvas.height !== height;
+        if (needResize) {
+            renderer.setSize(width, height);
+        }
+        return needResize;
+        }
     
     }
 
