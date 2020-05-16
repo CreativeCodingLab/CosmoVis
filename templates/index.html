@@ -167,6 +167,31 @@
 
         }
 
+        .pointLevels{
+            font-size: 6em;
+            color: white;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            position: absolute;
+            margin: 4vh 4vw 4vh 4vw;
+            bottom: 0px;
+            font-family: monospace;
+            font-weight: lighter;
+            opacity: 92%;
+        }
+
+        .pointLevels:hover{
+            color:#8fffdbd1;
+        }
+
+        #morePoints{
+            margin-bottom: 20vh;
+        }
+        #lessPoints{
+            margin-bottom: 10vh;
+        }
         .eye-icon{
             width: 2vh;
             height: 2vh;
@@ -584,6 +609,8 @@
             height: auto;
         }
 
+        
+
 
 
     </style>
@@ -600,7 +627,8 @@
         <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/jQuery.min.js') }}"></script>
         <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-        
+
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/dat.gui.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/d3.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/three.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/LineSegmentsGeometry.js') }}"></script>
@@ -608,6 +636,8 @@
         <script type="text/javascript" src="{{ url_for('static', filename='libs/LineMaterial.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/LineSegments2.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/Line2.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='shaders/VolumeShader.js') }}"></script>
+        
         <script>
         $( function() {
             $( "#data_layers" ).draggable();
@@ -694,7 +724,13 @@
                 //gl_FragColor = vec4(0.6,0.6,0.3,log(vZoom)/70.0));//* texture2D( texture, gl_PointCoord );
                 //gl_FragColor = vec4(vGasAttr,vGasAttr,vGasAttr,log(vZoom)/70.0);//* texture2D( texture, gl_PointCoord ); 
                 
-                gl_FragColor = mix( vMinCol, vMaxCol, ( vGasAttr - vMin ) / ( vMax - vMin ) );
+                float alpha = ( vGasAttr - vMin ) / ( vMax - vMin ); 
+                float r = (1.0 - alpha)*(vMinCol.r) + alpha*vMaxCol.r;
+                float g = (1.0 - alpha)*(vMinCol.g) + alpha*vMaxCol.g;
+                float b = (1.0 - alpha)*(vMinCol.b) + alpha*vMaxCol.b;
+                gl_FragColor = vec4(r,g,b,1.0);
+
+                //gl_FragColor = mix( vMinCol, vMaxCol, ( vGasAttr - vMin ) / ( vMax - vMin ) );
 
                 //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
 
@@ -767,7 +803,7 @@
                 vStarAttribute = starAttribute;
                 //gl_PointSize = zoom / 100.0; //( -mvPosition.z * 000.0 );
                 
-                gl_PointSize = 2.0;
+                gl_PointSize = 1.0;
                 gl_Position = projectionMatrix * mvPosition;
                 
             }
@@ -812,7 +848,7 @@
                 vMinCol = minCol;
                 vMaxCol = maxCol;
                 vec4 mvPosition = 4.0*modelViewMatrix * vec4( position, 1.0 );
-                gl_PointSize = 30.0; //( -mvPosition.z * 000.0 );
+                gl_PointSize = 4.0; //( -mvPosition.z * 000.0 );
                 gl_Position = projectionMatrix * mvPosition;
                 
             }
@@ -843,12 +879,35 @@
                     }
                 }
 
+                float distanceFromCenter = length(2.0 * gl_PointCoord - 1.0);
+                if(distanceFromCenter > 1.0){
+                    discard;
+                }
+
                 //gl_FragColor = vec4(0.8*vBHA,0.2*vBHA,0.2*vBHA,1.0);//* texture2D( texture, gl_PointCoord );
                 gl_FragColor = mix( vMinCol, vMaxCol, ( vBHA - vMin ) / ( vMax - vMin ) );
                 //gl_FragColor = vec4(vColor,vColor,vColor,0.5);//* texture2D( texture, gl_PointCoord ); 
                 //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
                 gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
     
+            }
+        </script>
+
+        <script type="x-shader/x-vertex" id="vertexshader-volume">
+            
+            void main() {
+            
+                
+            }
+        
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-volume">
+
+            void main() {
+
+                float a= tex3D(texCoord,dataTex);
+                color = a * emissiveColor;
             }
         </script>
     
@@ -993,16 +1052,19 @@
             });
 
             socket.on('domain_edges', function(data){
-                console.log(data.left_edge);
-                edges = data
-                camera.position.set(edges.right_edge[0]-edges.left_edge[0], edges.right_edge[1]-edges.left_edge[1], edges.right_edge[2]-edges.left_edge[2])
-                controls.target.set( (edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2 );
+                if(!edges){
+                    console.log(data.left_edge);
+                    edges = data
+                    camera.position.set(edges.right_edge[0]-edges.left_edge[0], edges.right_edge[1]-edges.left_edge[1], edges.right_edge[2]-edges.left_edge[2])
+                    controls.target.set( (edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2 );
 
-                var geometry = new THREE.BoxBufferGeometry( data.right_edge[0]-data.left_edge[0], data.right_edge[1]-data.left_edge[1], data.right_edge[2]-data.left_edge[2] );
-                var material = new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: true, transparent: true, opacity: 0.0} );
-                cube = new THREE.Mesh( geometry, material );
-                cube.position.set((edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2)
-                scene.add( cube );
+                    var geometry = new THREE.BoxBufferGeometry( data.right_edge[0]-data.left_edge[0], data.right_edge[1]-data.left_edge[1], data.right_edge[2]-data.left_edge[2] );
+                    var material = new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: true, transparent: true, opacity: 0.0} );
+                    cube = new THREE.Mesh( geometry, material );
+                    cube.position.set((edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2)
+                    scene.add( cube );
+                }
+                
             });
 
             socket.on('my_response', function(msg, cb) {
@@ -1042,16 +1104,16 @@
             socket.on('dataSentMsg',function(msg){
                 if(msg.particle_type == "PartType0"){
                     let gas = document.getElementById("gas_progress_sent")
-                    gas.value = msg.value*10
+                    gas.value = (msg.value/renderCount)*100
                 }
                 if(msg.particle_type == "PartType5"){
                     let bh = document.getElementById("bh_progress_sent")
-                    bh.value = msg.value*10
+                    bh.value = (msg.value/renderCount)*100
                 }
             });
 
             socket.on('pointData',function(msg) {
-                // console.log(msg);
+                console.log(msg);
                 // let found = field_list.find(element => element[0] == msg.particle_type && element[1] == msg.attribute)
                 // let index = field_list.indexOf(found)
                 // if(field_list[index].length == 2){
@@ -1064,42 +1126,42 @@
                 if(msg.particle_type == "PartType0"){
                     gasParticles.push(msg)
                     let gas = document.getElementById("gas_progress")
-                    gas.value = msg.i*10
-                    if(msg.i == 10){
-                        col = document.getElementById('gas-minval-input')
-                        col.value=msg.min
-                        materialGas.uniforms.min.value = msg.min
-                        col = document.getElementById('gas-maxval-input')
-                        col.value=msg.max
-                        materialGas.uniforms.max.value = msg.max
-                    }
+                    gas.value = (msg.i/renderCount)*100
+                    // if(msg.i+1 == renderCount){
+                    col = document.getElementById('gas-minval-input')
+                    col.value=msg.min
+                    materialGas.uniforms.min.value = msg.min
+                    col = document.getElementById('gas-maxval-input')
+                    col.value=msg.max
+                    materialGas.uniforms.max.value = msg.max
+                    // }
                 }
                 if(msg.particle_type == "PartType1"){
                     dmParticles.push(msg)
                     let dm = document.getElementById("dm_progress")
-                    dm.value = msg.i*10
+                    dm.value = msg.i*renderCount
                 }
                 if(msg.particle_type == "PartType4"){
                     starParticles.push(msg)
                     let star = document.getElementById("star_progress")
-                    star.value = msg.i*10
+                    star.value = msg.i*renderCount
                 }
                 if(msg.particle_type == "PartType5"){
                     bhParticles.push(msg)
                     let bh = document.getElementById("bh_progress")
-                    bh.value = msg.i*10
-                    if(msg.i == 10){
-                        col = document.getElementById('bh-minval-input')
-                        col.value=msg.min
-                        materialGas.uniforms.min.value = msg.min
-                        col = document.getElementById('bh-maxval-input')
-                        col.value=msg.max
-                        materialBlackHole.uniforms.max.value = msg.max
-                    }
+                    bh.value = (msg.i/renderCount)*100
+                    // if(msg.i == 10){
+                    col = document.getElementById('bh-minval-input')
+                    col.value=msg.min
+                    materialGas.uniforms.min.value = msg.min
+                    col = document.getElementById('bh-maxval-input')
+                    col.value=msg.max
+                    materialBlackHole.uniforms.max.value = msg.max
+                    // }
                 }
-
-                if(msg.i == 10){
-                    updateUnits(msg.particle_type, msg.units)
+                updateUnits(msg.particle_type, msg.units)
+                
+                if(msg.i >= renderCount){
                     plotPoints()
                 }
             });
@@ -1270,46 +1332,55 @@
                 }
             }
         }
-
-        function requestPoints(type,attr){
-            
-            exist = false
-            for(i=0;i<particles.length;i++){
-                if(particles[i].particle_type == type && particles[i].attribute == attr){
-                    exist = true
-                }
-            }
-
-            if(!exist){
-                socket.emit('requestPoints',type, attr)
-            }
-            else{
-                let min, max
-                for(i=0;i<particles.length;i++){
-                    if(particles[i].particle_type == type && particles[i].attribute == attr){
-                        min = particles[i].min
-                        max = particles[i].max
-                    }
-                }
-                if(type == 'PartType0'){
-                    col = document.getElementById('gas-minval-input')
-                    col.value=min
-                    materialGas.uniforms.min.value = min
-                    col = document.getElementById('gas-maxval-input')
-                    col.value=max
-                    materialGas.uniforms.max.value = max
-                }
-                if (type == 'PartType5'){
-                    col = document.getElementById('bh-minval-input')
-                    col.value=min
-                    materialGas.uniforms.min.value = min
-                    col = document.getElementById('bh-maxval-input')
-                    col.value=max
-                    materialBlackHole.uniforms.max.value = max
-                }
-                plotPoints()
+        function requestPoints(size,type,attr){
+            if(attr != 'Select an attribute'){
+                loadAttribute(size,type,attr)
             }
         }
+        // function requestPoints(type,attr,renderCount){
+        //     if(attr != 'Select an attribute'){
+
+                
+        //         exist = false
+        //         for(i=0;i<particles.length;i++){
+
+        //             if(particles[i].particle_type == type && particles[i].attribute == attr && particles[i].i >= renderCount){
+        //                 exist = true
+        //             }
+        //         }
+
+        //         if(!exist){
+        //             socket.emit('requestPoints',type, attr,renderCount)
+        //         }
+
+        //         else{
+        //             let min, max
+        //             for(i=0;i<particles.length;i++){
+        //                 if(particles[i].particle_type == type && particles[i].attribute == attr){
+        //                     min = particles[i].min
+        //                     max = particles[i].max
+        //                 }
+        //             }
+        //             if(type == 'PartType0'){
+        //                 col = document.getElementById('gas-minval-input')
+        //                 col.value=min
+        //                 materialGas.uniforms.min.value = min
+        //                 col = document.getElementById('gas-maxval-input')
+        //                 col.value=max
+        //                 materialGas.uniforms.max.value = max
+        //             }
+        //             if (type == 'PartType5'){
+        //                 col = document.getElementById('bh-minval-input')
+        //                 col.value=min
+        //                 materialGas.uniforms.min.value = min
+        //                 col = document.getElementById('bh-maxval-input')
+        //                 col.value=max
+        //                 materialBlackHole.uniforms.max.value = max
+        //             }
+        //             plotPoints()
+        //         }
+        //     }
+        // }
             
         function data_layers(){ 
             var x = document.getElementById("data_layers");
@@ -1403,6 +1474,14 @@
             alt="terminal event log"
             role="button"
             onclick="terminal()"/>
+
+        <!-- <div id="morePoints" class="pointLevels">
+            +
+        </div>
+        <div id="lessPoints" class="pointLevels">
+            -
+        </div> -->
+        
     </div>
     <div id="containers">    
         <div id="data_layers" class="container">
@@ -1438,12 +1517,15 @@
                 <div id="min">
                     min: <input type="checkbox" id="gas-min-check" onclick="toggleValueThreshold('gas','min')"> clip: <input type="checkbox" id="gas-min-clip-check" onclick="clipPoints('gas','min')"> 
                     <br>
-                    <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p>
+                    <input type="number" step="0.1" id="gas-minval-input" class="number-input minvalinput" name="gas-minval"><p class="units gas-attr-units"></p>
+
+                    <!-- <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p> -->
                 </div>
                 <div id="max">
                     max: <input type="checkbox" id="gas-max-check" onclick="toggleValueThreshold('gas','max')"> clip: <input type="checkbox" id="gas-max-clip-check" onclick="clipPoints('gas','max')">
                     <br>
-                    <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p>
+                    <!-- <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p> -->
+                    <input type="number" step="0.1" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval"><p class="units gas-attr-units"></p>
                 </div>
                 
                 <div id=gas-colorscale>
@@ -1452,11 +1534,11 @@
                 </div> 
 
                 <br>
-                <select class="data_select" id="gas_select" onchange="requestPoints('PartType0', document.getElementById('gas_select').value)">
+                <select class="data_select" id="gas_select" onchange="requestPoints(256,'PartType0', document.getElementById('gas_select').value)">
                     <option selected="selected" disabled="disabled">Select an attribute</option></select>
                 
-                sent data : <progress id="gas_progress_sent" value="0" max="100"><p>loading</p> </progress>
-                received data : <progress id="gas_progress" value="0" max="100"><p>loading</p> </progress>
+                <!-- sent data : <progress id="gas_progress_sent" value="0" max="100"><p>loading</p> </progress>
+                received data : <progress id="gas_progress" value="0" max="100"><p>loading</p> </progress> -->
             </div>
             <hr>
             <br>
@@ -1558,7 +1640,7 @@
 
                 </div>
                 <div id="bh-max">
-                    max: <input type="checkbox" id="bh-max-check" onclick="toggleValueThreshold('bh','max')"> clip: <input type="checkbox" id="gas-max-clip-check" onclick="clipPoints('bh','max')">
+                    max: <input type="checkbox" id="bh-max-check" onclick="toggleValueThreshold('bh','max')"> clip: <input type="checkbox" id="bh-max-clip-check" onclick="clipPoints('bh','max')">
                     <br>
                     <input type="number" id="bh-maxval-input" class="number-input maxvalinput" name="bh-maxval" oninput="changeValue('bh','max')"><p class="units bh-attr-units"></p>
                 </div>
@@ -1569,10 +1651,10 @@
                 </div> 
 
 
-                <select class="data_select" id="bh_select" onchange="requestPoints('PartType5', document.getElementById('bh_select').value)"></select>
+                <select class="data_select" id="bh_select" onchange="requestPoints('PartType5', document.getElementById('bh_select').value, renderCount)"></select>
                 
-                sent data: <progress id="bh_progress_sent" value="0" max="100"><p>loading</p> </progress>
-                received data: <progress id="bh_progress" value="0" max="100"><p>loading</p> </progress>
+                <!-- sent data: <progress id="bh_progress_sent" value="0" max="100"><p>loading</p> </progress>
+                received data: <progress id="bh_progress" value="0" max="100"><p>loading</p> </progress> -->
             </div>
             <hr>
 

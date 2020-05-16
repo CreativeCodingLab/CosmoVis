@@ -17,6 +17,7 @@ import pylab
 from itertools import product
 from flask import Response
 from flask_socketio import SocketIO, emit, join_room, leave_room, close_room, rooms, disconnect
+import random
 
 
 #Flask is used as web framework to run python scripts
@@ -34,8 +35,8 @@ socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeou
 # thread_lock = Lock()
 
 yt.enable_parallelism()
-fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-# fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+# fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
 ds = yt.load(fn)
 fl = sorted(ds.field_list) # contains list of fields in the dataset
 ad = ds.all_data()
@@ -44,7 +45,10 @@ left_edge = [float(ad.left_edge[0]),float(ad.left_edge[1]),float(ad.left_edge[2]
 sgs = []
 rpts = {}
 
+N = 1000000
+
 spectrum_hdul = fits.HDUList()
+
 
 def truncate(f, n):
     '''Truncates/pads a float f to n decimal places without rounding'''
@@ -54,45 +58,6 @@ def truncate(f, n):
     i, p, d = s.partition('.')
     return '.'.join([i, (d+'0'*n)[:n]])
 
-def createLookup():
-    # ids = np.array(ad['PartType0', 'ParticleIDs'])
-    # ids = list(ids)
-    positions = np.array(ad['PartType0', 'Coordinates'])
-    positions = np.around(positions,6)
-    positions = positions.tolist()
-    # lookup = tuple(zip(ids, positions))
-    with open('static/data/gasLookup-min-0376.json', 'w') as file:
-        json.dump(positions, file)
-
-    # ids = np.array(ad['PartType1', 'ParticleIDs'])
-    # ids = list(ids)
-    positions = np.array(ad['PartType1', 'Coordinates']).tolist()
-    positions = np.around(positions,6)
-    positions = positions.tolist()
-    # lookup = tuple(zip(ids, positions))
-
-    with open('static/data/dmLookup-min-0376.json', 'w') as file:
-        json.dump(positions, file)
-    
-    # ids = np.array(ad['PartType4', 'ParticleIDs'])
-    # ids = list(ids)
-    positions = np.array(ad['PartType4', 'Coordinates']).tolist()
-    positions = np.around(positions,6)
-    positions = positions.tolist()
-    # lookup = tuple(zip(ids, positions))
-
-    with open('static/data/starLookup-min-0376.json', 'w') as file:
-        json.dump(positions, file)
-
-    # ids = np.array(ad['PartType5', 'ParticleIDs'])
-    # ids = list(ids)
-    positions = np.array(ad['PartType5', 'Coordinates']).tolist()
-    positions = np.around(positions,6)
-    positions = positions.tolist()
-    # lookup = tuple(zip(ids, positions))
-
-    with open('static/data/bhLookup-min-0376.json', 'w') as file:
-        json.dump(positions, file)
 
 # createLookup()
 # import pdb; pdb.set_trace()
@@ -185,10 +150,10 @@ def sendPositions_background():
 
 
 @socketio.on('requestPoints', namespace='/test')
-def handle_attribute_selection(particle_type,attribute):
-    socketio.start_background_task(handle_attribute_selection_background, particle_type,attribute)
+def handle_attribute_selection(particle_type,attribute,renderCount):
+    socketio.start_background_task(handle_attribute_selection_background, particle_type,attribute,renderCount)
 
-def handle_attribute_selection_background(particle_type,attribute):
+def handle_attribute_selection_background(particle_type,attribute,renderCount):
     #particle types: gas, dm, star, bh
     # PartType0	gas
     # PartType1	dark matter 'halo'
@@ -207,8 +172,11 @@ def handle_attribute_selection_background(particle_type,attribute):
     print(len(ad[particle_type, attribute]))
     # import pdb; pdb.set_trace() 
     
-    ids = list(np.array(ad[particle_type, 'ParticleIDs']))
+
+    N = 1000000
+    # ids = list(np.array(ad[particle_type, 'ParticleIDs']))
     units = ''
+    
     if str(ad[particle_type, attribute].units) == 'code_mass':
         # attr = list(np.array(ad[particle_type, attribute].in_units('Msun')))
         attr = np.array(ad[particle_type, attribute].in_units('Msun'))
@@ -217,7 +185,7 @@ def handle_attribute_selection_background(particle_type,attribute):
         pmax = np.around(float(attr.max()),3)
         attr = np.around(attr,3).tolist()
         units = 'log(Msun)'
-    if str(ad[particle_type, attribute].units) == 'K':
+    elif str(ad[particle_type, attribute].units) == 'K':
         # attr = list(np.array(ad[particle_type, attribute]))
         attr = np.array(ad[particle_type, attribute])
         attr = np.log10(attr)
@@ -225,7 +193,7 @@ def handle_attribute_selection_background(particle_type,attribute):
         pmax = np.around(float(attr.max()),3)
         attr = np.around(attr,3).tolist()
         units = 'log(K)'
-    if attribute == 'Density':
+    elif attribute == 'Density':
         # attr = list(np.array(ad[particle_type, attribute].in_cgs()))
         attr = np.array(ad[particle_type, attribute].in_cgs())
         attr = np.log10(attr)
@@ -233,7 +201,7 @@ def handle_attribute_selection_background(particle_type,attribute):
         pmax = np.around(float(attr.max()),3)
         attr = np.around(attr,3).tolist()
         units = 'log(g/cm^3)'
-    if str(ad[particle_type, attribute].units) == 'dimensionless':
+    elif str(ad[particle_type, attribute].units) == 'dimensionless':
         # attr = list(np.array(ad[particle_type, attribute]))
         attr = np.array(ad[particle_type, attribute])
         attr = np.log10(attr)
@@ -241,14 +209,30 @@ def handle_attribute_selection_background(particle_type,attribute):
         pmax = np.around(float(attr.max()),3)
         attr = np.around(attr,3).tolist()
         units = 'dimensionless'
-    
-    
-        
-    for i in range(10):
+    else:
+        attr = np.array(ad[particle_type, attribute])
+        attr = np.log10(attr)
+        pmin = np.around(float(attr.min()),3)
+        pmax = np.around(float(attr.max()),3)
+        attr = np.around(attr,3).tolist()
+        units = str('log(',ad[particle_type, attribute].units,')')    
+
+    a = []
+    if particle_type == 'PartType0':
+        for i in range(renderCount*N):
+            a.append(attr[L_gas[i]])
+    elif particle_type == 'PartType5':
+        for i in range(renderCount*N):
+            a.append(attr[L_bh[i]])
+
+    # [:renderCount*N]
+    for i in range(renderCount):
         socketio.emit('dataSentMsg',{'particle_type':particle_type,'value':i+1}, namespace='/test')
         eventlet.sleep()
-        socketio.emit('pointData',{'particle_type':particle_type,'i':i+1,'attribute':attribute, 'units':units,  'min':pmin, 'max':pmax, 'id': ids[int(i*n/10):int((i+1)*n/10)], 'attr': attr[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
-        print(i+1,'/10 Data Sent')
+        # socketio.emit('pointData',{'particle_type':particle_type,'i':i+1,'attribute':attribute, 'units':units,  'min':pmin, 'max':pmax, 'id': ids[int(i*n/10):int((i+1)*n/10)], 'attr': attr[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
+        socketio.emit('pointData',{'particle_type':particle_type,'i':i+1,'attribute':attribute, 'units':units,  'min':pmin, 'max':pmax, 'attr': a[int(i*N):int((i+1)*N)] }, namespace='/test')
+
+        print(i+1,'/',renderCount,'Data Sent')
     
     # for i in range(0,len(ad[particle_type, attribute])-1): 
     #     eventlet.sleep()
