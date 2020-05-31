@@ -30,6 +30,7 @@ async_mode = 'eventlet'
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)
 # thread = None
 # thread_lock = Lock()
