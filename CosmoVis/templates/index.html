@@ -1,0 +1,1689 @@
+<!doctype html>
+<html>
+    <style>
+        *,html{
+            margin: 0px;
+            padding: 0px;
+        }
+        canvas {
+            margin: 0px;
+            padding: 0px;
+            width: 100vw;
+            height: 100vh;
+        }
+        body {
+            margin: 0px;
+            padding: 0px;
+        }
+        .sidebar {
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 300;
+            font-style: normal;
+            width: 15vw;
+            height: 100vh;
+            position: absolute;
+            background-color: darkgray;
+            background-blend-mode: darken;
+            opacity: 90%;
+            right: 0px;
+            top: 0px;
+            box-shadow: -8px 7px 2px black;
+            padding-left: 1vw;
+            padding-top: 1vw;
+        }
+
+        h1{
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 300;
+            font-style: normal;
+            font-size: 3vh;
+            color: whitesmoke;
+            opacity: 100%;
+        }
+
+
+        .dg ul {
+            list-style: none;
+            margin: 0;
+            padding-bottom: 2vh;
+            width: 14vw;
+            clear: both;
+        }
+
+        .dg.main .close-button {
+            -webkit-transition: opacity .1s linear;
+            -o-transition: opacity .1s linear;
+            -moz-transition: opacity .1s linear;
+            transition: opacity .1s linear;
+            border: 0;
+            line-height: 19px;
+            height: 20px;
+            cursor: pointer;
+            text-align: center;
+            background-color: #000;
+            width: 14vw;
+        }
+        .line {
+            fill: none;
+            stroke: black;
+            stroke-width: 0.3px;
+            opacity: 0.75;
+            clip-path: url(#clip);
+        }
+        #raySelection{
+            display: none;
+        }
+        .rayCoordField {
+            padding: 3% 4%;
+            margin: 8px 0;
+            box-sizing: border-box;
+            width: 18%;
+        }
+        #spectrum {
+            display: none;
+        }
+
+        #data_layers {
+            display: none;
+        }
+
+        #my-gui-container {
+            position: relative;
+
+            /* padding-bottom: 2vh; */
+            z-index: 0;   /* adjust as needed */
+            display: none;
+        }
+
+        #terminal {
+            display: none;
+        }
+
+
+        .title {
+            left: 3vw;
+            top: 1vw;
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 100;
+            font-style: normal;
+            font-size: 80px;
+            position: absolute;
+            color: #DDDDDD;
+        }
+        .title:hover {
+            left: 3vw;
+            top: 1vw;
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 100;
+            font-style: normal;
+            font-size: 80px;
+            position: absolute;
+            color:#DDDDDD;
+        }
+        #icon_container{
+            flex-direction: column;
+            float: right;
+            right: 0vw;
+            top: 1vw;
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 300;
+            font-style: normal;
+            width: 12vw;
+            height: 100vh;
+            position: absolute;
+            /* padding-left: 1vw; */
+            padding-top: 2vw;
+        }
+
+        #containers{
+            flex-direction: column;
+            /* float: right; */
+            position: absolute;
+            right: 14vw;
+            top: 1vw;
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 300;
+            font-style: normal;
+            /* width: 300px; */
+            height: 100vh;
+            position: absolute;
+            /* padding-left: 1vw; */
+            padding-top: 1vw;
+        }
+
+        .icon{
+            -webkit-transition: width 0.1s, height 0.1s; /* Safari prior 6.1 */
+            transition: width 0.1s, height 0.1s;
+            height: 4vh;
+            width: 4vh;
+            padding: 4vh 4vw 4vh 4vw;
+            filter: invert(99%) sepia(0%) saturate(0%) hue-rotate(183deg) brightness(90%) contrast(95%);
+        }
+        .icon:hover{
+            filter: invert(84%) sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%);
+            height: 5vh;
+            width: 5vh;
+            padding: 4vh 4vw 4vh 4vw;
+
+        }
+
+        .eye-icon{
+            width: 2vh;
+            height: 2vh;
+            display: inline-block;
+            margin-right: 0.5vw;
+            transform: translateY(0.5vh);
+        }
+        .eye-icon:hover{
+            filter: invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%);
+            width: 2vh;
+            height: 2vh;
+            display: inline-block;
+            margin-right: 0.5vw;
+            transform: translateY(0.5vh);
+        }
+
+        .blend-icon{
+            width: 2vh;
+            height: 2vh;
+            display: inline-block;
+            margin-right: 0.5vw;
+            transform: translateY(0.5vh);
+        }
+        .blend-icon:hover{
+            filter: invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%);
+            width: 2vh;
+            height: 2vh;
+            display: inline-block;
+            margin-right: 0.5vw;
+            transform: translateY(0.5vh);
+        }
+
+        .laser-icon{
+            width: 3vh;
+            height: 3vh;
+            display: inline-block;
+            margin-right: 0.5vw;
+            transform: translateY(1vh);
+        }
+        .laser-icon:hover{
+            filter: invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%);
+            width: 3vh;
+            height: 3vh;
+            display: inline-block;
+            margin-right: 0.5vw;
+            transform: translateY(0.5vh);
+        }
+
+        .data_select {
+            display: block;
+            font-size: 16px;
+            /* font-family: sans-serif; */
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 700;
+            color: #444;
+            line-height: 1.5;
+            padding: 0.0em 1.4em 0.0em .8em;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 1vh;
+            border: 1px solid #aaa;
+            box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+            border-radius: .5em;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #fff;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'),
+            linear-gradient(to bottom, #ffffedb8 0%,#ffffedb8 100%);
+            background-repeat: no-repeat, repeat;
+            background-position: right .7em top 50%, 0 0;
+            background-size: .65em auto, 100%;
+        }
+        .data_select::-ms-expand {
+            display: none;
+        }
+        .data_select:hover {
+            border-color: #888;
+        }
+        .data_select:focus {
+            border-color: #aaa;
+            box-shadow: 0 0 1px 3px rgba(59, 153, 252, .7);
+            box-shadow: 0 0 0 3px -moz-mac-focusring;
+            color: #222;
+            outline: none;
+        }
+        .data_select option {
+            font-weight:normal;
+        }
+
+        .container{
+            font-family: mr-eaves-modern, sans-serif;
+            font-weight: 300;
+            font-style: normal;
+            font-size: 1.4em;
+            width: 300px;
+            height: auto;
+            position: absolute;
+            background-color: #8fffdbd1;
+            background-blend-mode: darken;
+            opacity: 90%;
+            right: 1vw;
+            top: 0px;
+            box-shadow: -8px 7px 2px black;
+            padding-left: 0.5vw;
+            padding-right: 0.5vw;
+            padding-top: 0.5vw;
+            padding-bottom: 0.5vw;
+            border-radius: 10px;
+            border-style: double;
+            border-color: #00ffca;
+        }
+
+        progress{
+            width: 100%;
+            /* margin-top: 1vh;
+            margin-bottom: -0.5vh; */
+        }
+
+        #gas-eye-closed{
+            display: none;
+        }
+
+        #dm-eye-closed{
+            display: none;
+        }
+
+        #star-eye-closed{
+            display: none;
+        }
+
+        #bh-eye-closed{
+            display: none;
+        }
+
+        #skewer-eye-closed{
+            display: none;
+        }
+
+        input[type="color" i] {
+            width:2.4vh;
+            height:2.4vh;
+            margin-bottom:1vh;
+            border-radius: 0.5em;
+            border-color: #0000;
+            display: inline-block;
+            float: right;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            margin-bottom: -1vh;
+        }
+
+        #gas-colorscale{
+            width: 100%;
+            height:2.6vh;
+            background: linear-gradient(0.25turn, #3f87a6, #ebf8e1, #f69d3c);
+            display:inline-block;
+            margin-bottom: 1vh;
+            border-radius: 0.25em;
+            border: 1px solid #aaa;
+            box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+        }
+
+        #bh-colorscale{
+            width: 100%;
+            height:2.6vh;
+            background: linear-gradient(0.25turn, #3f87a6, #ebf8e1, #f69d3c);
+            display:inline-block;
+            margin-bottom: 1vh;
+            border-radius: 0.25em;
+            border: 1px solid #aaa;
+            box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+            
+        }
+
+        #gasMinCol{
+            float: left;
+        }
+        #gasMaxCol{
+            float: right;
+        }
+
+        #bhMinCol{
+            float: left;
+        }
+        #bhMaxCol{
+            float: right;
+        }
+
+        .minvalinput{
+            width: 50%;
+        }
+
+        .maxvalinput{
+            width: 50%;
+        }
+
+        #min{
+            float: left;
+            width:48%;
+            /* display:inline-block */
+        }
+        #max{
+            float: right;
+            width:48%;
+            /* display: inline-block; */
+        }
+
+        #bh-min{
+            float: left;
+            width:48%;
+            /* display:inline-block */
+        }
+        #bh-max{
+            float: right;
+            width:48%;
+            /* display: inline-block; */
+        }
+
+        .units{
+            /* display: inline-block; */
+            margin-bottom:1vh;
+        }
+
+        .number-input {
+            display: inline-block;
+            /* font-size: 16px; */
+            /* font-family: sans-serif; */
+            font-weight: 700;
+            color: #444;
+            line-height: 1.3;
+            padding: .6em 0.4em .5em .8em;
+            width: 100%;
+            max-width: 89%;
+            /* box-sizing: border-box; */
+            margin: 0;
+            border: 1px solid #aaa;
+            box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+            border-radius: .5em;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #ffffedb8;
+            /* linear-gradient(to bottom, #ffffff 0%,#e5e5e5 100%); */
+            background-repeat: no-repeat, repeat;
+            background-position: right .7em top 50%, 0 0;
+            background-size: .65em auto, 100%;
+            margin-bottom: 1vh;
+        }
+
+        .data-details{
+            margin-left: 0.5vw;
+            margin-right: 0.5vw;
+            margin-bottom: 1vh;
+        }
+
+        
+        .skewer-coords{
+            font-size: 15px;
+            /* margin-right: -1vw; */
+            display: inline-block;
+            float: right;
+            font-size: 0.87em;
+            font-family: sans monospace;
+        }
+
+        .pt-range{
+            width: 100%;
+
+        }
+
+        .skewer-coords-number{
+            /* margin-left: 1vw; */
+            margin-top:2vh;
+            font-size: 19px;
+            /* width:10%; */
+            float:left;
+            margin-right: 0.3vw;
+        }
+        .skewer-coords-values{
+            /* width: 6vw; */
+            display: inline-block;
+            float: right;
+            font-family: sans monospace;
+            font-size: 0.9em;
+        }
+
+        .skewer-coords-pt{
+            /* width: 8vw; */
+            float:left;
+        }
+
+        .skewer-coords-pt1-range{
+            margin-top: 1vh;
+            /* float:right; */
+            width: 88%;
+            /* display: inline-block; */
+        }
+        .skewer-coords-pt2-range{
+            /* float:right; */
+            width: 88%;
+            margin-bottom: 1vh;
+            /* display: inline-block; */
+        }
+
+        .skewer-coords-point1{
+            float:left;
+        }
+        .skewer-coords-point2{
+            float:left;
+        }
+        
+        .slider-wrapper {
+            display: inline-block;
+            width: 20%;
+            /* height: 150px; */
+            padding: 0;
+            /* transform-origin: 0px 0px;
+            transform: rotate(-90deg); */
+            /* margin-right: 1vw; */
+            margin-left: 1vw;
+        }
+        #skewer-coords{
+            margin-bottom: 2vh;
+        }
+        .skewer-coords-number{
+            font-size: 19px;
+        }
+
+        .delete-icon{
+            position: relative;
+            display: inline-block;
+            height: 0.8em;
+        }
+        
+        .delete-icon:hover{
+            filter: invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%);
+            position: relative;
+            display: inline-block;
+            height: 0.8em;
+        }
+
+        .retry-icon{
+            height: 0.8em;
+            display:inline-block;
+        }
+        
+        .retry-icon:hover{
+            filter: invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%);
+            height: 0.8em;
+            display:inline-block;
+        }
+
+        .spectra-status{
+            width: 100%;
+            display: inline-block;
+            font-size: 1em;
+            position: relative;
+        }
+
+        .request-button {
+            font-family: mr-eaves-modern, sans-serif;
+            display: block;
+            /* font-size: 16px; */
+            /* font-family: sans-serif; */
+            font-weight: 700;
+            font-size: 1em;
+            color: #444;
+            /* line-height: 1.3; */
+            /* padding: 0em 0em 1.3em 0em; */
+            width: 100%;
+            height: 3vh;
+            /* max-width: 89%; */
+            /* box-sizing: border-box; */
+            margin: 0;
+            border: 1px solid #aaa;
+            box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+            border-radius: .5em;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #ffffedb8;
+            background-repeat: no-repeat, repeat;
+            background-position: right .7em top 50%, 0 0;
+            background-size: .65em auto, 100%;
+            margin-bottom: 1vh;
+            float: left;
+        }
+
+        .request-button:disabled{
+            background-color: #4448;;
+        }
+
+        .spectra-request-status{
+            width: 100%;
+            /* float: right; */
+            /* margin-top: 1vh; */
+            margin-bottom: 1vh;
+            margin-left: 1vw;
+            margin-right: 1vw;
+        }
+
+        
+        #wavelength{
+            font-size: 0.9em;
+            margin-bottom: 1vh;
+        }
+
+        .graph{
+            float: right;
+            width: 100%;
+            height: auto;
+        }
+
+
+
+    </style>
+    <head>
+        <title>cosmovis</title>
+
+        <!-- load libraries -->
+        
+        <!-- <link src="{{ url_for('static', filename='styles/style.css') }}" rel="stylesheet" type="text/css"> -->
+        <!-- <script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script> -->
+        
+        <link href="https://fonts.googleapis.com/css?family=Odibee+Sans&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://use.typekit.net/qnm2bha.css">
+        <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/jQuery.min.js') }}"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/d3.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/three.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineSegmentsGeometry.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineGeometry.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineMaterial.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineSegments2.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/Line2.js') }}"></script>
+        <script>
+        $( function() {
+            $( "#data_layers" ).draggable();
+        } );
+        $( function() {
+            $( "#raySelection" ).draggable();
+        } );
+        // $( function() {
+        //     $( "#my-gui-container" ).draggable();
+        // } );
+        $( function() {
+            $( "#spectrum" ).draggable();
+        } );
+        $( function() {
+            $( "#terminal" ).draggable();
+        } );
+        // $( function() {
+        //     $( ".icon" ).draggable();
+        // } );
+        </script>
+        
+        
+        <script type="x-shader/x-vertex" id="vertexshader-gas">
+            
+            uniform float zoom;
+            uniform vec4 minCol;
+            uniform vec4 maxCol;
+            uniform float min;
+            uniform float max;
+            attribute float gasAttribute;
+            
+            varying float vZoom;
+            varying vec4 vMinCol;
+            varying vec4 vMaxCol;
+            varying float vMin;
+            varying float vMax;
+            varying float vGasAttr;
+
+            
+            void main() {
+                
+                vGasAttr = gasAttribute;
+                vZoom = zoom;
+                vMinCol = minCol;
+                vMaxCol = maxCol;
+                vMin = min;
+                vMax = max;
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                //gl_PointSize = zoom / (100.0);//* -mvPosition.z);
+                gl_PointSize = 2.0;
+                gl_Position = projectionMatrix * mvPosition;
+                
+            }
+        
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-gas">
+            
+            uniform sampler2D texture;
+            
+            uniform bool minClip;
+            uniform bool maxClip;
+            varying float vZoom;
+            varying float vGasAttr;
+            varying vec4 vMinCol;
+            varying vec4 vMaxCol;
+            varying float vMin;
+            varying float vMax;
+
+
+            void main() {
+
+                if(minClip){
+                    if(vGasAttr < vMin){
+                        discard;
+                    }
+                }
+                if(maxClip){
+                    if(vGasAttr > vMax){
+                        discard;
+                    }
+                }
+
+                //gl_FragColor = vec4(0.6,0.6,0.3,log(vZoom)/70.0));//* texture2D( texture, gl_PointCoord );
+                //gl_FragColor = vec4(vGasAttr,vGasAttr,vGasAttr,log(vZoom)/70.0);//* texture2D( texture, gl_PointCoord ); 
+                
+                gl_FragColor = mix( vMinCol, vMaxCol, ( vGasAttr - vMin ) / ( vMax - vMin ) );
+
+                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
+
+                gl_FragColor.a = 1.0 ;    
+
+                //if(vGasAttr<=vMin || vGasAttr>=vMax){
+                //    gl_FragColor.a = 0.0 ;
+                //}
+                //else{
+                //    gl_FragColor.a = 1.0 ;    
+                //}
+    
+            }
+        </script>
+
+        <script type="x-shader/x-vertex" id="vertexshader-darkmatter">
+            uniform vec4 Col;
+            //uniform vec4 maxCol;
+            attribute float dmAttribute;
+            uniform float zoom;
+            varying float vZoom;
+            varying float vDMAttr;
+            varying vec4 vCol;
+            //varying vec4 vMaxCol;
+            void main() {
+                vZoom = zoom;
+                vCol = Col;
+                //vMaxCol = maxCol;
+                vDMAttr = dmAttribute;
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                //gl_PointSize = zoom / 100.0; //( -mvPosition.z * 000.0 );
+                gl_PointSize = 2.0;
+                gl_Position = projectionMatrix * mvPosition;
+                
+            }
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-darkmatter">
+            
+            varying vec4 vCol;
+            //varying vec4 vMaxCol;
+            uniform sampler2D texture;
+            varying float vZoom;
+            varying float vDMAttr;
+            void main() {
+
+                //gl_FragColor = vec4(0.55,0.35,0.55,log(vZoom)/70.0);//* texture2D( texture, gl_PointCoord );
+                //gl_FragColor = mix( vMinCol,vMaxCol,vDMAttr );
+                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//* texture2D( texture, gl_PointCoord ); 
+                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
+                //gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
+    
+            }
+        </script>
+
+        <script type="x-shader/x-vertex" id="vertexshader-star">
+            
+            uniform vec4 Col;
+            //uniform vec4 maxCol;
+            varying vec4 vCol;
+            //varying vec4 vMaxCol;
+            uniform float zoom;
+            attribute float starAttribute;
+            varying float vStarAttribute;
+
+            void main() {
+                vCol = Col;
+                //vMaxCol = maxCol;
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                vStarAttribute = starAttribute;
+                //gl_PointSize = zoom / 100.0; //( -mvPosition.z * 000.0 );
+                
+                gl_PointSize = 2.0;
+                gl_Position = projectionMatrix * mvPosition;
+                
+            }
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-star">
+            
+            uniform sampler2D texture;
+            varying float vStarAttribute;
+            varying vec4 vCol;
+            //varying vec4 vMaxCol;
+            void main() {
+
+                //gl_FragColor = vec4(0.8*vStarAttribute,0.8*vStarAttribute,0.2*vStarAttribute,0.2);//* texture2D( texture, gl_PointCoord );
+                //gl_FragColor = mix( vMinCol,vMaxCol,vStarAttribute );
+                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//* texture2D( texture, gl_PointCoord ); 
+                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
+                gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
+    
+            }
+        </script>
+
+        <script type="x-shader/x-vertex" id="vertexshader-blackhole">
+            uniform float zoom;
+            attribute float bhAttribute;
+            uniform float min;
+            uniform float max;
+            uniform vec4 minCol;
+            uniform vec4 maxCol;
+            
+            varying vec4 vMinCol;
+            varying vec4 vMaxCol;
+            varying float vMin;
+            varying float vMax;
+            varying float vBHA;
+            
+
+            void main() {
+                vBHA = bhAttribute;
+                vMin = min;
+                vMax = max;
+                vMinCol = minCol;
+                vMaxCol = maxCol;
+                vec4 mvPosition = 4.0*modelViewMatrix * vec4( position, 1.0 );
+                gl_PointSize = 30.0; //( -mvPosition.z * 000.0 );
+                gl_Position = projectionMatrix * mvPosition;
+                
+            }
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-blackhole">
+            
+            //varying float vRotation;
+            varying float vColor;
+            varying float vBHA;
+            uniform sampler2D texture;
+            uniform bool minClip;
+            uniform bool maxClip;
+            varying vec4 vMinCol;
+            varying vec4 vMaxCol;
+            varying float vMin;
+            varying float vMax;
+
+            void main() {
+                if(minClip){
+                    if(vBHA < vMin){
+                        discard;
+                    }
+                }
+                if(maxClip){
+                    if(vBHA > vMax){
+                        discard;
+                    }
+                }
+
+                //gl_FragColor = vec4(0.8*vBHA,0.2*vBHA,0.2*vBHA,1.0);//* texture2D( texture, gl_PointCoord );
+                gl_FragColor = mix( vMinCol, vMaxCol, ( vBHA - vMin ) / ( vMax - vMin ) );
+                //gl_FragColor = vec4(vColor,vColor,vColor,0.5);//* texture2D( texture, gl_PointCoord ); 
+                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
+                gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
+    
+            }
+        </script>
+    
+        <script type="x-shader/x-vertex" id="vertexshader-235">
+            attribute float density;
+            attribute float temperature;
+            //uniform float spin;
+            varying float vColor;
+            //varying float vRotation;
+            void main() {
+                //vRotation = spin;
+                vColor = temperature;
+                vec4 mvPosition = modelViewMatrix * vec4( position.x, position.y, -temperature*8.47, 1.0 );
+                gl_PointSize = 1.4;// * ( 300.0 / -mvPosition.z );
+                gl_Position = projectionMatrix * mvPosition;
+                
+            }
+        </script>
+    
+        <script type="x-shader/x-fragment" id="fragmentshader-235">
+            
+            //varying float vRotation;
+            varying float vColor;
+            uniform sampler2D texture;
+            void main() {
+    
+                //float mid = 0.5;
+                //vec2 rotated = vec2(cos(vRotation) * (gl_PointCoord.x - mid) + sin(vRotation) * (gl_PointCoord.y - mid) + mid,
+                                    //cos(vRotation) * (gl_PointCoord.y - mid) - sin(vRotation) * (gl_PointCoord.x - mid) + mid);
+                //vec4 rotatedTexture = texture2D( texture,  rotated);
+                gl_FragColor = vec4(vColor,vColor,vColor,0.95);// * texture2D( texture, gl_PointCoord );
+                //gl_FragColor.a *= 1/pow( gl_FragCoord.z, 2.0 );
+    
+            }
+        </script>
+
+        <script>
+        // c holds the coordinate data
+        // var c = new Array()
+
+        var skewerData = []
+        var domainLambda = []
+        var xScale
+        // var gasCoordLookup = []
+        // var dmCoordLookup = []
+        // var starCoordLookup = []
+        // var bhCoordLookup = []
+
+        
+        $(document).ready(function(){
+            
+            
+
+            // $('form#selectRay').submit(function(event) {
+            //     var ray1 = [document.getElementById("ray_x1").value,document.getElementById("ray_y1").value,document.getElementById("ray_z1").value]
+            //     var ray2 = [document.getElementById("ray_x2").value,document.getElementById("ray_y2").value,document.getElementById("ray_z2").value]
+                
+            //     socket.emit('selectRay', ray1,ray2);
+                
+            //     var geometry = new THREE.Geometry();
+            //     geometry.vertices.push(new THREE.Vector3(ray1[0],ray1[1],ray1[2]) );
+            //     geometry.vertices.push(new THREE.Vector3(ray2[0],ray2[1],ray2[2]) );
+
+            //     var material = new THREE.LineBasicMaterial( { 
+            //         color: 0xffff00,
+            //         linewidth: 20
+
+            //      } );
+
+            //     var line = new THREE.Line( geometry, material );
+            //     line.position.set(-(8.47)/2, -(8.47)/2,0)
+            //     line.layers.set(4)
+            //     scene.add( line );
+            //     return false
+            // });
+
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'I\'m connected!'});
+            });
+
+            socket.on('field_list', function(msg) {
+                if(!field_list){
+                    field_list = msg.data
+                    clearDropDowns()
+                
+                    createAttributeSelectors(field_list)
+                    
+                    function clearDropDowns(){
+                        $("#gas_select").empty();
+                        $("#dm_select").empty();
+                        $("#star_select").empty();
+                        $("#bh_select").empty();
+                    }
+                }
+
+                // console.log(field_list);
+                
+                
+                
+                function createAttributeSelectors(field_list){
+                    var select = document.getElementById("gas_select"); 
+                    var option = document.createElement("option");
+                    option.disabled = "disabled"
+                    option.selected = "selected"
+                    option.text = "Select an attribute"
+                    select.add(option);
+
+                    var select = document.getElementById("bh_select"); 
+                    var option = document.createElement("option");
+                    option.disabled = "disabled"
+                    option.selected = "selected"
+                    option.text = "Select an attribute"
+                    select.add(option);
+
+                    for(i = 0; i < field_list.length; i++){
+                        if(field_list[i][0] == 'PartType0'){
+                            var select = document.getElementById("gas_select"); 
+                            var option = document.createElement("option");
+                            option.text = field_list[i][1];
+                            select.add(option);
+                        }
+                        // if(field_list[i][0] == 'PartType1'){
+                        //     var select = document.getElementById("dm_select"); 
+                        //     var option = document.createElement("option");
+                        //     option.text = field_list[i][1];
+                        //     select.add(option);
+                        // }
+                        // if(field_list[i][0] == 'PartType4'){
+                        //     var select = document.getElementById("star_select"); 
+                        //     var option = document.createElement("option");
+                        //     option.text = field_list[i][1];
+                        //     select.add(option);
+                        // }
+                        if(field_list[i][0] == 'PartType5'){
+                            var select = document.getElementById("bh_select");
+                            var option = document.createElement("option");
+                            option.text = field_list[i][1];
+                            select.add(option);
+                        }
+                    }
+                }
+            });
+
+            socket.on('domain_edges', function(data){
+                console.log(data.left_edge);
+                edges = data
+                camera.position.set(edges.right_edge[0]-edges.left_edge[0], edges.right_edge[1]-edges.left_edge[1], edges.right_edge[2]-edges.left_edge[2])
+                controls.target.set( (edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2 );
+
+                var geometry = new THREE.BoxBufferGeometry( data.right_edge[0]-data.left_edge[0], data.right_edge[1]-data.left_edge[1], data.right_edge[2]-data.left_edge[2] );
+                var material = new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: true, transparent: true, opacity: 0.0} );
+                cube = new THREE.Mesh( geometry, material );
+                cube.position.set((edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2)
+                scene.add( cube );
+            });
+
+            socket.on('my_response', function(msg, cb) {
+                console.log('Received #' + msg.count + ': ' + msg.data);
+                if (cb)
+                    cb();
+            });
+
+            socket.on('positionData',function(msg){
+                ptype = msg.particle_type
+                if(ptype == 'PartType0'){
+                    gasCoordLookup.push(msg.data)
+                    let gas = document.getElementById("gas_progress")
+                    gas.value = msg.i
+                    if(msg.i == 100){plotPoints()}
+                }
+                if(ptype == 'PartType1'){
+                    dmCoordLookup.push(msg.data)
+                    let dm = document.getElementById("dm_progress")
+                    dm.value = msg.i
+                    if(msg.i == 100){plotPoints()}
+                }
+                if(ptype == 'PartType4'){
+                    starCoordLookup.push(msg.data)
+                    starParticles.push(msg)
+                    let star = document.getElementById("star_progress")
+                    star.value = msg.i*10
+                }
+                if(ptype == 'PartType5'){
+                    bhCoordLookup.push(msg.data)
+                    let bh = document.getElementById("bh_progress")
+                    bh.value = msg.i*10
+                }
+
+            });
+
+            socket.on('dataSentMsg',function(msg){
+                if(msg.particle_type == "PartType0"){
+                    let gas = document.getElementById("gas_progress_sent")
+                    gas.value = msg.value*10
+                }
+                if(msg.particle_type == "PartType5"){
+                    let bh = document.getElementById("bh_progress_sent")
+                    bh.value = msg.value*10
+                }
+            });
+
+            socket.on('pointData',function(msg) {
+                // console.log(msg);
+                // let found = field_list.find(element => element[0] == msg.particle_type && element[1] == msg.attribute)
+                // let index = field_list.indexOf(found)
+                // if(field_list[index].length == 2){
+                //     field_list[index].push(data=[])
+                // }
+
+                // field_list[index][2].push([msg.data])
+                particles.push(msg)
+
+                if(msg.particle_type == "PartType0"){
+                    gasParticles.push(msg)
+                    let gas = document.getElementById("gas_progress")
+                    gas.value = msg.i*10
+                    if(msg.i == 10){
+                        col = document.getElementById('gas-minval-input')
+                        col.value=msg.min
+                        materialGas.uniforms.min.value = msg.min
+                        col = document.getElementById('gas-maxval-input')
+                        col.value=msg.max
+                        materialGas.uniforms.max.value = msg.max
+                    }
+                }
+                if(msg.particle_type == "PartType1"){
+                    dmParticles.push(msg)
+                    let dm = document.getElementById("dm_progress")
+                    dm.value = msg.i*10
+                }
+                if(msg.particle_type == "PartType4"){
+                    starParticles.push(msg)
+                    let star = document.getElementById("star_progress")
+                    star.value = msg.i*10
+                }
+                if(msg.particle_type == "PartType5"){
+                    bhParticles.push(msg)
+                    let bh = document.getElementById("bh_progress")
+                    bh.value = msg.i*10
+                    if(msg.i == 10){
+                        col = document.getElementById('bh-minval-input')
+                        col.value=msg.min
+                        materialGas.uniforms.min.value = msg.min
+                        col = document.getElementById('bh-maxval-input')
+                        col.value=msg.max
+                        materialBlackHole.uniforms.max.value = msg.max
+                    }
+                }
+
+                if(msg.i == 10){
+                    updateUnits(msg.particle_type, msg.units)
+                    plotPoints()
+                }
+            });
+
+            socket.on('processingRay',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'generating spectrum . . . '
+            });
+
+            socket.on('sentRay',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'sending spectrum . . . '
+            });
+
+            socket.on('synthetic_spectrum', function(msg) {
+                console.log(msg)
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                if(div){
+                    div.innerText = 'spectrum received!' 
+                }
+                plotSyntheticSpectrum(msg);
+            });
+            
+            // socket.on('dataC', function(msg) {
+            //     // c.push(msg.data)
+            //     plotPoint(msg.data)
+            //     // $('#log').append('<br>' + $('<div/>').text('Received ' + msg.data).html());
+            // });
+
+            // var ping_pong_times = [];
+            // var start_time;
+            
+            // window.setInterval(function() {
+            //     start_time = (new Date).getTime();
+            //     socket.emit('my_ping');
+            // }, 1000);
+            
+            // socket.on('my_pong', function() {
+            //     var latency = (new Date).getTime() - start_time;
+            //     ping_pong_times.push(latency);
+            //     ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
+            //     var sum = 0;
+            //     for (var i = 0; i < ping_pong_times.length; i++)
+            //         sum += ping_pong_times[i];
+            //     $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+            // });
+
+            // $('form#disconnect').submit(function(event) {
+            //     socket.emit('disconnect_request');
+            //     return false;
+            // });
+            // $('form#loadData').submit(function(event) {
+            //     socket.emit('loadData');
+            //     return false;
+            // });
+            // $('form#sendCoords').submit(function(event) {
+            //     socket.emit('sendCoords');
+            //     return false;
+            // });
+
+        });
+
+        </script>
+    </head>
+    <body>
+   
+        <!-- load scripts -->
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/Tween.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/OrbitControls.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/cosmo-vis.js') }}"></script>
+    <script>
+
+        function toggleLayer( l ){
+            camera.layers.toggle( l )
+            if(l==0){
+                var visible = boxOfGasPoints.layers.test( camera.layers );
+                if(visible){
+                    var x = document.getElementById("gas-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("gas-eye-closed");
+                    y.style.display = "none";
+
+                }
+                else{
+                    var x = document.getElementById("gas-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("gas-eye-closed");
+                    y.style.display = "inline-block";
+
+                }
+            }
+            if(l==1){
+                var visible = boxOfDMPoints.layers.test( camera.layers );
+                if(visible){
+                    var x = document.getElementById("dm-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("dm-eye-closed");
+                    y.style.display = "none";
+
+                }
+                else{
+                    var x = document.getElementById("dm-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("dm-eye-closed");
+                    y.style.display = "inline-block";
+                }
+            }
+            if(l==2){
+                var visible = boxOfStarPoints.layers.test( camera.layers );
+                if(visible){
+                    var x = document.getElementById("star-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("star-eye-closed");
+                    y.style.display = "none";
+
+                }
+                else{
+                    var x = document.getElementById("star-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("star-eye-closed");
+                    y.style.display = "inline-block";
+
+                }
+            }
+            if(l==3){
+                var visible = boxOfBHPoints.layers.test( camera.layers );
+                if(visible){
+                    var x = document.getElementById("bh-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("bh-eye-closed");
+                    y.style.display = "none";
+
+                }
+                else{
+                    var x = document.getElementById("bh-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("bh-eye-closed");
+                    y.style.display = "inline-block";
+
+                }
+            }
+            if(l==4){
+                var visible = line.layers.test( camera.layers );
+                if(visible){
+                    var x = document.getElementById("skewer-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("skewer-eye-closed");
+                    y.style.display = "none";
+
+                }
+                else{
+                    var x = document.getElementById("skewer-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("skewer-eye-closed");
+                    y.style.display = "inline-block";
+
+                }
+            }
+        }
+
+        function requestPoints(type,attr){
+            
+            exist = false
+            for(i=0;i<particles.length;i++){
+                if(particles[i].particle_type == type && particles[i].attribute == attr){
+                    exist = true
+                }
+            }
+
+            if(!exist){
+                socket.emit('requestPoints',type, attr)
+            }
+            else{
+                let min, max
+                for(i=0;i<particles.length;i++){
+                    if(particles[i].particle_type == type && particles[i].attribute == attr){
+                        min = particles[i].min
+                        max = particles[i].max
+                    }
+                }
+                if(type == 'PartType0'){
+                    col = document.getElementById('gas-minval-input')
+                    col.value=min
+                    materialGas.uniforms.min.value = min
+                    col = document.getElementById('gas-maxval-input')
+                    col.value=max
+                    materialGas.uniforms.max.value = max
+                }
+                if (type == 'PartType5'){
+                    col = document.getElementById('bh-minval-input')
+                    col.value=min
+                    materialGas.uniforms.min.value = min
+                    col = document.getElementById('bh-maxval-input')
+                    col.value=max
+                    materialBlackHole.uniforms.max.value = max
+                }
+                plotPoints()
+            }
+        }
+            
+        function data_layers(){ 
+            var x = document.getElementById("data_layers");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }    
+        }
+        
+        function ray(){ 
+            var x = document.getElementById("raySelection");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }    
+        }
+
+        function graph(){
+            var x = document.getElementById("spectrum");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }    
+        }
+
+        function gui(){
+            var x = document.getElementById("my-gui-container");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }    
+        }
+        function terminal(){
+            var x = document.getElementById("terminal");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        }    
+        $
+    </script>
+    <!-- <script type="text/javascript" src="libs/Tween.js"></script>
+    <script type="text/javascript" src="libs/OrbitControls.js"></script>
+    <script type="text/javascript" src="js/cosmo-vis.js"></script> -->
+        <!-- <h1>Flask-SocketIO Test</h1>
+    <p>Async mode is: <b>{{ async_mode }}</b></p>
+    <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
+    <h2>Send:</h2>
+     -->
+    <!-- <form id="disconnect" method="POST" action="#">
+        <input type="submit" value="Disconnect">
+    </form>
+    
+    <form id="loadData" method="POST" action="#">
+            <input type="submit" value="loadData">
+    </form>
+    
+    <form id="sendCoords" method="POST" action="#">
+            <input type="submit" value="sendCoords">
+    </form> -->
+
+    <div class="title">cosmovis</div>
+    
+    <div id="icon_container">
+        <img 
+            class="icon"
+            src="static/assets/layers.svg" 
+            alt="attributes and data filtering"
+            role="button"
+            onclick="data_layers()"/>
+        <img 
+            class="icon"
+            src="static/assets/hst.svg" 
+            alt="make an observation"
+            role="button"
+            onclick="ray()"/>
+        <img 
+            class="icon"
+            src="static/assets/graph.svg" 
+            alt="view spectrum"
+            role="button"
+            onclick="graph()"/>
+        <img 
+            class="icon"
+            src="static/assets/terminal.svg" 
+            alt="terminal event log"
+            role="button"
+            onclick="terminal()"/>
+    </div>
+    <div id="containers">    
+        <div id="data_layers" class="container">
+            <!-- <h2>attribute visualization</h2>
+            <br> -->
+            <hr>
+            
+            <label for="gas_select"><h3><img 
+                id="gas-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="gas visible"
+                role="button"
+                onclick="toggleLayer( 0 )"/>
+
+            <img 
+                id="gas-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="gas hidden"
+                role="button"
+                onclick="toggleLayer( 0 )"/>
+            <img 
+                id="gas-blend"
+                class="blend-icon"
+                src="static/assets/blend.svg" 
+                alt="blend mode"
+                role="button"
+                onclick="toggleBlendMode( 0 )"/>gas</h3></label>
+            <br>
+            <div id="gas-data-details "class="data-details">
+        
+                <div id="min">
+                    min: <input type="checkbox" id="gas-min-check" onclick="toggleValueThreshold('gas','min')"> clip: <input type="checkbox" id="gas-min-clip-check" onclick="clipPoints('gas','min')"> 
+                    <br>
+                    <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p>
+                </div>
+                <div id="max">
+                    max: <input type="checkbox" id="gas-max-check" onclick="toggleValueThreshold('gas','max')"> clip: <input type="checkbox" id="gas-max-clip-check" onclick="clipPoints('gas','max')">
+                    <br>
+                    <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p>
+                </div>
+                
+                <div id=gas-colorscale>
+                    <input type="color" class="color-picker" value="#0000ff" id="gasMinCol"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol">
+                    <br>
+                </div> 
+
+                <br>
+                <select class="data_select" id="gas_select" onchange="requestPoints('PartType0', document.getElementById('gas_select').value)">
+                    <option selected="selected" disabled="disabled">Select an attribute</option></select>
+                
+                sent data : <progress id="gas_progress_sent" value="0" max="100"><p>loading</p> </progress>
+                received data : <progress id="gas_progress" value="0" max="100"><p>loading</p> </progress>
+            </div>
+            <hr>
+            <br>
+            
+            
+            <label for="dm_select"><h3><img 
+                id="dm-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="dark matter visible"
+                role="button"
+                onclick="toggleLayer( 1 )"/>
+            <img 
+                id="dm-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="dark matter hidden"
+                role="button"
+                onclick="toggleLayer( 1 )"/><img 
+                id="gas-blend"
+                class="blend-icon"
+                src="static/assets/blend.svg" 
+                alt="blend mode"
+                role="button"
+                onclick="toggleBlendMode( 1 )"/><input type="color" class="color-picker"  value="#ffffff" id="dmCol">dark matter     </h3></label>
+            
+            <br>
+            <!-- <br> -->
+            <!-- <select id="dm_select" onchange="socket.emit('requestPoints','PartType1', document.getElementById('dm_select').value)"></select> -->
+            <!-- <select class="data_select" id="dm_select" onchange="requestPoints('PartType1', document.getElementById('dm_select').value)"></select> -->
+            <!-- <progress id="dm_progress" value="0" max="100"><p>loading</p> </progress> -->
+            <!-- <br>
+            <br> -->
+            <hr>
+            <br>
+
+
+            <label for="star_select"><h3><img 
+                id="star-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="stars visible"
+                role="button"
+                onclick="toggleLayer( 2 )"/>
+            <img 
+                id="star-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="stars hidden"
+                role="button"
+                onclick="toggleLayer( 2 )"/><img 
+                id="gas-blend"
+                class="blend-icon"
+                src="static/assets/blend.svg" 
+                alt="blend mode"
+                role="button"
+                onclick="toggleBlendMode( 4 )"/><input type="color" class="color-picker" value="#ffffff" id="starCol">stars   </h3></label>
+            
+            <br>
+            
+            <!-- <br> -->
+            <!-- <select class="data_select" id="star_select" onchange="requestPoints('PartType4', document.getElementById('star_select').value)"></select>             -->
+            <!-- <progress id="star_progress" value="0" max="100"><p>loading</p> </progress> -->
+            <!-- <br>
+            <br> -->
+            <hr>
+            <br>
+
+            <label for="bh_select"><h3><img 
+                id="bh-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="black holes visible"
+                role="button"
+                onclick="toggleLayer( 3 )"/>
+            <img 
+                id="bh-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="black holes hidden"
+                role="button"
+                onclick="toggleLayer( 3 );"/><img 
+                id="gas-blend"
+                class="blend-icon"
+                src="static/assets/blend.svg" 
+                alt="blend mode"
+                role="button"
+                onclick="toggleBlendMode( 5 )"/>black holes</h3></label>
+            
+            <br>
+            <!-- min: <input type="color" value="#0000ff" id="bhMinCol"> max: <input type="color" value="#ff0000" id="bhMaxCol">
+            <br> -->
+            <div id="bh-data-details" class="data-details">
+
+                <div id="bh-min">
+                min: <input type="checkbox" id="bh-min-check" onclick="toggleValueThreshold('bh','min')"> clip: <input type="checkbox" id="bh-min-clip-check" onclick="clipPoints('bh','min')">
+                <br>
+                <input type="number" id="bh-minval-input" class="number-input minvalinput" name="bh-minval" oninput="changeValue('bh','min')"><p class="units bh-attr-units"></p>
+
+                </div>
+                <div id="bh-max">
+                    max: <input type="checkbox" id="bh-max-check" onclick="toggleValueThreshold('bh','max')"> clip: <input type="checkbox" id="gas-max-clip-check" onclick="clipPoints('bh','max')">
+                    <br>
+                    <input type="number" id="bh-maxval-input" class="number-input maxvalinput" name="bh-maxval" oninput="changeValue('bh','max')"><p class="units bh-attr-units"></p>
+                </div>
+                
+                <div id=bh-colorscale>
+                    <input type="color" class="color-picker" value="#0000ff" id="bhMinCol"><input type="color" class="color-picker" value="#ff0000" id="bhMaxCol">
+                    <br>
+                </div> 
+
+
+                <select class="data_select" id="bh_select" onchange="requestPoints('PartType5', document.getElementById('bh_select').value)"></select>
+                
+                sent data: <progress id="bh_progress_sent" value="0" max="100"><p>loading</p> </progress>
+                received data: <progress id="bh_progress" value="0" max="100"><p>loading</p> </progress>
+            </div>
+            <hr>
+
+        </div>
+        
+        <div id="raySelection" class="container">
+
+            <h3><img 
+                id="skewer-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="gas visible"
+                role="button"
+                onclick="toggleLayer( 4 )"/>
+            <img 
+                id="skewer-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="gas hidden"
+                role="button"
+                onclick="toggleLayer( 4 )"/>
+            <img 
+                id="skewer-laser"
+                class="laser-icon"
+                src="static/assets/laser.svg" 
+                alt="draw skewer mode"
+                role="button"
+                onclick="toggleDrawSkewerMode()"/></h3>
+            <br>
+            <hr>
+            <!-- <br> -->
+
+            <div id="skewer-coords">
+            </div>
+
+
+            <!-- <h3>coordinate selection</h3>
+            <br>
+            <h4>ray origin</h4>
+            <p><em>x<sub>1 </sub></em>: <input type="number" class="rayCoordField" id="ray_x1" value="1"> <i>y</i><em><sub>1&nbsp;</sub></em>:<input type="number" class="rayCoordField" id="ray_y1" value="1">  <i>z</i><em><sub>1&nbsp;</sub></em>: <input type="number" class="rayCoordField" id="ray_z1" value="1">&nbsp;</p>
+            <h4>ray end</h4>
+            <p><em>x<sub>2 </sub></em>: <input type="number" class="rayCoordField" id="ray_x2" value="2"> <i>y</i><em><sub>2&nbsp;</sub></em>:<input type="number" class="rayCoordField" id="ray_y2" value="2">  <i>z</i><em><sub>2&nbsp;</sub></em>: <input type="number" class="rayCoordField" id="ray_z2" value="2">&nbsp;</p>
+            <form id="selectRay" method="POST" action="/">
+                <input type="submit" value="select ray">
+            </form> -->
+            <!-- <br> -->
+            <!-- <hr> -->
+        </div>
+        
+        <div id="spectrum" class="container">
+            <select class="data_select" id="common-wavelengths" onchange="commonWavelength()">
+                <option selected disabled>Select a rest wavelength (Å)</option>
+                <option value="1215.67"     >HI (1215.67 Å)</option>
+                <option value="1548.195"    >C IV (1548.195 Å)</option>
+                <option value="1550.77"     >C IV (1550.77 Å)</option>
+                <option value="1260.4221"   >Si II (1260.4221 Å)</option>
+                <option value="1206.5"      >Si III (1206.5 Å)</option>
+                <option value="1334.53"     >C II (1334.53 Å)</option>
+            </select>
+
+            <div id="wavelength">
+                <input type="radio" id="Angstroms" name="x-axis-transform" value="Angstroms" onchange="commonWavelength()">
+                <label for="Angstroms">Wavelength (Å)</label>
+                <input type="radio" id="Velocity-Space" name="x-axis-transform" value="Velocity Space" onchange="commonWavelength()">
+                <label for="Velocity Space">Velocity Space (km/s)</label>
+            </div>
+
+
+            <button type="submit" class="request-button" onclick="window.open('{{ url_for('static', filename='data/spectra.fits')}}')"  >download spectra</button>
+        </div>
+        <!-- <img 
+            class="icon"
+            src="static/assets/wrench.svg" 
+            alt="control panel"
+            role="button"
+            onclick="gui()"/>
+        <div id="my-gui-container" class="container">
+
+        </div> -->
+        
+        <div id="terminal" class="container"></div>
+    </div>
+    
+    <div hidden class="sidebar">
+        <!-- <h1>cosmovis</h1> -->
+        <nav>
+            
+
+
+            
+            <!--         
+            <h2>particles</h2>
+            <ul>
+                <li>gas</li>
+                <li>dark matter</li>
+                <li>stars</li>
+                <li>black holes</li>
+            </ul> -->
+        </nav>
+    </div>
+
+    
+    
+    <!-- <h2>Receive:</h2>
+    <div id="log"></div> -->
+    <script>
+    namespace = '/test';
+    var socket = io(namespace, {reconnect: true});
+    </script>
+    </body>
+
+    <footer hidden><div>Refresh icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Delete icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Laser icon made by  <a href="https://www.flaticon.com/authors/those-icons" title="Those Icons">Those Icons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Layer icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>Telescope icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>,<a href="https://www.flaticon.com/authors/dinosoftlabs" title="DinosoftLabs">DinosoftLabs</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Line Graph Icon made by Zach Bogart from the Noun Project, Wrench Icon by Icon Lauk from the Noun Project</div></footer>
+
+</html>
