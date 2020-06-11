@@ -9,7 +9,7 @@
 
 var container //floating GUI containers
 var camera, scene, renderer, material, skewerScene //THREE.js environment variables
-var tex1 = new THREE.TextureLoader().load( "/textures/blur.png" );
+var tex1 = new THREE.TextureLoader().load( "/CosmoVis/textures/blur.png" );
 const windowHalf = new THREE.Vector2( window.innerWidth / 2, window.innerHeight / 2 );
 var field_list //contains list of particle fields
 var gasMinCol, gasMaxCol, dmMinCol, dmMaxCol, starMinCol, starMaxCol, bhMinCol, bhMaxCol //stores colors for different particle types
