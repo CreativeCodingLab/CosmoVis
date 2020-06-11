@@ -313,7 +313,7 @@ async function asyncCall() {
 function loadDensity(size,type,attr){
     
     return new Promise(resolve => {
-        d3.json('/data/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
+        d3.json('/CosmoVis/data/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
             arr = new Float32Array(size * size * size)
             for(x=0;x<size;x++){
                 for(y=0;y<size;y++){
@@ -360,7 +360,7 @@ function loadAttribute(size,type,attr,density_bool){
      */
     
      //load the desired dataset
-    d3.json('/data/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
+    d3.json('/CosmoVis/data/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
         if(type == 'PartType0' && gasMaterial) clearLayer(0);
         if(type == 'PartType1' && dmMaterial) clearLayer(1)
         if(type == 'PartType4' && starMaterial) clearLayer(2)
