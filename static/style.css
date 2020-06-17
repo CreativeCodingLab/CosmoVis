@@ -135,7 +135,7 @@ h1{
 #containers{
     flex-direction: column;
     /* float: right; */
-    position: absolute;
+    /* position: absolute; */
     right: 14vw;
     top: 1vw;
     font-family: mr-eaves-modern, sans-serif;
@@ -292,7 +292,7 @@ h1{
     font-size: 1.4em;
     width: 300px;
     height: auto;
-    position: absolute;
+    /* position: absolute; */
     background-color: #8fffdbd1;
     background-blend-mode: darken;
     opacity: 90%;
@@ -670,6 +670,26 @@ h3 {
     width: 100%;
     height: auto;
 }
+
+#density-mod{
+    display: inline-grid;
+    padding: 2%;
+}
+
+#density-min{
+    width: 60%;
+}
+
+#density-max{
+    width: 60%;
+}
+
+#options{
+    padding: 2%;
+}
+
+
+
 
 #step-size{
 

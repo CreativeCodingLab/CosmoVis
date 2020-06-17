@@ -149,6 +149,8 @@ function updateUniforms() {
     h = 1
     size = w * h
     d_mod = (document.getElementById("density-mod-check").checked ? 1.0 : 0.0);
+    densityMin = document.getElementById('density-minval-input').value
+    densityMax = document.getElementById('density-maxval-input').value
     g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
     dither = (document.getElementById("dither-check").checked ? 1.0 : 0.0);
     if(gasMaterial){
@@ -295,13 +297,14 @@ function updateUniforms() {
         data = []
         starMaterial.uniforms[ "u_cmdata" ].value = cmtexture;
     }
+    
 }
 
 async function asyncCall() {
     var dens = await loadDensity(gridsize,'PartType0','H_number_density')
     // console.log(dens)
     // densityTexture = dens[0]
-    densityMin = -8.0
+    densityMin = dens[1]
     densityMax = dens[2]
     dens = []
     animate()
@@ -324,17 +327,33 @@ function loadDensity(size,type,attr){
             }
             d = []
 
+            densityMax = arr.reduce(function(a, b) {
+                return Math.max(a, b);
+            });
+            densityMin = arr.reduce(function(a, b) {
+                return Math.min(a, b);
+            });
+
+            setDensityMinMaxInputValues('density',densityMin,densityMax)
+
+            function setDensityMinMaxInputValues(type,min,max){
+                let minval = document.getElementById(type+'-minval-input')
+                minval.value = round(min,2)
+                let maxval = document.getElementById(type+'-maxval-input')
+                maxval.value = round(max,2)
+            }
+
+            dm = document.querySelector('#density-minval-input')
+            dm.addEventListener('input', updateUniforms);
+            dmx = document.querySelector('#density-maxval-input')
+            dmx.addEventListener('input', updateUniforms);
+
             densityTexture = new THREE.DataTexture3D( arr, size, size, size)
             densityTexture.format = THREE.RedFormat
             densityTexture.type = THREE.FloatType
             densityTexture.minFilter = densityTexture.magFilter = THREE.LinearFilter
             densityTexture.unpackAlignment = 1
-            var densityMax = arr.reduce(function(a, b) {
-                return Math.max(a, b);
-            });
-            var densityMin = arr.reduce(function(a, b) {
-                return Math.min(a, b);
-            });
+            
             // if(densityMin == -Infinity){
             //     densityMin = 0.0000000000001
             // }
