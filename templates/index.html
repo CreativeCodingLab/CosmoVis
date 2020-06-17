@@ -935,7 +935,7 @@
                 <div id="min">
                     min: <input type="checkbox" id="gas-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="gas-min-clip-check" onclick="updateUniforms()" checked> 
                     <br>
-                    <input type="number" step="0.1" id="gas-minval-input" class="number-input minvalinput" name="gas-minval"><p class="units gas-attr-units"></p>
+                    <input type="number" step="0.05" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
 
                     <!-- <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p> -->
                 </div>
@@ -943,7 +943,7 @@
                     max: <input type="checkbox" id="gas-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="gas-max-clip-check" onclick="updateUniforms()" checked>
                     <br>
                     <!-- <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p> -->
-                    <input type="number" step="0.1" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval"><p class="units gas-attr-units"></p>
+                    <input type="number" step="0.05" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
                 </div>
                 
                 <div id=gas-colorscale>
@@ -987,15 +987,15 @@
             <div id="dm-data-details" class="data-details">
         
                 <div id="min">
-                    min: <input type="checkbox" id="dm-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-min-clip-check" onclick="updateUniforms()"> 
+                    min: <input type="checkbox" id="dm-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-min-clip-check" onclick="updateUniforms()" checked> 
                     <br>
-                    <input type="number" step="0.1" id="dm-minval-input" class="number-input minvalinput" name="dm-minval"><p class="units dm-attr-units"></p>
+                    <input type="number" step="0.1" id="dm-minval-input" class="number-input minvalinput" name="dm-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
 
                 </div>
                 <div id="max">
-                    max: <input type="checkbox" id="dm-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-max-clip-check" onclick="updateUniforms()">
+                    max: <input type="checkbox" id="dm-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-max-clip-check" onclick="updateUniforms()" checked>
                     <br>
-                    <input type="number" step="0.1" id="dm-maxval-input" class="number-input maxvalinput" name="dm-maxval"><p class="units dm-attr-units"></p>
+                    <input type="number" step="0.1" id="dm-maxval-input" class="number-input maxvalinput" name="dm-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
                 </div>
                 
                 <div id=dm-colorscale>
@@ -1032,17 +1032,17 @@
                 <!-- <input type="color" class="color-picker" value="#ffffff" id="starCol"> -->
                 <div id="star-data-details"class="data-details">
                     <div id="min">
-                        min: <input type="checkbox" id="star-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="star-min-clip-check" onclick="updateUniforms()"> 
+                        min: <input type="checkbox" id="star-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="star-min-clip-check" onclick="updateUniforms()" checked> 
                         <br>
-                        <input type="number" step="0.1" id="star-minval-input" class="number-input minvalinput" name="star-minval"><p class="units star-attr-units"></p>
+                        <input type="number" step="0.1" id="star-minval-input" class="number-input minvalinput" name="star-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units star-attr-units"></p>
 
                         <!-- <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p> -->
                     </div>
                     <div id="max">
-                        max: <input type="checkbox" id="star-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="star-max-clip-check" onclick="updateUniforms()">
+                        max: <input type="checkbox" id="star-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="star-max-clip-check" onclick="updateUniforms()" checked>
                         <br>
                         <!-- <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p> -->
-                        <input type="number" step="0.1" id="star-maxval-input" class="number-input maxvalinput" name="star-maxval"><p class="units star-attr-units"></p>
+                        <input type="number" step="0.1" id="star-maxval-input" class="number-input maxvalinput" name="star-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units star-attr-units"></p>
                     </div>
                     
                     <div id=star-colorscale>

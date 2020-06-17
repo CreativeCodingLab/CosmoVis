@@ -123,8 +123,8 @@ THREE.VolumeRenderShader1 = {
 		"		varying vec4 v_farpos;",
 
 		// The maximum distance through our rendering volume is sqrt(3)*size.
-		"		const int MAX_STEPS = 111;	// 887 for 512^3, 1774 for 1024^3",
-		"		const int REFINEMENT_STEPS = 4;",
+		"		const int MAX_STEPS = 887;	// 887 for 512^3, 1774 for 1024^3",
+		"		const int REFINEMENT_STEPS = 1;",
 		"		const float relative_step_size = 1.0;",
 		"		const vec4 ambient_color = vec4(0.2, 0.4, 0.2, 1.0);",
 		"		const vec4 diffuse_color = vec4(0.8, 0.2, 0.2, 1.0);",
@@ -237,10 +237,10 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);",
 		"				if(a != 0.0 && val<=0.5){",
-		"					a = d*dist*dist;",
+		"					a = 0.8*d+0.2*dist;",
 		"				}",
 		"				else if (a != 0.0){",
-		"					a = d*dist*dist;",
+		"					a = 0.8*d+0.2*dist;",
 		"				}",
 		"				vec4 tex = texture2D(u_cmdata, vec2(val, 0.5));",
 		"				tex.rgb = tex.rgb;",

@@ -445,9 +445,9 @@ function loadAttribute(size,type,attr,density_bool){
             }
             // type = 'gas'
             let minval = document.getElementById(type+'-minval-input')
-            minval.value = min
+            minval.value = round(min,2)
             let maxval = document.getElementById(type+'-maxval-input')
-            maxval.value = max
+            maxval.value = round(max,2)
         }
     
         
@@ -830,7 +830,9 @@ function round(value, decimals) {
      */
     return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
-
+function setTwoNumberDecimal(el) {
+    el.value = parseFloat(el.value).toFixed(2);
+};
 
 function refreshLoop() {
     /*
