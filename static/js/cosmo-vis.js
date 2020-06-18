@@ -63,6 +63,7 @@ var line
 var lines = []
 var container_hover //used to determine if the mouse is over a GUI container when drawing skewers
 var edges_scaled = []
+var domainXYZ = [0.0,1.0,0.0,1.0,0.0,1.0]
 
 /**
  * * used with refreshLoop() to get fps
@@ -153,6 +154,7 @@ function updateUniforms() {
     densityMax = document.getElementById('density-maxval-input').value
     g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
     dither = (document.getElementById("dither-check").checked ? 1.0 : 0.0);
+
     if(gasMaterial){
         document.getElementById("gas-minval-input").disabled = (document.getElementById("gas-min-check").checked);
         document.getElementById("gas-maxval-input").disabled = (document.getElementById("gas-max-check").checked);
@@ -188,7 +190,8 @@ function updateUniforms() {
         gasMaterial.uniforms[ "u_grayscaleDepthMod" ].value = g_mod;
         gasMaterial.uniforms[ "u_dither" ].value = dither;
         gasMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
-
+        gasMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
+        gasMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
 
         gasMinCol = new THREE.Color(document.querySelector("#gasMinCol").value);
         gasMaxCol = new THREE.Color(document.querySelector("#gasMaxCol").value);
@@ -242,6 +245,9 @@ function updateUniforms() {
         dmMaterial.uniforms[ "u_grayscaleDepthMod" ].value = g_mod;
         dmMaterial.uniforms[ "u_dither" ].value = dither;
         dmMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
+        dmMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
+        dmMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+
 
         dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
         dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
@@ -280,6 +286,9 @@ function updateUniforms() {
         starMaterial.uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
         starMaterial.uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
         starMaterial.uniforms[ "u_clip" ].value = [ document.getElementById("star-min-clip-check").checked, document.getElementById("star-max-clip-check").checked ]
+        starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
+        starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+
 
         starMinCol = new THREE.Color(document.querySelector("#starMinCol").value);
         starMaxCol = new THREE.Color(document.querySelector("#starMaxCol").value);
@@ -390,9 +399,9 @@ function loadAttribute(size,type,attr,density_bool){
         // }
         //set camera position so the entire dataset is in view
         camera.position.set(size*1.5, size*1.5, size*1.5)
-        camera.lookAt(size/2,  size/2,  size/2)
-        camera.zoom = 6
-        camera.updateProjectionMatrix()
+        // camera.lookAt(size/2,  size/2,  size/2)
+        // camera.zoom = 6
+        // camera.updateProjectionMatrix()
         controls.target.set( size/2,  size/2,  size/2 );
 
         //arr holds the flattened data in Float32Array to be used as a 3D texture
@@ -566,7 +575,7 @@ function loadAttribute(size,type,attr,density_bool){
             uniforms: uniforms,
             vertexShader: shader.vertexShader,
             fragmentShader: shader.fragmentShader,
-            clipping: false,
+            clipping: true,
             side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
             transparent: true,
         } );
@@ -1271,6 +1280,143 @@ function updateGraph(){
     }
 }
 
+function createXYZBrush(xyz){
+    // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
+    // d3.select('#terminal').selectAll('.depth-brush').remove();
+    
+    d3.select('#terminal').append('div').attr('id',xyz+'-depth-brush').attr('class','depth-brush').append('text').text(xyz)
+    let svg = d3.select('#terminal').append('div').attr('id',xyz+'-depth-brush').attr('class','depth-brush').append('svg')
+
+    let margin = {top: 20, right: 15, bottom: 30, left: 30};
+    let axis = svg.append('g');
+
+    let brush = svg.append("g")
+        .attr("class", "brush");
+
+    let width = 300, height = 40
+    var x = d3.scaleLinear()
+        .domain([0.0,1.0])
+        .range([margin.left, width]);
+
+    var y = d3.scaleLinear()
+        .domain([0.0,1.0])
+        .range([margin.left, width]);
+
+    var z = d3.scaleLinear()
+        .domain([0.0,1.0])
+        .range([margin.left, width]);
+
+
+    XYZresize();
+    drawXYZBrush(xyz);
+
+    function XYZresize() {
+        var w = width - margin.right;
+        var h = 60;
+
+        var aspect = w / h;
+        var vw = width;
+        var vh = vw / aspect;
+
+        width = vw;
+        height = vh - margin.bottom;
+
+        svg
+            //.style("font-size", "2px")
+            .attr('width', w).attr('height', h)
+            .attr("viewBox", "0 0 " + vw + " " + vh)
+            //.attr("text", "white")
+
+        x.range([margin.left, width - margin.right]);
+        axis.attr('transform', 'translate(0,' + height + ')')
+            .call(d3.axisBottom(x).ticks(6))
+
+        y.range([margin.left, width - margin.right]);
+        axis.attr('transform', 'translate(0,' + height + ')')
+            .call(d3.axisBottom(y).ticks(6))
+
+        z.range([margin.left, width - margin.right]);
+        axis.attr('transform', 'translate(0,' + height + ')')
+            .call(d3.axisBottom(z).ticks(6))
+
+    }
+
+    function drawXYZBrush(xyz) {
+        // if (!x) { return; }
+        if(xyz == 'x'){
+            if (!x) { return; }
+            brusher = d3.brushX()
+                .extent([[margin.left, 0], [width - margin.right, height]])
+                .on("brush end", XYZbrushed);
+            brush.call(brusher)
+                .call(brusher.move, x.range());
+        }
+        
+        else if (xyz == 'y'){
+            if (!y) { return; }
+            brusher = d3.brushX()
+                .extent([[margin.left, 0], [width - margin.right, height]])
+                .on("brush end", XYZbrushed);
+            brush.call(brusher)
+                .call(brusher.move, y.range());
+        }
+        
+        else if( xyz == 'z'){
+            if (!z) { return; }
+            brusher = d3.brushX()
+                .extent([[margin.left, 0], [width - margin.right, height]])
+                .on("brush end", XYZbrushed);
+            brush.call(brusher)
+                .call(brusher.move, z.range());
+        }
+    }
+
+    function XYZbrushed() {
+
+        if(xyz == 'x'){
+            var s = d3.event.selection || x.range();
+            ret = s.map(x.invert, x);
+        }
+        else if(xyz == 'y'){
+            var s = d3.event.selection || y.range();
+            ret = s.map(y.invert, y);
+        }
+        else if(xyz == 'z'){
+            var s = d3.event.selection || z.range();
+            ret = s.map(z.invert, z);
+        }
+        
+        
+        // console.log(s)
+        // console.log(ret)
+
+        if (ret[0] !== ret[1]) {
+            updateXYZDomain(xyz,ret[0],ret[1])
+        }
+    }
+}
+
+function updateXYZDomain(xyz, min, max){
+    if(xyz == 'x'){
+        domainXYZ[0] = min
+        domainXYZ[1] = max
+    }
+    else if(xyz == 'y'){
+        domainXYZ[2] = min
+        domainXYZ[3] = max
+    }
+    else if(xyz == 'z'){
+        domainXYZ[4] = min
+        domainXYZ[5] = max
+    }
+
+    updateUniforms();
+    
+    xSliderScale = d3.scaleLinear().domain([domainXYZ[0],domainXYZ[1]]).range([0, 210])
+    ySliderScale = d3.scaleLinear().domain([domainXYZ[2],domainXYZ[3]]).range([0, 210])
+    zSliderScale = d3.scaleLinear().domain([domainXYZ[4],domainXYZ[5]]).range([0, 210])
+}
+
 function createBrush() {
     // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
     d3.select('#spectrum').selectAll('#depth-brush').remove();
@@ -1516,6 +1662,10 @@ $(document).ready(function(){
         bmc.addEventListener('change',changeColor,false);
         bmxc = document.querySelector("#bhMaxCol")
         bmxc.addEventListener('change',changeColor,false);
+
+        createXYZBrush('x')
+        createXYZBrush('y')
+        createXYZBrush('z')
 
         refreshLoop();
 

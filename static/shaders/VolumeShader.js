@@ -21,7 +21,9 @@ THREE.VolumeRenderShader1 = {
 		"u_dither": { value: null },
 		"u_cmdata": { value: null },
 		"u_clip": {value: [ false, false ]},
-		"u_stepSize": { value: 1.0 }
+		"u_stepSize": { value: 1.0 },
+		"u_xyzMin": {value: new THREE.Vector3( 0.0, 0.0, 0.0)},
+		"u_xyzMax": {value: new THREE.Vector3( 1.0, 1.0, 1.0)}
     },
 	vertexShader: [
 		"		varying vec4 v_nearpos;",
@@ -114,6 +116,8 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_densityDepthMod;",
 		"		uniform float u_grayscaleDepthMod;",
 		"		uniform float u_dither;",
+		"		uniform vec3 u_xyzMin;",
+		"		uniform vec3 u_xyzMax;",
 
 		"		uniform sampler3D u_density;",
 		"		uniform sampler2D u_cmdata;",
@@ -124,7 +128,7 @@ THREE.VolumeRenderShader1 = {
 
 		// The maximum distance through our rendering volume is sqrt(3)*size.
 		"		const int MAX_STEPS = 887;	// 887 for 512^3, 1774 for 1024^3",
-		"		const int REFINEMENT_STEPS = 1;",
+		"		const int REFINEMENT_STEPS = 4;",
 		"		const float relative_step_size = 1.0;",
 		"		const vec4 ambient_color = vec4(0.2, 0.4, 0.2, 1.0);",
 		"		const vec4 diffuse_color = vec4(0.8, 0.2, 0.2, 1.0);",
@@ -181,8 +185,8 @@ THREE.VolumeRenderShader1 = {
 		"						cast_dvr(start_loc, step, nsteps, view_ray);",
 		"				else if (u_renderstyle == 1)",
 		"						cast_iso(start_loc, step, nsteps, view_ray);",
-		"				if (gl_FragColor.a < 0.05)",
-		"						discard;",
+		// "				if (gl_FragColor.a < 0.05)",
+		// "						discard;",
 		"		}",
 
 
@@ -237,10 +241,10 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);",
 		"				if(a != 0.0 && val<=0.5){",
-		"					a = 0.7*d+0.2*dist+0.1*val;",
+		"					a = 0.6*d+0.3*dist+0.1*val;",
 		"				}",
 		"				else if (a != 0.0){",
-		"					a = 0.7*d+0.2*dist+0.1*val;",
+		"					a = 0.6*d+0.3*dist+0.1*val;",
 		"				}",
 		"				vec4 tex = texture2D(u_cmdata, vec2(val, 0.5));",
 		"				tex.rgb = tex.rgb;",
@@ -258,12 +262,16 @@ THREE.VolumeRenderShader1 = {
 		"				vec3 loc = start_loc;",
 		"				float val = sample1(loc);",
 		"				float density = sampleDensity(loc);",
-		"				vec4 c = apply_dvr_colormap(val,density,0.0);",
+		"				vec4 c;",
+		"				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+		"					c = apply_dvr_colormap(val,density,0.0);",
+		"				}",
+		"				else{ c = vec4(0.0156,0.0234,0.0898,0.0); }",
 		// "				c.a = 0.5;",
 		// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
 		// non-constant expression. So we use a hard-coded max, and an additional condition
 		// inside the loop.
-		"				for (int iter=1; iter<int(float(MAX_STEPS)/u_stepSize); iter++) {",
+		"				for (int iter=0; iter<int(float(MAX_STEPS)/u_stepSize); iter++) {",
 		"						if (iter >= nsteps)",
 		"								break;",
 		// Sample from the 3D texture
@@ -278,13 +286,23 @@ THREE.VolumeRenderShader1 = {
 		"						else{",
 		"							dist = float(nsteps-iter)/float(nsteps);",
 		"						}",
-		"						vec4 c_i = apply_dvr_colormap(val,density,dist);",
+		"						vec4 c_i;",
+		"						if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+		"							c_i = apply_dvr_colormap(val,density,dist);",
+		"							float c_i_r = c.r*c.a + c_i.r*(1.0-c.a);",
+		"							float c_i_g = c.g*c.a + c_i.g*(1.0-c.a);",
+		"							float c_i_b = c.b*c.a + c_i.b*(1.0-c.a);",
+		"							float c_i_a = c.a + c_i.a*(1.0-c.a);",
+		"							c = vec4(c_i_r,c_i_g,c_i_b,c_i_a);",
+		"						}",
+		"						else{",
+		// "							c_i = vec4(0.0156,0.0234,0.0898,0.0);",
+		"						}",
+
+
 		// "						c_i.a = 0.1;",
-		"						float c_i_r = c.r*c.a + c_i.r*(1.0-c.a);",
-		"						float c_i_g = c.g*c.a + c_i.g*(1.0-c.a);",
-		"						float c_i_b = c.b*c.a + c_i.b*(1.0-c.a);",
-		"						float c_i_a = c.a + c_i.a*(1.0-c.a);",
-		"						c = vec4(c_i_r,c_i_g,c_i_b,c_i_a);",
+
+
 		// "						if(c.a > 0.99){",
 		// "							break;",
 		// "						}",
