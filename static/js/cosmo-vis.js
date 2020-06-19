@@ -136,7 +136,7 @@ function updateSize(){
             loadAttribute(gridsize,'PartType1','density',false)
         }
         if(document.getElementById("star-eye-open").style.display = "inline-block"){
-            
+            loadAttribute(gridsize,'PartType4','density',false)
         }
         if(document.getElementById("bh-eye-open").style.display = "inline-block"){
             
@@ -192,6 +192,20 @@ function updateUniforms() {
         gasMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
         gasMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         gasMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+        
+        if((document.getElementById("dist-mod-check")).checked){
+            gasMaterial.uniforms[ "u_distMod" ].value = 1.0;
+        }
+        else{
+            gasMaterial.uniforms[ "u_distMod" ].value = 0.0;
+        }
+
+        if((document.getElementById("val-mod-check")).checked){
+            gasMaterial.uniforms[ "u_valMod" ].value = 1.0;
+        }
+        else{
+            gasMaterial.uniforms[ "u_valMod" ].value = 0.0;
+        }
 
         gasMinCol = new THREE.Color(document.querySelector("#gasMinCol").value);
         gasMaxCol = new THREE.Color(document.querySelector("#gasMaxCol").value);
@@ -248,6 +262,19 @@ function updateUniforms() {
         dmMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         dmMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
 
+        if((document.getElementById("dist-mod-check")).checked){
+            dmMaterial.uniforms[ "u_distMod" ].value = 1.0;
+        }
+        else{
+            dmMaterial.uniforms[ "u_distMod" ].value = 0.0;
+        }
+
+        if((document.getElementById("val-mod-check")).checked){
+            dmMaterial.uniforms[ "u_valMod" ].value = 1.0;
+        }
+        else{
+            dmMaterial.uniforms[ "u_valMod" ].value = 0.0;
+        }
 
         dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
         dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
@@ -289,6 +316,19 @@ function updateUniforms() {
         starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
 
+        if((document.getElementById("dist-mod-check")).checked){
+            starMaterial.uniforms[ "u_distMod" ].value = 1.0;
+        }
+        else{
+            starMaterial.uniforms[ "u_distMod" ].value = 0.0;
+        }
+
+        if((document.getElementById("val-mod-check")).checked){
+            starMaterial.uniforms[ "u_valMod" ].value = 1.0;
+        }
+        else{
+            starMaterial.uniforms[ "u_valMod" ].value = 0.0;
+        }
 
         starMinCol = new THREE.Color(document.querySelector("#starMinCol").value);
         starMaxCol = new THREE.Color(document.querySelector("#starMaxCol").value);
@@ -389,19 +429,19 @@ function loadAttribute(size,type,attr,density_bool){
     
      //load the desired dataset
     d3.json('static/data/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
-        if(type == 'PartType0' && gasMaterial) clearLayer(0);
-        if(type == 'PartType1' && dmMaterial) clearLayer(1)
-        if(type == 'PartType4' && starMaterial) clearLayer(2)
-        if(type == 'PartType5' && bhMaterial) clearLayer(3)
+        if(type == 'PartType0') clearLayer(0);
+        if(type == 'PartType1') clearLayer(1)
+        if(type == 'PartType4') clearLayer(3)
+        if(type == 'PartType5') clearLayer(4)
         // cleardThree(scene) //clears the THREE.js scene to prevent memory overload
         // if(gui){ //reset the dat.GUI
         //     gui.destroy()
         // }
         //set camera position so the entire dataset is in view
         camera.position.set(size*1.5, size*1.5, size*1.5)
-        // camera.lookAt(size/2,  size/2,  size/2)
-        // camera.zoom = 6
-        // camera.updateProjectionMatrix()
+        camera.lookAt(size/2,  size/2,  size/2)
+        camera.zoom = 6
+        camera.updateProjectionMatrix()
         controls.target.set( size/2,  size/2,  size/2 );
 
         //arr holds the flattened data in Float32Array to be used as a 3D texture
@@ -578,6 +618,11 @@ function loadAttribute(size,type,attr,density_bool){
             clipping: true,
             side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
             transparent: true,
+            opacity: 0.05,
+            // blending: THREE.CustomBlending,
+            blendSrc: THREE.OneMinusDstAlphaFactor,
+            blendDst: THREE.OneFactor,
+            depthWrite: false,
         } );
 
         // THREE.Mesh
@@ -589,17 +634,20 @@ function loadAttribute(size,type,attr,density_bool){
         var mesh = new THREE.Mesh( geometry, material );
         if(type == 'PartType0'){
             mesh.layers.set(0)
+            mesh.renderOrder = 1
             gasMaterial = material
             gasMesh = mesh
-            console.log(gasMesh)
+            // console.log(gasMesh)
         }
         else if(type == 'PartType1'){
             mesh.layers.set(1)
+            mesh.renderOrder = 0
             dmMaterial = material
             dmMesh = mesh
         }
         else if(type == 'PartType4'){
             mesh.layers.set(2)
+            mesh.renderOrder = 2
             starMaterial = material
             starMesh = mesh
         }
@@ -859,7 +907,7 @@ function round(value, decimals) {
     return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
 function setTwoNumberDecimal(el) {
-    el.value = parseFloat(el.value).toFixed(2);
+    // el.value = el.value.toFixed(2);
 };
 
 function refreshLoop() {

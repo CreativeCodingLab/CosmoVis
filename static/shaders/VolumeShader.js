@@ -23,7 +23,9 @@ THREE.VolumeRenderShader1 = {
 		"u_clip": {value: [ false, false ]},
 		"u_stepSize": { value: 1.0 },
 		"u_xyzMin": {value: new THREE.Vector3( 0.0, 0.0, 0.0)},
-		"u_xyzMax": {value: new THREE.Vector3( 1.0, 1.0, 1.0)}
+		"u_xyzMax": {value: new THREE.Vector3( 1.0, 1.0, 1.0)},
+		"u_distMod": {value: null},
+		"u_valMod": {value: null}
     },
 	vertexShader: [
 		"		varying vec4 v_nearpos;",
@@ -118,6 +120,8 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_dither;",
 		"		uniform vec3 u_xyzMin;",
 		"		uniform vec3 u_xyzMax;",
+		"		uniform float u_distMod;",
+		"		uniform float u_valMod;",
 
 		"		uniform sampler3D u_density;",
 		"		uniform sampler2D u_cmdata;",
@@ -241,10 +245,10 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);",
 		"				if(a != 0.0 && val<=0.5){",
-		"					a = 0.6*d+0.3*dist+0.1*val;",
+		"					a = 0.5*d+0.2*val*u_valMod+0.3*dist*u_distMod;",
 		"				}",
 		"				else if (a != 0.0){",
-		"					a = 0.6*d+0.3*dist+0.1*val;",
+		"					a = 0.5*d+0.2*val*u_valMod+0.3*dist*u_distMod;",
 		"				}",
 		"				vec4 tex = texture2D(u_cmdata, vec2(val, 0.5));",
 		"				tex.rgb = tex.rgb;",
