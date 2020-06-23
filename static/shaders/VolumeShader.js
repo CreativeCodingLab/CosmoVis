@@ -28,9 +28,11 @@ THREE.VolumeRenderShader1 = {
 		"u_valMod": {value: null}
     },
 	vertexShader: [
+		
 		"		varying vec4 v_nearpos;",
 		"		varying vec4 v_farpos;",
 		"		varying vec3 v_position;",
+		"		varying vec3 v_cameraPosition;",
 
 		"		mat4 inversemat(mat4 m) {",
 		// Taken from https://github.com/stackgl/glsl-inverse/blob/master/index.glsl
@@ -77,6 +79,7 @@ THREE.VolumeRenderShader1 = {
 
 
 		"		void main() {",
+		"				vec3 v_cameraPosition = cameraPosition;",
 		// Prepare transforms to map to "camera view". See also:
 		// https://threejs.org/docs/#api/renderers/webgl/WebGLProgram
 		"				mat4 viewtransformf = modelViewMatrix;",
@@ -126,9 +129,11 @@ THREE.VolumeRenderShader1 = {
 		"		uniform sampler3D u_density;",
 		"		uniform sampler2D u_cmdata;",
 
+		"		varying vec3 v_cameraPosition;",
 		"		varying vec3 v_position;",
 		"		varying vec4 v_nearpos;",
 		"		varying vec4 v_farpos;",
+		
 
 		// The maximum distance through our rendering volume is sqrt(3)*size.
 		"		const int MAX_STEPS = 887;	// 887 for 512^3, 1774 for 1024^3",
@@ -152,7 +157,6 @@ THREE.VolumeRenderShader1 = {
 		// Normalize clipping plane info
 		"				vec3 farpos = v_farpos.xyz / v_farpos.w;",
 		"				vec3 nearpos = v_nearpos.xyz / v_nearpos.w;",
-
 		// Calculate unit vector pointing in the view direction through this fragment.
 		"				vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);",
 
@@ -222,9 +226,10 @@ THREE.VolumeRenderShader1 = {
 		"			return outputColor;",
 		"		}",
 
-		"		vec4 apply_dvr_colormap(float val, float density, float dist) {",
+		"		vec4 apply_dvr_colormap(float val, float density, float dist, vec3 texcoords) {",
 		"				float a;",
 		"				float d;",
+		"				float delta = distance(v_cameraPosition,texcoords);",
 		"				if(u_densityDepthMod == 1.0){",
 		"					d = ((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]));",
 		"				}",
@@ -245,10 +250,10 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);",
 		"				if(a != 0.0 && val<=0.5){",
-		"					a = 0.5*d+0.2*val*u_valMod+0.3*dist*u_distMod;",
+		"					a = 0.5*d+0.2*val*u_valMod+0.1*delta*u_distMod;",
 		"				}",
 		"				else if (a != 0.0){",
-		"					a = 0.5*d+0.2*val*u_valMod+0.3*dist*u_distMod;",
+		"					a = 0.5*d+0.2*val*u_valMod+0.1*delta*u_distMod;",
 		"				}",
 		"				vec4 tex = texture2D(u_cmdata, vec2(val, 0.5));",
 		"				tex.rgb = tex.rgb;",
@@ -268,7 +273,7 @@ THREE.VolumeRenderShader1 = {
 		"				float density = sampleDensity(loc);",
 		"				vec4 c;",
 		"				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
-		"					c = apply_dvr_colormap(val,density,0.0);",
+		"					c = apply_dvr_colormap(val,density,0.0,loc);",
 		"				}",
 		"				else{ c = vec4(0.0156,0.0234,0.0898,0.0); }",
 		// "				c.a = 0.5;",
@@ -292,7 +297,7 @@ THREE.VolumeRenderShader1 = {
 		"						}",
 		"						vec4 c_i;",
 		"						if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
-		"							c_i = apply_dvr_colormap(val,density,dist);",
+		"							c_i = apply_dvr_colormap(val,density,dist,loc);",
 		"							float c_i_r = c.r*c.a + c_i.r*(1.0-c.a);",
 		"							float c_i_g = c.g*c.a + c_i.g*(1.0-c.a);",
 		"							float c_i_b = c.b*c.a + c_i.b*(1.0-c.a);",

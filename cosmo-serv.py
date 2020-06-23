@@ -376,7 +376,7 @@ def handle_ray_selection_background(idx, start, end):
     hdr['INSTRMNT'] = instrument    # Instrument
     hdr['GRATING'] = grating        # Grating
     hdr['ROTATION'] = 'null'        # Grating rotation
-    hdr['RESOLUTN'] = sg.dlambda*6    # Spectral resolution (Angstroms)
+    hdr['RESOLUTN'] = float(sg.dlambda*6)    # Spectral resolution (Angstroms)
 
     # Lines added (each boolean)
     for line in lines:
