@@ -11,13 +11,14 @@ canvas {
 body {
     margin: 0px;
     padding: 0px;
+    overflow: hidden;
 }
 .sidebar {
     font-family: mr-eaves-modern, sans-serif;
     font-weight: 300;
     font-style: normal;
     width: 15vw;
-    height: 100vh;
+    /* height: 100vh; */
     position: absolute;
     background-color: darkgray;
     background-blend-mode: darken;
@@ -126,7 +127,7 @@ h1{
     font-weight: 300;
     font-style: normal;
     width: 11vw;
-    height: 100vh;
+    /* height: 100vh; */
     position: absolute;
     /* padding-left: 1vw; */
     padding-top: 2vw;
@@ -142,7 +143,7 @@ h1{
     font-weight: 300;
     font-style: normal;
     /* width: 300px; */
-    height: 100vh;
+    /* height: 100vh; */
     position: absolute;
     /* padding-left: 1vw; */
     padding-top: 1vw;
@@ -167,6 +168,7 @@ h1{
 .icon_caption{
     color: white;
     text-align: center;
+    display: inline-grid;
 }
 
 .pointLevels{
@@ -407,6 +409,11 @@ h3 {
 
 #gasMinCol{
     float: left;
+}
+#gasMidCol{
+    float: left;
+    left: 46%;
+    position: absolute;
 }
 #gasMaxCol{
     float: right;
@@ -673,7 +680,7 @@ h3 {
 
 #density-mod{
     display: inline-grid;
-    padding: 2%;
+    margin-left: 10px;
 }
 
 #density-min{
@@ -685,12 +692,41 @@ h3 {
 }
 
 #options{
-    padding: 2%;
+    /* padding: 2%; */
+    margin-left: 10px;
+    margin-right: 30px;
+    padding-bottom: 15px;
 }
 
+#x-depth-brush-label{
+    margin-left: 20px;
+    margin-right: 30px;
+    border-color: rgba(255,0,0,0.7);
+    border-width: thin;
+    border: red;
+    border-style: double;
+    text-align: center;
+    /* background: rgba(255,0,0,0.4); */
+}
 
+#y-depth-brush-label{
+    margin-left: 20px;
+    margin-right: 30px;
+    border-color: rgba(0,255,0,0.7);
+    border-width: thin;
+    border: green;
+    border-style: double;
+    text-align: center;
+    /* background: rgba(0,255,0,0.2); */
+}
 
-
-#step-size{
-
+#z-depth-brush-label{
+    margin-left: 20px;
+    margin-right: 30px;
+    border-color: rgba(0,0,255,0.7);
+    border-width: thin;
+    border: blue;
+    border-style: double;
+    text-align: center;
+    /* background: rgba(0,0,255,0.2); */
 }

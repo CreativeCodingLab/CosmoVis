@@ -24,8 +24,11 @@ THREE.VolumeRenderShader1 = {
 		"u_stepSize": { value: 1.0 },
 		"u_xyzMin": {value: new THREE.Vector3( 0.0, 0.0, 0.0)},
 		"u_xyzMax": {value: new THREE.Vector3( 1.0, 1.0, 1.0)},
+		"u_densityModI": {value: null},
 		"u_distMod": {value: null},
-		"u_valMod": {value: null}
+		"u_distModI": {value: null},
+		"u_valMod": {value: null},
+		"u_valModI": {value: null}
     },
 	vertexShader: [
 		
@@ -125,6 +128,10 @@ THREE.VolumeRenderShader1 = {
 		"		uniform vec3 u_xyzMax;",
 		"		uniform float u_distMod;",
 		"		uniform float u_valMod;",
+
+		"		uniform float u_densityModI;",
+		"		uniform float u_distModI;",
+		"		uniform float u_valModI;",
 
 		"		uniform sampler3D u_density;",
 		"		uniform sampler2D u_cmdata;",
@@ -250,10 +257,10 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);",
 		"				if(a != 0.0 && val<=0.5){",
-		"					a = 0.5*d+0.2*val*u_valMod+0.1*delta*u_distMod;",
+		"					a = (u_densityModI*d+u_valModI*val*u_valMod+u_distModI*delta*u_distMod)/3.0;",
 		"				}",
 		"				else if (a != 0.0){",
-		"					a = 0.5*d+0.2*val*u_valMod+0.1*delta*u_distMod;",
+		"					a = (u_densityModI*d+u_valModI*val*u_valMod+u_distModI*delta*u_distMod)/3.0;",
 		"				}",
 		"				vec4 tex = texture2D(u_cmdata, vec2(val, 0.5));",
 		"				tex.rgb = tex.rgb;",

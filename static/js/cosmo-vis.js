@@ -12,7 +12,7 @@ var camera, scene, renderer, material, skewerScene //THREE.js environment variab
 var tex1 = new THREE.TextureLoader().load( "static/textures/blur.png" );
 const windowHalf = new THREE.Vector2( window.innerWidth / 2, window.innerHeight / 2 );
 var field_list //contains list of particle fields
-var gasMinCol, gasMaxCol, dmMinCol, dmMaxCol, starMinCol, starMaxCol, bhMinCol, bhMaxCol //stores colors for different particle types
+var gasMinCol, gasMidCol, gasMaxCol, dmMinCol, dmMaxCol, starMinCol, starMaxCol, bhMinCol, bhMaxCol //stores colors for different particle types
 var gm, gmx, bhm, bhmx //used for changeValue()
 var brusher //used for spectra brush
 var gui //used to hold dat.GUI object
@@ -71,6 +71,8 @@ var domainXYZ = [0.0,1.0,0.0,1.0,0.0,1.0]
 const times = [];
 let fps;
 
+var cameraGrid;
+
 /**
  * * GLOBAL FUNCTIONS 
  */
@@ -117,6 +119,13 @@ function clearLayer(l){
         if(l==3 && layer == 4){
             scene.remove(scene.children[i])
         }
+        if(l==9 && layer == 512){
+            scene.remove(scene.children[i])
+            console.log('clear')
+        }
+        if(l == 10 && layer == 1024){
+            scene.remove(scene.children[i])
+        }
     } 
     
 }
@@ -125,22 +134,156 @@ function clearLayer(l){
 function updateSize(){
     s = document.getElementById("size_select").value
     //check to see if selected size is different than the current configuration
+
+    let oldSize = gridsize
+    let oldPos = camera.position
+
+
     if(gridsize != s){
         gridsize = s
+
+        camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+        // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
+        // camera.zoom = 6
+        camera.updateProjectionMatrix()
+        controls.target.set( gridsize/2,  gridsize/2,  gridsize/2 );
+    
+        
         asyncCall()
         //check to see which variables are visible and update those immediately
-        if(document.getElementById("gas-eye-open").style.display == "inline-block"){
-            loadAttribute(gridsize,'PartType0','Temperature',false)
+        
+
+        loadAttributes()
+
+        function loadAttributes(){
+            if(document.getElementById("gas-eye-open").style.display == "inline-block"){
+                loadAttribute(gridsize,'PartType0','Temperature',true)
+            }
+            if(document.getElementById("dm-eye-open").style.display == "inline-block"){
+                loadAttribute(gridsize,'PartType1','density',true)
+        
+            }
+            if(document.getElementById("star-eye-open").style.display = "inline-block"){
+                loadAttribute(gridsize,'PartType4','density',true)
+            }
+            if(document.getElementById("bh-eye-open").style.display = "inline-block"){
+                
+            }
         }
-        if(document.getElementById("dm-eye-open").style.display == "inline-block"){
-            loadAttribute(gridsize,'PartType1','density',false)
-        }
-        if(document.getElementById("star-eye-open").style.display = "inline-block"){
-            loadAttribute(gridsize,'PartType4','density',false)
-        }
-        if(document.getElementById("bh-eye-open").style.display = "inline-block"){
-            
-        }
+        
+        createSkewerCube(gridsize)
+        updateSkewerEndpoints(gridsize)
+        toggleXYZGuide()
+        updateUniforms()
+
+        clearLayer(9)
+        
+        divisions = 25
+
+        var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper.position.set(0,-gridsize/2,0)
+        gridHelper.layers.set(9)
+        gridHelper.material.transparent = true;
+        gridHelper.material.alpha = 0.01;
+        gridHelper.translateX( gridsize / 2);
+        gridHelper.translateY( gridsize / 2);
+        gridHelper.translateZ( gridsize / 2);
+        gridHelper.side = THREE.DoubleSide
+        scene.add( gridHelper );
+
+        var gridHelper1 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper1.position.set(0,1*gridsize,-gridsize/2)
+        gridHelper1.rotateX(Math.PI/2)
+        gridHelper1.layers.set(9)
+        gridHelper1.material.transparent = true;
+        gridHelper1.material.alpha = 0.01;
+        gridHelper1.translateX( gridsize / 2);
+        gridHelper1.translateY( gridsize / 2);
+        gridHelper1.translateZ( gridsize / 2);
+        gridHelper1.side = THREE.DoubleSide
+        scene.add( gridHelper1 );
+
+        var gridHelper2 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper2.position.set(gridsize/2,0,0)
+        gridHelper2.rotateZ(Math.PI/2)
+        gridHelper2.layers.set(9)
+        gridHelper2.material.transparent = true;
+        gridHelper2.material.alpha = 0.01;
+        gridHelper2.translateX( gridsize / 2);
+        gridHelper2.translateY( gridsize / 2);
+        gridHelper2.translateZ( gridsize / 2);
+        gridHelper2.side = THREE.DoubleSide
+        scene.add( gridHelper2 );
+
+        var gridHelper3 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper3.position.set(0,gridsize/2,0)
+        gridHelper3.layers.set(9)
+        gridHelper3.material.transparent = true;
+        gridHelper3.material.alpha = 0.01;
+        gridHelper3.translateX( gridsize / 2);
+        gridHelper3.translateY( gridsize / 2);
+        gridHelper3.translateZ( gridsize / 2);
+        gridHelper3.side = THREE.DoubleSide
+        scene.add( gridHelper3 );
+
+        var gridHelper4 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper4.position.set(0,1*gridsize,gridsize/2)
+        gridHelper4.rotateX(Math.PI/2)
+        gridHelper4.layers.set(9)
+        gridHelper4.material.transparent = true;
+        gridHelper4.material.alpha = 0.01;
+        gridHelper4.translateX( gridsize / 2);
+        gridHelper4.translateY( gridsize / 2);
+        gridHelper4.translateZ( gridsize / 2);
+        gridHelper4.side = THREE.DoubleSide
+        scene.add( gridHelper4 );
+
+        var gridHelper5 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper5.position.set(1.5*gridsize,0,0)
+        gridHelper5.rotateZ(Math.PI/2)
+        gridHelper5.layers.set(9)
+        gridHelper5.material.transparent = true;
+        gridHelper5.material.alpha = 0.01;
+        gridHelper5.translateX( gridsize / 2);
+        gridHelper5.translateY( gridsize / 2);
+        gridHelper5.translateZ( gridsize / 2);
+        gridHelper5.side = THREE.DoubleSide
+        scene.add( gridHelper5 );
+
+    }
+    
+}
+
+function toggleGrid(){
+    let div = (document.getElementById("grid-check")).checked
+    
+    
+    if(div){
+        camera.layers.toggle( 9 )
+    }
+    else{
+        camera.layers.toggle( 9 )
+    }
+}
+
+function toggleXYZGuide(){
+    
+    let div = (document.getElementById("xyzguide-check")).checked
+    if(div){
+        var axesHelper = new THREE.AxesHelper( gridsize );
+        axesHelper.layers.set(10)
+        scene.add( axesHelper );
+    }
+    else{
+        clearLayer(10)
+    }
+}
+
+function updateSkewerEndpoints(size){
+    for(i=0;i<lines.length;i++){
+        lines[i].scale.x = size/64
+        lines[i].scale.y = size/64
+        lines[i].scale.z = size/64
     }
 }
 
@@ -154,6 +297,19 @@ function updateUniforms() {
     densityMax = document.getElementById('density-maxval-input').value
     g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
     dither = (document.getElementById("dither-check").checked ? 1.0 : 0.0);
+
+    localStorage.setItem('gasMinVal',(document.getElementById('gas-minval-input')).value);
+    localStorage.setItem('gasMaxVal',(document.getElementById('gas-maxval-input')).value);
+    
+    // localStorage.setItem('dmCol', "#" + dmCol.getHexString());
+    localStorage.setItem('dmMinVal',(document.getElementById('dm-minval-input')).value);
+    localStorage.setItem('dmMaxVal',(document.getElementById('dm-maxval-input')).value);
+    
+    localStorage.setItem('starMinVal',(document.getElementById('star-minval-input')).value);
+    localStorage.setItem('starMaxVal',(document.getElementById('star-maxval-input')).value);
+
+    localStorage.setItem('bhMinVal',(document.getElementById('bh-minval-input')).value);
+    localStorage.setItem('bhMaxVal',(document.getElementById('bh-maxval-input')).value);
 
     if(gasMaterial){
         document.getElementById("gas-minval-input").disabled = (document.getElementById("gas-min-check").checked);
@@ -193,6 +349,11 @@ function updateUniforms() {
         gasMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         gasMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
         
+        gasMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
+        gasMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
+        gasMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
+
+
         if((document.getElementById("dist-mod-check")).checked){
             gasMaterial.uniforms[ "u_distMod" ].value = 1.0;
         }
@@ -214,7 +375,12 @@ function updateUniforms() {
         for(i=0;i<w;i++){
             stride = i * 3
             a = i/w
-            c = gasMinCol.clone().lerp(gasMaxCol,a)
+            if(i<w/2){
+                c = gasMinCol.clone().lerp(gasMidCol,a)
+            }
+            else{
+                c = gasMidCol.clone().lerp(gasMaxCol,a)
+            }
             data[stride] = Math.floor(c.r*255)
             data[stride+1] = Math.floor(c.g*255)
             data[stride+2] = Math.floor(c.b*255)
@@ -261,6 +427,11 @@ function updateUniforms() {
         dmMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
         dmMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         dmMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+
+        dmMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
+        dmMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
+        dmMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
+
 
         if((document.getElementById("dist-mod-check")).checked){
             dmMaterial.uniforms[ "u_distMod" ].value = 1.0;
@@ -315,6 +486,10 @@ function updateUniforms() {
         starMaterial.uniforms[ "u_clip" ].value = [ document.getElementById("star-min-clip-check").checked, document.getElementById("star-max-clip-check").checked ]
         starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+
+        starMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
+        starMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
+        starMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
 
         if((document.getElementById("dist-mod-check")).checked){
             starMaterial.uniforms[ "u_distMod" ].value = 1.0;
@@ -413,7 +588,7 @@ function loadDensity(size,type,attr){
 
 }
 
-function loadAttribute(size,type,attr,density_bool){
+function loadAttribute(size,type,attr,resolution_bool){
     /**
      * * loadAttribute() is called when selecting an attribute from one of the dropdown menus
      * 
@@ -438,11 +613,11 @@ function loadAttribute(size,type,attr,density_bool){
         //     gui.destroy()
         // }
         //set camera position so the entire dataset is in view
-        camera.position.set(size*1.5, size*1.5, size*1.5)
-        camera.lookAt(size/2,  size/2,  size/2)
-        camera.zoom = 6
-        camera.updateProjectionMatrix()
-        controls.target.set( size/2,  size/2,  size/2 );
+        // camera.position.set(size*1.5, size*1.5, size*1.5)
+        // camera.lookAt(size/2,  size/2,  size/2)
+        // camera.zoom = 6
+        // camera.updateProjectionMatrix()
+        // controls.target.set( size/2,  size/2,  size/2 );
 
         //arr holds the flattened data in Float32Array to be used as a 3D texture
         arr = new Float32Array(size * size * size)
@@ -488,6 +663,12 @@ function loadAttribute(size,type,attr,density_bool){
                 x.style.display = "inline-block";
                 var y = document.getElementById("gas-eye-closed");
                 y.style.display = "none";
+                if(resolution_bool && localStorage.getItem('gasMinVal') != ""){
+                    min = localStorage.getItem('gasMinVal')
+                }
+                if(resolution_bool && localStorage.getItem('gasMaxVal') != ""){
+                    max = localStorage.getItem('gasMaxVal')
+                }
                 climGasLimits = [min, max]
                 type = 'gas'
             }
@@ -496,6 +677,12 @@ function loadAttribute(size,type,attr,density_bool){
                 x.style.display = "inline-block";
                 var y = document.getElementById("dm-eye-closed");
                 y.style.display = "none";
+                if(localStorage.getItem('dmMinVal') != ""){
+                    min = localStorage.getItem('dmMinVal')
+                }
+                if(localStorage.getItem('dmMaxVal') != ""){
+                    max = localStorage.getItem('dmMaxVal')
+                }
                 climDMLimits = [min, max]
                 type = 'dm'
             }
@@ -504,6 +691,12 @@ function loadAttribute(size,type,attr,density_bool){
                 x.style.display = "inline-block";
                 var y = document.getElementById("star-eye-closed");
                 y.style.display = "none";
+                if(localStorage.getItem('starMinVal') != ""){
+                    min = localStorage.getItem('starMinVal')
+                }
+                if(localStorage.getItem('starMaxVal') != ""){
+                    max = localStorage.getItem('starMaxVal')
+                }
                 climStarLimits = [min, max]
                 type = 'star'
             }
@@ -656,7 +849,7 @@ function loadAttribute(size,type,attr,density_bool){
             bhMaterial = material
             bhMesh = mesh
         }
-        
+        updateUniforms()
         scene.add( mesh );
 
         // changeValue()
@@ -692,6 +885,7 @@ function changeColor(){
      */
     
     gasMinCol = new THREE.Color(document.querySelector("#gasMinCol").value);
+    gasMidCol = new THREE.Color(document.querySelector("#gasMidCol").value);
     gasMaxCol = new THREE.Color(document.querySelector("#gasMaxCol").value);
     dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
     dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
@@ -714,7 +908,7 @@ function changeColor(){
     bhMaxCol = new THREE.Color(document.querySelector("#bhMaxCol").value);
 
     col = document.getElementById('gas-colorscale')
-    col.style.background = 'linear-gradient( 0.25turn, #' + gasMinCol.getHexString() +', #' + gasMaxCol.getHexString() + ')'
+    col.style.background = 'linear-gradient( 0.25turn, #' + gasMinCol.getHexString() +', #' + gasMidCol.getHexString() + ', #' + gasMaxCol.getHexString() + ')'
     col = document.getElementById('dm-colorscale')
     col.style.background = 'linear-gradient( 0.25turn, #' + dmMinCol.getHexString() +', #' + dmMaxCol.getHexString() + ')'
     col = document.getElementById('star-colorscale')
@@ -723,6 +917,7 @@ function changeColor(){
     col.style.background = 'linear-gradient( 0.25turn, #' + bhMinCol.getHexString() +', #' + bhMaxCol.getHexString() + ')'
     
     document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
+    document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
     document.querySelector("#gasMaxCol").style.backgroundColor = document.querySelector("#gasMaxCol").value
     document.querySelector("#dmMinCol").style.backgroundColor = document.querySelector("#dmMinCol").value
     document.querySelector("#dmMaxCol").style.backgroundColor = document.querySelector("#dmMaxCol").value
@@ -744,6 +939,7 @@ function changeColor(){
     // materialBlackHole.uniforms.maxCol.value = new THREE.Vector4(bhMaxCol.r,bhMaxCol.g,bhMaxCol.b,1.0);
 
     localStorage.setItem('gasMinCol', "#" + gasMinCol.getHexString());
+    localStorage.setItem('gasMidCol', "#" + gasMidCol.getHexString());
     localStorage.setItem('gasMaxCol', "#" + gasMaxCol.getHexString());
     
     // localStorage.setItem('dmCol', "#" + dmCol.getHexString());
@@ -896,6 +1092,12 @@ function render() {
 
     requestAnimationFrame( render );
     controls.update()
+    let vector = new THREE.Vector3()
+    dir = camera.getWorldDirection(vector)
+    // console.log(vector)
+    // theta = Math.atan2(vector.x,vector.z)
+    cameraGrid.lookAt(camera.position.x,camera.position.y,camera.position.z)
+    cameraGrid.rotateX(Math.PI/2)
     renderer.render( scene, camera );
 
 };
@@ -1332,10 +1534,10 @@ function createXYZBrush(xyz){
     // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
     // d3.select('#terminal').selectAll('.depth-brush').remove();
     
-    d3.select('#terminal').append('div').attr('id',xyz+'-depth-brush').attr('class','depth-brush').append('text').text(xyz)
+    d3.select('#terminal').append('div').attr('id',xyz+'-depth-brush-label').attr('class','depth-brush').append('text').text(xyz)
     let svg = d3.select('#terminal').append('div').attr('id',xyz+'-depth-brush').attr('class','depth-brush').append('svg')
 
-    let margin = {top: 20, right: 15, bottom: 30, left: 30};
+    let margin = {top: 20, right: 15, bottom: 30, left: 20};
     let axis = svg.append('g');
 
     let brush = svg.append("g")
@@ -1604,7 +1806,7 @@ $(document).ready(function(){
 
         THREE.Cache.enabled = true
         canvas = document.createElement('canvas')
-        context = canvas.getContext('webgl2', { alpha: false })
+        context = canvas.getContext('webgl2', { antialias: true, alpha: true })
         
         scene = new THREE.Scene();
         scene.background = new THREE.Color("rgb(4,6,23)")
@@ -1616,6 +1818,97 @@ $(document).ready(function(){
         camera.layers.enable(2);
         camera.layers.enable(3);
         camera.layers.enable(4);
+        camera.layers.enable(9);
+        camera.layers.enable(10);
+
+        gridMaterial = new THREE.MeshBasicMaterial
+
+        var divisions = 25;
+
+        cameraGrid = new THREE.GridHelper( gridsize*1.7, divisions*1.7, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) )
+        cameraGrid.position.set(gridsize/2,gridsize/2,gridsize/2)
+        cameraGrid.layers.set(9)
+        cameraGrid.material.transparent = true;
+        cameraGrid.material.alpha = 0.01;
+        // gridHelper.translateX( gridsize / 2);
+        // gridHelper.translateY( gridsize / 2);
+        // gridHelper.translateZ( gridsize / 2);
+        cameraGrid.side = THREE.DoubleSide
+        scene.add( cameraGrid );
+
+        // camera.layers.toggle(9)
+        // var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
+        // gridHelper.position.set(0,-gridsize/2,0)
+        // gridHelper.layers.set(9)
+        // gridHelper.material.transparent = true;
+        // gridHelper.material.alpha = 0.01;
+        // gridHelper.translateX( gridsize / 2);
+        // gridHelper.translateY( gridsize / 2);
+        // gridHelper.translateZ( gridsize / 2);
+        // gridHelper.side = THREE.DoubleSide
+        // scene.add( gridHelper );
+
+        // var gridHelper1 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
+        // gridHelper1.position.set(0,gridsize,-gridsize/2)
+        // gridHelper1.rotateX(Math.PI/2)
+        // gridHelper1.layers.set(9)
+        // gridHelper1.material.transparent = true;
+        // gridHelper1.material.alpha = 0.01;
+        // gridHelper1.translateX( gridsize / 2);
+        // gridHelper1.translateY( gridsize / 2);
+        // gridHelper1.translateZ( gridsize / 2);
+        // gridHelper1.side = THREE.DoubleSide
+        // scene.add( gridHelper1 );
+
+        // var gridHelper2 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
+        // gridHelper2.position.set(gridsize/2,0,0)
+        // gridHelper2.rotateZ(Math.PI/2)
+        // gridHelper2.layers.set(9)
+        // gridHelper2.material.transparent = true;
+        // gridHelper2.material.alpha = 0.01;
+        // gridHelper2.translateX( gridsize / 2);
+        // gridHelper2.translateY( gridsize / 2);
+        // gridHelper2.translateZ( gridsize / 2);
+        // gridHelper2.side = THREE.DoubleSide
+        // scene.add( gridHelper2 );
+
+        // var gridHelper3 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
+        // gridHelper3.position.set(0,gridsize/2,0)
+        // gridHelper3.layers.set(9)
+        // gridHelper3.material.transparent = true;
+        // gridHelper3.material.alpha = 0.01;
+        // gridHelper3.translateX( gridsize / 2);
+        // gridHelper3.translateY( gridsize / 2);
+        // gridHelper3.translateZ( gridsize / 2);
+        // gridHelper3.side = THREE.DoubleSide
+        // scene.add( gridHelper3 );
+
+        // var gridHelper4 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
+        // gridHelper4.position.set(0,gridsize,gridsize/2)
+        // gridHelper4.rotateX(Math.PI/2)
+        // gridHelper4.layers.set(9)
+        // gridHelper4.material.transparent = true;
+        // gridHelper4.material.alpha = 0.01;
+        // gridHelper4.translateX( gridsize / 2);
+        // gridHelper4.translateY( gridsize / 2);
+        // gridHelper4.translateZ( gridsize / 2);
+        // gridHelper4.side = THREE.DoubleSide
+        // scene.add( gridHelper4 );
+
+        // var gridHelper5 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
+        // gridHelper5.position.set(1.5*gridsize,0,0)
+        // gridHelper5.rotateZ(Math.PI/2)
+        // gridHelper5.layers.set(9)
+        // gridHelper5.material.transparent = true;
+        // gridHelper5.material.alpha = 0.01;
+        // gridHelper5.translateX( gridsize / 2);
+        // gridHelper5.translateY( gridsize / 2);
+        // gridHelper5.translateZ( gridsize / 2);
+        // gridHelper5.side = THREE.DoubleSide
+        // scene.add( gridHelper5 );
+
+        
+
         
 
         renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context });
@@ -1629,15 +1922,16 @@ $(document).ready(function(){
         renderer.gammaOutput = true;
         renderer.logarithmicDepthBuffer = false
         
-        // camera.position.set(8.47, 8.47, 8.47)
-        camera.position.set(gridsize, gridsize, gridsize)
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
 
+        // camera.position.set(8.47, 8.47, 8.47)
+        camera.position.set(gridsize*1.5, gridsize*1.5, gridsize*1.5)
+        camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
         camera.zoom = 6
         // camera.lookAt(0,0,0)
         camera.updateProjectionMatrix();
 
         
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
         // edges.right_edge[0]-edges.left_edge[0], edges.right_edge[1]-edges.left_edge[1], edges.right_edge[2]-edges.left_edge[2]
         // controls.target.set( 8.47/2, 8.47/2, 8.47/2 );
 
@@ -1645,8 +1939,8 @@ $(document).ready(function(){
 
         controls.update()
 
-        // controls.enableDamping = true
-        // controls.dampingFactor = 0.07;
+        controls.enableDamping = true
+        controls.dampingFactor = 0.14;
 
         // initMaterial();
         initColor();
@@ -1691,6 +1985,8 @@ $(document).ready(function(){
 
         gmc = document.querySelector("#gasMinCol")
         gmc.addEventListener('change',changeColor,false);
+        gmd = document.querySelector("#gasMidCol")
+        gmd.addEventListener('change',changeColor,false);
         gmxc = document.querySelector("#gasMaxCol")
         gmxc.addEventListener('change',changeColor,false);
         
@@ -1862,7 +2158,7 @@ $(document).ready(function(){
                     scene.remove(lines[idx])
                     var material = new THREE.LineMaterial( { 
                         color: 0xff5522,
-                        linewidth: 0.01,
+                        linewidth: 0.0025,
                         transparent: true,
                         opacity: 0.7,
                         blending: THREE.AdditiveBlending
@@ -2020,7 +2316,17 @@ $(document).ready(function(){
             document.querySelector("#gasMinCol").value = '#ffffff';
         }
         document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
-        
+
+        if( localStorage.getItem('gasMidCol') ){
+            document.querySelector("#gasMidCol").value = localStorage.getItem('gasMidCol');
+            document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
+        }
+        else{
+            document.querySelector("#gasMidCol").value = '#ffffff';
+        }
+        document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
+
+
         if( localStorage.getItem('gasMaxCol') ){
             document.querySelector("#gasMaxCol").value = localStorage.getItem('gasMaxCol');
         }
