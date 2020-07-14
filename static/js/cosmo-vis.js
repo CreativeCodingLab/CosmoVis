@@ -27,6 +27,7 @@ var climDMLimits = []
 var climStarLimits = []
 var climBHLimits = []
 var gridsize = 64
+var staticGrid
 
 var blank_d = new Float32Array(gridsize * gridsize * gridsize)
 for(x=0;x<gridsize;x++){
@@ -70,8 +71,9 @@ var domainXYZ = [0.0,1.0,0.0,1.0,0.0,1.0]
  */
 const times = [];
 let fps;
+var camPos;
 
-var cameraGrid;
+// var staticGrid;
 
 /**
  * * GLOBAL FUNCTIONS 
@@ -156,19 +158,18 @@ function updateSize(){
         loadAttributes()
 
         function loadAttributes(){
-            if(document.getElementById("gas-eye-open").style.display == "inline-block"){
+            // if(document.getElementById("gas-eye-open").style.display == "inline-block"){
                 loadAttribute(gridsize,'PartType0','Temperature',true)
-            }
-            if(document.getElementById("dm-eye-open").style.display == "inline-block"){
+            // }
+            // if(document.getElementById("dm-eye-open").style.display == "inline-block"){
                 loadAttribute(gridsize,'PartType1','density',true)
-        
-            }
-            if(document.getElementById("star-eye-open").style.display = "inline-block"){
+            // }
+            // if(document.getElementById("star-eye-open").style.display = "inline-block"){
                 loadAttribute(gridsize,'PartType4','density',true)
-            }
-            if(document.getElementById("bh-eye-open").style.display = "inline-block"){
+            // }
+            // if(document.getElementById("bh-eye-open").style.display = "inline-block"){
                 
-            }
+            // }
         }
         
         createSkewerCube(gridsize)
@@ -199,95 +200,24 @@ function toggleGrid(){
         toggleXYZGuide()
         updateUniforms()
 
-        clearLayer(9)
-        
-        divisions = 25
-
-        var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
-        gridHelper.position.set(0,-gridsize/2,0)
-        gridHelper.layers.set(9)
-        gridHelper.material.transparent = true;
-        gridHelper.material.alpha = 0.01;
-        gridHelper.translateX( gridsize / 2);
-        gridHelper.translateY( gridsize / 2);
-        gridHelper.translateZ( gridsize / 2);
-        gridHelper.side = THREE.DoubleSide
-        scene.add( gridHelper );
-
-        var gridHelper1 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
-        gridHelper1.position.set(0,1*gridsize,-gridsize/2)
-        gridHelper1.rotateX(Math.PI/2)
-        gridHelper1.layers.set(9)
-        gridHelper1.material.transparent = true;
-        gridHelper1.material.alpha = 0.01;
-        gridHelper1.translateX( gridsize / 2);
-        gridHelper1.translateY( gridsize / 2);
-        gridHelper1.translateZ( gridsize / 2);
-        gridHelper1.side = THREE.DoubleSide
-        scene.add( gridHelper1 );
-
-        var gridHelper2 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
-        gridHelper2.position.set(gridsize/2,0,0)
-        gridHelper2.rotateZ(Math.PI/2)
-        gridHelper2.layers.set(9)
-        gridHelper2.material.transparent = true;
-        gridHelper2.material.alpha = 0.01;
-        gridHelper2.translateX( gridsize / 2);
-        gridHelper2.translateY( gridsize / 2);
-        gridHelper2.translateZ( gridsize / 2);
-        gridHelper2.side = THREE.DoubleSide
-        scene.add( gridHelper2 );
-
-        var gridHelper3 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
-        gridHelper3.position.set(0,gridsize/2,0)
-        gridHelper3.layers.set(9)
-        gridHelper3.material.transparent = true;
-        gridHelper3.material.alpha = 0.01;
-        gridHelper3.translateX( gridsize / 2);
-        gridHelper3.translateY( gridsize / 2);
-        gridHelper3.translateZ( gridsize / 2);
-        gridHelper3.side = THREE.DoubleSide
-        scene.add( gridHelper3 );
-
-        var gridHelper4 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
-        gridHelper4.position.set(0,1*gridsize,gridsize/2)
-        gridHelper4.rotateX(Math.PI/2)
-        gridHelper4.layers.set(9)
-        gridHelper4.material.transparent = true;
-        gridHelper4.material.alpha = 0.01;
-        gridHelper4.translateX( gridsize / 2);
-        gridHelper4.translateY( gridsize / 2);
-        gridHelper4.translateZ( gridsize / 2);
-        gridHelper4.side = THREE.DoubleSide
-        scene.add( gridHelper4 );
-
-        var gridHelper5 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
-        gridHelper5.position.set(1.5*gridsize,0,0)
-        gridHelper5.rotateZ(Math.PI/2)
-        gridHelper5.layers.set(9)
-        gridHelper5.material.transparent = true;
-        gridHelper5.material.alpha = 0.01;
-        gridHelper5.translateX( gridsize / 2);
-        gridHelper5.translateY( gridsize / 2);
-        gridHelper5.translateZ( gridsize / 2);
-        gridHelper5.side = THREE.DoubleSide
-        scene.add( gridHelper5 );
-
-    }
-    
-}
-
-function toggleGrid(){
-    let div = (document.getElementById("grid-check")).checked
-    
-    
-    if(div){
-        camera.layers.toggle( 9 )
     }
     else{
-        camera.layers.toggle( 9 )
+        clearLayer(9)
     }
+    
 }
+
+// function toggleGrid(){
+//     let div = (document.getElementById("grid-check")).checked
+    
+    
+//     if(div){
+//         camera.layers.toggle( 9 )
+//     }
+//     else{
+//         camera.layers.toggle( 9 )
+//     }
+// }
 
 function toggleXYZGuide(){
     
@@ -311,20 +241,22 @@ function updateSkewerEndpoints(size){
 }
 
 function createStaticGrid(){
+    clearLayer(9)
+    
     gridMaterial = new THREE.MeshBasicMaterial
 
     var divisions = 25;
 
-    cameraGrid = new THREE.GridHelper( gridsize*1.7, divisions*1.7, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) )
-    cameraGrid.position.set(gridsize/2,gridsize/2,gridsize/2)
-    cameraGrid.layers.set(9)
-    cameraGrid.material.transparent = true;
-    cameraGrid.material.alpha = 0.01;
+    staticGrid = new THREE.GridHelper( gridsize*1.7, divisions*1.7, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) )
+    staticGrid.position.set(gridsize/2,gridsize/2,gridsize/2)
+    staticGrid.layers.set(9)
+    staticGrid.material.transparent = true;
+    staticGrid.material.alpha = 0.01;
     // gridHelper.translateX( gridsize / 2);
     // gridHelper.translateY( gridsize / 2);
     // gridHelper.translateZ( gridsize / 2);
-    cameraGrid.side = THREE.DoubleSide
-    scene.add( cameraGrid );
+    staticGrid.side = THREE.DoubleSide
+    scene.add( staticGrid );
 }
 
 function createBoundariesGrid(){
@@ -433,11 +365,7 @@ function updateUniforms() {
     densityMin = document.getElementById('density-minval-input').value
     densityMax = document.getElementById('density-maxval-input').value
     g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
-<<<<<<< HEAD
     // dither = (document.getElementById("dither-check").checked ? 1.0 : 0.0);
-=======
-    dither = (document.getElementById("dither-check").checked ? 1.0 : 0.0);
->>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
 
     localStorage.setItem('gasMinVal',(document.getElementById('gas-minval-input')).value);
     localStorage.setItem('gasMaxVal',(document.getElementById('gas-maxval-input')).value);
@@ -675,6 +603,7 @@ function updateUniforms() {
         data = []
         starMaterial.uniforms[ "u_cmdata" ].value = cmtexture;
     }
+    // render()
     
 }
 
@@ -685,10 +614,13 @@ async function asyncCall() {
     densityMin = dens[1]
     densityMax = dens[2]
     dens = []
-    animate()
-    render()
+    // animate()
+    // render()
     
     // loadAttribute(128,'PartType0','Temperature',true)
+    loadAttribute(gridsize,'PartType0','Temperature',true)
+    loadAttribute(gridsize,'PartType1','density',true)
+    loadAttribute(gridsize,'PartType4','density',true)
 }
 
 function loadDensity(size,type,attr){
@@ -809,6 +741,8 @@ function loadAttribute(size,type,attr,resolution_bool){
         var min = arr.reduce(function(a, b) {
             return Math.min(a, b);
         });
+        console.log(min)
+        if(min==-Infinity){min = -999999999999}
         setMinMaxInputValues(type,min,max)
 
         function setMinMaxInputValues(type,min,max){
@@ -1223,7 +1157,7 @@ function loadData(){
         var mesh = new THREE.Mesh( geometry, material );
         scene.add( mesh );
 
-        updateUniforms
+        updateUniforms()
 
         // render();
 
@@ -1254,8 +1188,8 @@ function render() {
         dir = camera.getWorldDirection(vector)
         // console.log(vector)
         // theta = Math.atan2(vector.x,vector.z)
-        cameraGrid.lookAt(camera.position.x,camera.position.y,camera.position.z)
-        cameraGrid.rotateX(Math.PI/2)
+        staticGrid.lookAt(camera.position.x,camera.position.y,camera.position.z)
+        staticGrid.rotateX(Math.PI/2)
     }
     renderer.render( scene, camera );   
 };
@@ -1270,20 +1204,20 @@ function setTwoNumberDecimal(el) {
     // el.value = el.value.toFixed(2);
 };
 
-function refreshLoop() {
-    /*
-     * * refreshLoop() finds the frame rate 
-     */
-    window.requestAnimationFrame(() => {
-        const now = performance.now();
-        while (times.length > 0 && times[0] <= now - 1000) {
-        times.shift();
-        }
-        times.push(now);
-        fps = times.length;
-        refreshLoop();
-    });
-}
+// function refreshLoop() {
+//     /*
+//      * * refreshLoop() finds the frame rate 
+//      */
+//     window.requestAnimationFrame(() => {
+//         const now = performance.now();
+//         while (times.length > 0 && times[0] <= now - 1000) {
+//         times.shift();
+//         }
+//         times.push(now);
+//         fps = times.length;
+//         refreshLoop();
+//     });
+// }
 
 function toggleDrawSkewerMode(){
     /*
@@ -2154,9 +2088,11 @@ $(document).ready(function(){
         createXYZBrush('y')
         createXYZBrush('z')
 
-        refreshLoop();
+        // refreshLoop();
 
         toggleGrid()
+
+        camPos = camera.position
 
         
         // loadData()
@@ -2456,7 +2392,8 @@ $(document).ready(function(){
             document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
         }
         else{
-            document.querySelector("#gasMinCol").value = '#ffffff';
+            let col = new THREE.Color('rgb(0,200,240)')
+            document.querySelector("#gasMinCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
 
@@ -2465,7 +2402,8 @@ $(document).ready(function(){
             document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
         }
         else{
-            document.querySelector("#gasMidCol").value = '#ffffff';
+            let col = new THREE.Color('rgb(255,213,0)')
+            document.querySelector("#gasMidCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
 
@@ -2474,7 +2412,8 @@ $(document).ready(function(){
             document.querySelector("#gasMaxCol").value = localStorage.getItem('gasMaxCol');
         }
         else{
-            document.querySelector("#gasMaxCol").value = '#ffffff';
+            let col = new THREE.Color('rgb(210,0,0)')
+            document.querySelector("#gasMaxCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMaxCol").style.backgroundColor = document.querySelector("#gasMaxCol").value
 
@@ -2483,7 +2422,8 @@ $(document).ready(function(){
             document.querySelector("#dmMinCol").value = localStorage.getItem('dmMinCol');
         }
         else{
-            document.querySelector("#dmMinCol").value = '#ffffff';
+            let col = new THREE.Color('rgb(255,0,255)')
+            document.querySelector("#dmMinCol").value = '#'+col.getHexString();
         }
         document.querySelector("#dmMinCol").style.backgroundColor = document.querySelector("#dmMinCol").value
 
@@ -2491,7 +2431,8 @@ $(document).ready(function(){
             document.querySelector("#dmMaxCol").value = localStorage.getItem('dmMaxCol');
         }
         else{
-            document.querySelector("#dmMaxCol").value = '#ffffff';
+            let col = new THREE.Color('rgb(255,0,255)')
+            document.querySelector("#dmMaxCol").value = '#'+col.getHexString();
         }
         document.querySelector("#dmMaxCol").style.backgroundColor = document.querySelector("#dmMaxCol").value
 
@@ -2500,7 +2441,8 @@ $(document).ready(function(){
             document.querySelector("#starMinCol").value = localStorage.getItem('starMinCol');
         }
         else{
-            document.querySelector("#starMinCol").value = '#ffffff';
+            let col = new THREE.Color('rgb(255,247,0)')
+            document.querySelector("#starMinCol").value = '#'+col.getHexString();
         }
         document.querySelector("#starMinCol").style.backgroundColor = document.querySelector("#starMinCol").value
 
@@ -2508,7 +2450,8 @@ $(document).ready(function(){
             document.querySelector("#starMaxCol").value = localStorage.getItem('starMaxCol');
         }
         else{
-            document.querySelector("#starMaxCol").value = '#ffffff';
+            let col = new THREE.Color('rgb(255,221,0)')
+            document.querySelector("#starMaxCol").value = '#'+col.getHexString();
         }
         document.querySelector("#starMaxCol").style.backgroundColor = document.querySelector("#starMaxCol").value
 
