@@ -21,12 +21,21 @@ THREE.VolumeRenderShader1 = {
 		"u_dither": { value: null },
 		"u_cmdata": { value: null },
 		"u_clip": {value: [ false, false ]},
-		"u_stepSize": { value: 1.0 }
+		"u_stepSize": { value: 1.0 },
+		"u_xyzMin": {value: new THREE.Vector3( 0.0, 0.0, 0.0)},
+		"u_xyzMax": {value: new THREE.Vector3( 1.0, 1.0, 1.0)},
+		"u_densityModI": {value: null},
+		"u_distMod": {value: null},
+		"u_distModI": {value: null},
+		"u_valMod": {value: null},
+		"u_valModI": {value: null}
     },
 	vertexShader: [
+		
 		"		varying vec4 v_nearpos;",
 		"		varying vec4 v_farpos;",
 		"		varying vec3 v_position;",
+		"		varying vec3 v_cameraPosition;",
 
 		"		mat4 inversemat(mat4 m) {",
 		// Taken from https://github.com/stackgl/glsl-inverse/blob/master/index.glsl
@@ -73,6 +82,7 @@ THREE.VolumeRenderShader1 = {
 
 
 		"		void main() {",
+		"				vec3 v_cameraPosition = cameraPosition;",
 		// Prepare transforms to map to "camera view". See also:
 		// https://threejs.org/docs/#api/renderers/webgl/WebGLProgram
 		"				mat4 viewtransformf = modelViewMatrix;",
@@ -114,17 +124,27 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_densityDepthMod;",
 		"		uniform float u_grayscaleDepthMod;",
 		"		uniform float u_dither;",
+		"		uniform vec3 u_xyzMin;",
+		"		uniform vec3 u_xyzMax;",
+		"		uniform float u_distMod;",
+		"		uniform float u_valMod;",
+
+		"		uniform float u_densityModI;",
+		"		uniform float u_distModI;",
+		"		uniform float u_valModI;",
 
 		"		uniform sampler3D u_density;",
 		"		uniform sampler2D u_cmdata;",
 
+		"		varying vec3 v_cameraPosition;",
 		"		varying vec3 v_position;",
 		"		varying vec4 v_nearpos;",
 		"		varying vec4 v_farpos;",
+		
 
 		// The maximum distance through our rendering volume is sqrt(3)*size.
 		"		const int MAX_STEPS = 887;	// 887 for 512^3, 1774 for 1024^3",
-		"		const int REFINEMENT_STEPS = 1;",
+		"		const int REFINEMENT_STEPS = 4;",
 		"		const float relative_step_size = 1.0;",
 		"		const vec4 ambient_color = vec4(0.2, 0.4, 0.2, 1.0);",
 		"		const vec4 diffuse_color = vec4(0.8, 0.2, 0.2, 1.0);",
@@ -144,7 +164,6 @@ THREE.VolumeRenderShader1 = {
 		// Normalize clipping plane info
 		"				vec3 farpos = v_farpos.xyz / v_farpos.w;",
 		"				vec3 nearpos = v_nearpos.xyz / v_nearpos.w;",
-
 		// Calculate unit vector pointing in the view direction through this fragment.
 		"				vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);",
 
@@ -181,8 +200,8 @@ THREE.VolumeRenderShader1 = {
 		"						cast_dvr(start_loc, step, nsteps, view_ray);",
 		"				else if (u_renderstyle == 1)",
 		"						cast_iso(start_loc, step, nsteps, view_ray);",
-		"				if (gl_FragColor.a < 0.05)",
-		"						discard;",
+		// "				if (gl_FragColor.a < 0.05)",
+		// "						discard;",
 		"		}",
 
 
@@ -214,9 +233,10 @@ THREE.VolumeRenderShader1 = {
 		"			return outputColor;",
 		"		}",
 
-		"		vec4 apply_dvr_colormap(float val, float density, float dist) {",
+		"		vec4 apply_dvr_colormap(float val, float density, float dist, vec3 texcoords) {",
 		"				float a;",
 		"				float d;",
+		"				float delta = distance(v_cameraPosition,texcoords);",
 		"				if(u_densityDepthMod == 1.0){",
 		"					d = ((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]));",
 		"				}",
@@ -237,10 +257,10 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);",
 		"				if(a != 0.0 && val<=0.5){",
-		"					a = 0.8*d+0.2*dist;",
+		"					a = (u_densityModI*d+u_valModI*val*u_valMod+u_distModI*delta*u_distMod)/3.0;",
 		"				}",
 		"				else if (a != 0.0){",
-		"					a = 0.8*d+0.2*dist;",
+		"					a = (u_densityModI*d+u_valModI*val*u_valMod+u_distModI*delta*u_distMod)/3.0;",
 		"				}",
 		"				vec4 tex = texture2D(u_cmdata, vec2(val, 0.5));",
 		"				tex.rgb = tex.rgb;",
@@ -258,12 +278,16 @@ THREE.VolumeRenderShader1 = {
 		"				vec3 loc = start_loc;",
 		"				float val = sample1(loc);",
 		"				float density = sampleDensity(loc);",
-		"				vec4 c = apply_dvr_colormap(val,density,0.0);",
+		"				vec4 c;",
+		"				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+		"					c = apply_dvr_colormap(val,density,0.0,loc);",
+		"				}",
+		"				else{ c = vec4(0.0156,0.0234,0.0898,0.0); }",
 		// "				c.a = 0.5;",
 		// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
 		// non-constant expression. So we use a hard-coded max, and an additional condition
 		// inside the loop.
-		"				for (int iter=1; iter<int(float(MAX_STEPS)/u_stepSize); iter++) {",
+		"				for (int iter=0; iter<int(float(MAX_STEPS)/u_stepSize); iter++) {",
 		"						if (iter >= nsteps)",
 		"								break;",
 		// Sample from the 3D texture
@@ -278,13 +302,23 @@ THREE.VolumeRenderShader1 = {
 		"						else{",
 		"							dist = float(nsteps-iter)/float(nsteps);",
 		"						}",
-		"						vec4 c_i = apply_dvr_colormap(val,density,dist);",
+		"						vec4 c_i;",
+		"						if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+		"							c_i = apply_dvr_colormap(val,density,dist,loc);",
+		"							float c_i_r = c.r*c.a + c_i.r*(1.0-c.a);",
+		"							float c_i_g = c.g*c.a + c_i.g*(1.0-c.a);",
+		"							float c_i_b = c.b*c.a + c_i.b*(1.0-c.a);",
+		"							float c_i_a = c.a + c_i.a*(1.0-c.a);",
+		"							c = vec4(c_i_r,c_i_g,c_i_b,c_i_a);",
+		"						}",
+		"						else{",
+		// "							c_i = vec4(0.0156,0.0234,0.0898,0.0);",
+		"						}",
+
+
 		// "						c_i.a = 0.1;",
-		"						float c_i_r = c.r*c.a + c_i.r*(1.0-c.a);",
-		"						float c_i_g = c.g*c.a + c_i.g*(1.0-c.a);",
-		"						float c_i_b = c.b*c.a + c_i.b*(1.0-c.a);",
-		"						float c_i_a = c.a + c_i.a*(1.0-c.a);",
-		"						c = vec4(c_i_r,c_i_g,c_i_b,c_i_a);",
+
+
 		// "						if(c.a > 0.99){",
 		// "							break;",
 		// "						}",

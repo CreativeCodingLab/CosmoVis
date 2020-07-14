@@ -2,7 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 
 # app.py
-# from threading import Lock
+from threading import Lock
 from flask import Flask, jsonify, request, render_template, session, copy_current_request_context
 import yt
 import trident
@@ -32,8 +32,8 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)
-# thread = None
-# thread_lock = Lock()
+thread = None
+thread_lock = Lock()
 
 yt.enable_parallelism()
 # fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
@@ -49,7 +49,6 @@ rpts = {}
 N = 1000000
 
 spectrum_hdul = fits.HDUList()
-
 
 def truncate(f, n):
     '''Truncates/pads a float f to n decimal places without rounding'''
@@ -265,8 +264,9 @@ def handle_attribute_selection_background(particle_type,attribute,renderCount):
 @socketio.on('selectRay', namespace='/test')
 def handle_ray_selection(idx, start, end):
     socketio.start_background_task(handle_ray_selection_background,idx, start, end)
-
+    
 def handle_ray_selection_background(idx, start, end):
+    # socketio = SocketIO(message_queue='amqp://')
     socketio.emit( 'processingRay', {'index': idx}, namespace = '/test' )
     eventlet.sleep()
     print('received args: ' + str(start) + str(end))
@@ -376,7 +376,7 @@ def handle_ray_selection_background(idx, start, end):
     hdr['INSTRMNT'] = instrument    # Instrument
     hdr['GRATING'] = grating        # Grating
     hdr['ROTATION'] = 'null'        # Grating rotation
-    hdr['RESOLUTN'] = sg.dlambda*6    # Spectral resolution (Angstroms)
+    hdr['RESOLUTN'] = float(sg.dlambda*6)    # Spectral resolution (Angstroms)
 
     # Lines added (each boolean)
     for line in lines:
@@ -413,6 +413,7 @@ def test_connect():
         emit('synthetic_spectrum',{'index':sgs[-1][3],'start':sgs[-1][0],'end':sgs[-1][1],'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
     if len(rpts):
         emit('pointData',rpts[-1])
+
 if __name__ == '__main__':
     # socketio.run(app, debug=False)
     socketio.run(app, host='0.0.0.0', debug=False)
