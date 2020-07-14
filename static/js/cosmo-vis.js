@@ -169,6 +169,7 @@ function updateSize(){
             if(document.getElementById("bh-eye-open").style.display = "inline-block"){
                 
             }
+<<<<<<< HEAD
         }
         
         createSkewerCube(gridsize)
@@ -192,7 +193,123 @@ function toggleGrid(){
         }
         if(divGridRadio2){
             createBoundariesGrid()
+=======
+>>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
         }
+        
+        createSkewerCube(gridsize)
+        updateSkewerEndpoints(gridsize)
+        toggleXYZGuide()
+        updateUniforms()
+
+        clearLayer(9)
+        
+        divisions = 25
+
+        var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper.position.set(0,-gridsize/2,0)
+        gridHelper.layers.set(9)
+        gridHelper.material.transparent = true;
+        gridHelper.material.alpha = 0.01;
+        gridHelper.translateX( gridsize / 2);
+        gridHelper.translateY( gridsize / 2);
+        gridHelper.translateZ( gridsize / 2);
+        gridHelper.side = THREE.DoubleSide
+        scene.add( gridHelper );
+
+        var gridHelper1 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper1.position.set(0,1*gridsize,-gridsize/2)
+        gridHelper1.rotateX(Math.PI/2)
+        gridHelper1.layers.set(9)
+        gridHelper1.material.transparent = true;
+        gridHelper1.material.alpha = 0.01;
+        gridHelper1.translateX( gridsize / 2);
+        gridHelper1.translateY( gridsize / 2);
+        gridHelper1.translateZ( gridsize / 2);
+        gridHelper1.side = THREE.DoubleSide
+        scene.add( gridHelper1 );
+
+        var gridHelper2 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper2.position.set(gridsize/2,0,0)
+        gridHelper2.rotateZ(Math.PI/2)
+        gridHelper2.layers.set(9)
+        gridHelper2.material.transparent = true;
+        gridHelper2.material.alpha = 0.01;
+        gridHelper2.translateX( gridsize / 2);
+        gridHelper2.translateY( gridsize / 2);
+        gridHelper2.translateZ( gridsize / 2);
+        gridHelper2.side = THREE.DoubleSide
+        scene.add( gridHelper2 );
+
+        var gridHelper3 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper3.position.set(0,gridsize/2,0)
+        gridHelper3.layers.set(9)
+        gridHelper3.material.transparent = true;
+        gridHelper3.material.alpha = 0.01;
+        gridHelper3.translateX( gridsize / 2);
+        gridHelper3.translateY( gridsize / 2);
+        gridHelper3.translateZ( gridsize / 2);
+        gridHelper3.side = THREE.DoubleSide
+        scene.add( gridHelper3 );
+
+        var gridHelper4 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper4.position.set(0,1*gridsize,gridsize/2)
+        gridHelper4.rotateX(Math.PI/2)
+        gridHelper4.layers.set(9)
+        gridHelper4.material.transparent = true;
+        gridHelper4.material.alpha = 0.01;
+        gridHelper4.translateX( gridsize / 2);
+        gridHelper4.translateY( gridsize / 2);
+        gridHelper4.translateZ( gridsize / 2);
+        gridHelper4.side = THREE.DoubleSide
+        scene.add( gridHelper4 );
+
+        var gridHelper5 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
+        gridHelper5.position.set(1.5*gridsize,0,0)
+        gridHelper5.rotateZ(Math.PI/2)
+        gridHelper5.layers.set(9)
+        gridHelper5.material.transparent = true;
+        gridHelper5.material.alpha = 0.01;
+        gridHelper5.translateX( gridsize / 2);
+        gridHelper5.translateY( gridsize / 2);
+        gridHelper5.translateZ( gridsize / 2);
+        gridHelper5.side = THREE.DoubleSide
+        scene.add( gridHelper5 );
+
+    }
+    
+}
+
+function toggleGrid(){
+    let div = (document.getElementById("grid-check")).checked
+    
+    
+    if(div){
+        camera.layers.toggle( 9 )
+    }
+    else{
+        camera.layers.toggle( 9 )
+    }
+}
+
+function toggleXYZGuide(){
+    
+    let div = (document.getElementById("xyzguide-check")).checked
+    if(div){
+        var axesHelper = new THREE.AxesHelper( gridsize );
+        axesHelper.layers.set(10)
+        scene.add( axesHelper );
+    }
+    else{
+        clearLayer(10)
+    }
+}
+
+function updateSkewerEndpoints(size){
+    for(i=0;i<lines.length;i++){
+        lines[i].scale.x = size/64
+        lines[i].scale.y = size/64
+        lines[i].scale.z = size/64
     }
     else{
         clearLayer(9)
@@ -322,7 +439,11 @@ function updateUniforms() {
     densityMin = document.getElementById('density-minval-input').value
     densityMax = document.getElementById('density-maxval-input').value
     g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
+<<<<<<< HEAD
     // dither = (document.getElementById("dither-check").checked ? 1.0 : 0.0);
+=======
+    dither = (document.getElementById("dither-check").checked ? 1.0 : 0.0);
+>>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
 
     localStorage.setItem('gasMinVal',(document.getElementById('gas-minval-input')).value);
     localStorage.setItem('gasMaxVal',(document.getElementById('gas-maxval-input')).value);
@@ -378,7 +499,24 @@ function updateUniforms() {
         gasMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
         gasMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
         gasMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
+<<<<<<< HEAD
+=======
 
+>>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
+
+        if((document.getElementById("dist-mod-check")).checked){
+            gasMaterial.uniforms[ "u_distMod" ].value = 1.0;
+        }
+        else{
+            gasMaterial.uniforms[ "u_distMod" ].value = 0.0;
+        }
+
+        if((document.getElementById("val-mod-check")).checked){
+            gasMaterial.uniforms[ "u_valMod" ].value = 1.0;
+        }
+        else{
+            gasMaterial.uniforms[ "u_valMod" ].value = 0.0;
+        }
 
         if((document.getElementById("dist-mod-check")).checked){
             gasMaterial.uniforms[ "u_distMod" ].value = 1.0;
@@ -1118,6 +1256,16 @@ function render() {
 
     requestAnimationFrame( render );
     controls.update()
+<<<<<<< HEAD
+=======
+    let vector = new THREE.Vector3()
+    dir = camera.getWorldDirection(vector)
+    // console.log(vector)
+    // theta = Math.atan2(vector.x,vector.z)
+    cameraGrid.lookAt(camera.position.x,camera.position.y,camera.position.z)
+    cameraGrid.rotateX(Math.PI/2)
+    renderer.render( scene, camera );
+>>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
 
     let divGrid = (document.getElementById("grid-check")).checked
     let divGridRadio1 = (document.getElementById("grid-radio-1")).checked
@@ -1851,6 +1999,24 @@ $(document).ready(function(){
         camera.layers.enable(9);
         camera.layers.enable(10);
 
+<<<<<<< HEAD
+=======
+        gridMaterial = new THREE.MeshBasicMaterial
+
+        var divisions = 25;
+
+        cameraGrid = new THREE.GridHelper( gridsize*1.7, divisions*1.7, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) )
+        cameraGrid.position.set(gridsize/2,gridsize/2,gridsize/2)
+        cameraGrid.layers.set(9)
+        cameraGrid.material.transparent = true;
+        cameraGrid.material.alpha = 0.01;
+        // gridHelper.translateX( gridsize / 2);
+        // gridHelper.translateY( gridsize / 2);
+        // gridHelper.translateZ( gridsize / 2);
+        cameraGrid.side = THREE.DoubleSide
+        scene.add( cameraGrid );
+
+>>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
         // camera.layers.toggle(9)
         // var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
         // gridHelper.position.set(0,-gridsize/2,0)
