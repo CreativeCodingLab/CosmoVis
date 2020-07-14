@@ -169,7 +169,6 @@ function updateSize(){
             if(document.getElementById("bh-eye-open").style.display = "inline-block"){
                 
             }
-<<<<<<< HEAD
         }
         
         createSkewerCube(gridsize)
@@ -193,8 +192,6 @@ function toggleGrid(){
         }
         if(divGridRadio2){
             createBoundariesGrid()
-=======
->>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
         }
         
         createSkewerCube(gridsize)
@@ -310,9 +307,6 @@ function updateSkewerEndpoints(size){
         lines[i].scale.x = size/64
         lines[i].scale.y = size/64
         lines[i].scale.z = size/64
-    }
-    else{
-        clearLayer(9)
     }
 }
 
@@ -499,10 +493,6 @@ function updateUniforms() {
         gasMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
         gasMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
         gasMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
-<<<<<<< HEAD
-=======
-
->>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
 
         if((document.getElementById("dist-mod-check")).checked){
             gasMaterial.uniforms[ "u_distMod" ].value = 1.0;
@@ -1256,16 +1246,6 @@ function render() {
 
     requestAnimationFrame( render );
     controls.update()
-<<<<<<< HEAD
-=======
-    let vector = new THREE.Vector3()
-    dir = camera.getWorldDirection(vector)
-    // console.log(vector)
-    // theta = Math.atan2(vector.x,vector.z)
-    cameraGrid.lookAt(camera.position.x,camera.position.y,camera.position.z)
-    cameraGrid.rotateX(Math.PI/2)
-    renderer.render( scene, camera );
->>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
 
     let divGrid = (document.getElementById("grid-check")).checked
     let divGridRadio1 = (document.getElementById("grid-radio-1")).checked
@@ -1999,24 +1979,6 @@ $(document).ready(function(){
         camera.layers.enable(9);
         camera.layers.enable(10);
 
-<<<<<<< HEAD
-=======
-        gridMaterial = new THREE.MeshBasicMaterial
-
-        var divisions = 25;
-
-        cameraGrid = new THREE.GridHelper( gridsize*1.7, divisions*1.7, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) )
-        cameraGrid.position.set(gridsize/2,gridsize/2,gridsize/2)
-        cameraGrid.layers.set(9)
-        cameraGrid.material.transparent = true;
-        cameraGrid.material.alpha = 0.01;
-        // gridHelper.translateX( gridsize / 2);
-        // gridHelper.translateY( gridsize / 2);
-        // gridHelper.translateZ( gridsize / 2);
-        cameraGrid.side = THREE.DoubleSide
-        scene.add( cameraGrid );
-
->>>>>>> 490e90bad047770e6cbda0a8fe7c625a54800aae
         // camera.layers.toggle(9)
         // var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
         // gridHelper.position.set(0,-gridsize/2,0)
