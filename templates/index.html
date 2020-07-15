@@ -792,55 +792,55 @@
         
         function data_layers(){ 
             var x = document.getElementById("data_layers");
-            if (x.style.display === "none") {
-                x.style.display = "block";
-            } else {
+            if (x.style.display === "block") {
                 x.style.display = "none";
+            } else {
+                x.style.display = "block";
             }    
         }
         
         function ray(){ 
             var x = document.getElementById("raySelection");
-            if (x.style.display === "none") {
-                x.style.display = "block";
-            } else {
+            if (x.style.display === "block") {
                 x.style.display = "none";
+            } else {
+                x.style.display = "block";
             }    
         }
 
         function graph(){
             var x = document.getElementById("spectrum");
-            if (x.style.display === "none") {
-                x.style.display = "grid";
-            } else {
+            if (x.style.display === "grid") {
                 x.style.display = "none";
+            } else {
+                x.style.display = "grid";
             }    
         }
 
         function gui(){
             var x = document.getElementById("my-gui-container");
-            if (x.style.display === "none") {
-                x.style.display = "block";
-            } else {
+            if (x.style.display === "block") {
                 x.style.display = "none";
+            } else {
+                x.style.display = "block";
             }    
         }
         function terminal(){
             var x = document.getElementById("terminal");
-            if (x.style.display === "none") {
-                x.style.display = "block";
-            } else {
+            if (x.style.display === "block") {
                 x.style.display = "none";
+            } else {
+                x.style.display = "block";
             }
         }
         
         function hideDetails(type){
             var x = document.getElementById(type+"-data-details")
             // console.log(x)
-            if(x.style.display === "none"){
-                x.style.display = "block"
+            if(x.style.display === "block"){
+                x.style.display = "none"
             }
-            else x.style.display = "none"
+            else x.style.display = "block"
         }
         $
     </script>
@@ -947,7 +947,7 @@
                 </div>
                 
                 <div id=gas-colorscale>
-                    <input type="color" class="color-picker" value="#0000ff" id="gasMinCol"><input type="color" class="color-picker" value="#0000ff" id="gasMidCol"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol">
+                    <input type="color" class="color-picker" value="#0000ff" id="gasMinCol" oninput="changeColor()"><input type="color" class="color-picker" value="#0000ff" id="gasMidCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol" oninput="changeColor()">
                     <br>
                 </div> 
 
@@ -999,7 +999,7 @@
                 </div>
                 
                 <div id=dm-colorscale>
-                    <input type="color" class="color-picker" value="#0000ff" id="dmMinCol"><input type="color" class="color-picker"  value="#ff0000" id="dmMaxCol">
+                    <input type="color" class="color-picker" value="#0000ff" id="dmMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="dmMaxCol" oninput="changeColor()">
                     <br>
                 </div> 
                 <br>
@@ -1046,7 +1046,7 @@
                     </div>
                     
                     <div id=star-colorscale>
-                        <input type="color" class="color-picker" value="#0000ff" id="starMinCol"><input type="color" class="color-picker"  value="#ff0000" id="starMaxCol">
+                        <input type="color" class="color-picker" value="#0000ff" id="starMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="starMaxCol" oninput="changeColor()">
                         <br>
                     </div> 
                 </div>
@@ -1261,7 +1261,7 @@
     <div id="log"></div> -->
     <script>
     namespace = '/test';
-    var socket = io(namespace, {reconnect: true});
+    var socket = io(namespace, {reconnect: true, transport: ['websocket']});
     </script>
     </body>
 

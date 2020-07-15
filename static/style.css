@@ -122,11 +122,11 @@ h1{
     flex-direction: column;
     float: right;
     right: 0vw;
-    top: 1vw;
+    top: -2vh;
     font-family: mr-eaves-modern, sans-serif;
     font-weight: 300;
     font-style: normal;
-    width: 11vw;
+    width: 10vw;
     /* height: 100vh; */
     position: absolute;
     /* padding-left: 1vw; */
@@ -137,8 +137,8 @@ h1{
     flex-direction: column;
     /* float: right; */
     /* position: absolute; */
-    right: 14vw;
-    top: 1vw;
+    right: 7vw;
+    top: 1vh;
     font-family: mr-eaves-modern, sans-serif;
     font-weight: 300;
     font-style: normal;
