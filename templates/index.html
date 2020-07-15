@@ -722,7 +722,8 @@
                 }
             }
             if(l==4){
-                var visible = line.layers.test( camera.layers );
+                var visible = !lines[0].layers.test( camera.layers );
+                camera.layers.toggle( l )
                 if(visible){
                     var x = document.getElementById("skewer-eye-open");
                     x.style.display = "inline-block";
@@ -731,6 +732,7 @@
                     y.style.display = "none";
 
                 }
+
                 else{
                     var x = document.getElementById("skewer-eye-open");
                     x.style.display = "none";
