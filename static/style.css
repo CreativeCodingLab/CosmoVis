@@ -85,6 +85,13 @@ h1{
     display: none;
 }
 
+.layers-details{
+    transition: color .2s;
+}
+.layers-details:hover{
+    color: white;
+}
+
 #my-gui-container {
     position: relative;
 
@@ -107,6 +114,7 @@ h1{
     font-size: 80px;
     position: absolute;
     color: #DDDDDD;
+    transition: color 1s;
 }
 .title:hover {
     left: 3vw;
@@ -116,7 +124,7 @@ h1{
     font-style: normal;
     font-size: 80px;
     position: absolute;
-    color:#DDDDDD;
+    color:#4ff1fc;
 }
 #icon_container{
     flex-direction: column;
@@ -151,18 +159,20 @@ h1{
 
 .icon{
     -webkit-transition: width 0.1s, height 0.1s; /* Safari prior 6.1 */
-    transition: width 0.04s, height 0.04s;
+    transition: width 0.1s, height 0.1s, padding 0.1s;
     height: 4vh;
     width: 4vh;
     padding: 4vh 4vw 1vh 4vw;
     filter: invert(99%) sepia(0%) saturate(0%) hue-rotate(183deg) brightness(90%) contrast(95%);
+    right: 0;
 }
 .icon:hover{
     filter: invert(84%) sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%);
-    height: 5vh;
-    width: 5vh;
-    padding: 4vh 4vw 1vh 4vw;
-
+    height: 4.2vh;
+    width: 4.2vh;
+    /* margin-right: 1vw; */
+    padding: 4.2vh 4.2vw 1vh 4.2vw;
+    right: 0;
 }
 
 .icon_caption{

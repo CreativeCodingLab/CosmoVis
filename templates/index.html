@@ -796,8 +796,26 @@
             var x = document.getElementById("data_layers");
             if (x.style.display === "block") {
                 x.style.display = "none";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter ="";
+
             } else {
                 x.style.display = "block";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
             }    
         }
         
@@ -805,8 +823,25 @@
             var x = document.getElementById("raySelection");
             if (x.style.display === "block") {
                 x.style.display = "none";
+                var x = document.getElementById("ray");
+                x.style.filter ="";
             } else {
                 x.style.display = "block";
+                var x = document.getElementById("ray");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
             }    
         }
 
@@ -814,8 +849,26 @@
             var x = document.getElementById("spectrum");
             if (x.style.display === "grid") {
                 x.style.display = "none";
+                var x = document.getElementById("graph");
+                x.style.filter ="";
             } else {
                 x.style.display = "grid";
+                var x = document.getElementById("graph");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+
+                
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
             }    
         }
 
@@ -825,14 +878,33 @@
                 x.style.display = "none";
             } else {
                 x.style.display = "block";
+
+                
             }    
         }
         function terminal(){
             var x = document.getElementById("terminal");
             if (x.style.display === "block") {
                 x.style.display = "none";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter ="";
             } else {
                 x.style.display = "block";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
             }
         }
         
@@ -931,7 +1003,7 @@
                 src="static/assets/blend.svg" 
                 alt="blend mode"
                 role="button"
-                onclick="toggleBlendMode( 0 )"/><div style="display: inline;" onclick="hideDetails('gas')">gas</div></h3></label>
+                onclick="toggleBlendMode( 0 )"/><div style="display: inline;" onclick="hideDetails('gas')" class="layers-details">gas</div></h3></label>
             <br>
             <div id="gas-data-details" class="data-details">
                 <div id="min">
@@ -983,7 +1055,7 @@
                 src="static/assets/blend.svg" 
                 alt="blend mode"
                 role="button"
-                onclick="toggleBlendMode( 1 )"/><div style="display: inline;" onclick="hideDetails('dm')">dark matter</div></h3></label>
+                onclick="toggleBlendMode( 1 )"/><div style="display: inline;" onclick="hideDetails('dm')" class="layers-details">dark matter</div></h3></label>
             
             <br>
             <div id="dm-data-details" class="data-details">
@@ -1029,7 +1101,7 @@
                 src="static/assets/blend.svg" 
                 alt="blend mode"
                 role="button"
-                onclick="toggleBlendMode( 4 )"/><div style="display: inline;" onclick="hideDetails('star')">stars</div></h3></label>
+                onclick="toggleBlendMode( 4 )"/><div style="display: inline;" onclick="hideDetails('star')" class="layers-details">stars</div></h3></label>
                 <br>
                 <!-- <input type="color" class="color-picker" value="#ffffff" id="starCol"> -->
                 <div id="star-data-details"class="data-details">
@@ -1082,7 +1154,7 @@
                 src="static/assets/blend.svg" 
                 alt="blend mode"
                 role="button"
-                onclick="toggleBlendMode( 5 )"/><div style="display: inline;" onclick="hideDetails('bh')">black holes</div></h3></label>
+                onclick="toggleBlendMode( 5 )"/><div style="display: inline;" onclick="hideDetails('bh')" class="layers-details">black holes</div></h3></label>
             
             <br>
             <!-- min: <input type="color" value="#0000ff" id="bhMinCol"> max: <input type="color" value="#ff0000" id="bhMaxCol">
@@ -1196,7 +1268,7 @@
             <div id="density-mod" class="density-mod">
                 
                 <p><input type="checkbox" id="density-mod-check" onclick="updateUniforms()" checked> density opacity modulation</p>
-                <p><input type="range" id="density-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.5" onchange="updateUniforms()"> intensity</p>
+                <p><input type="range" id="density-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.5" oninput="updateUniforms()"> intensity</p>
                 <div id="density-min">
                     min
                     <input type="number" step="0.1" id="density-minval-input" class="number-input minvalinput" name="density-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
@@ -1212,10 +1284,10 @@
             <div id="options">
                 
                 <p><input type="checkbox" id="dist-mod-check" onclick="updateUniforms()" checked> distance opacity modulation</p>
-                <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.1" onchange="updateUniforms()"> intensity</p>
+                <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.1" oninput="updateUniforms()"> intensity</p>
 
                 <p><input type="checkbox" id="val-mod-check" onclick="updateUniforms()" checked> value opacity modulation</p>
-                <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.3" onchange="updateUniforms()"> intensity</p>
+                <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.3" oninput="updateUniforms()"> intensity</p>
 
                 <p><input type="checkbox" id="grayscale-mod-check" onclick="updateUniforms()" checked> grayscale depth filter</p>
 
@@ -1226,7 +1298,7 @@
                 <hr>
                 <p><input type="checkbox" id="xyzguide-check" onclick="toggleXYZGuide()" > axes helper </p>
                 <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
-                <p><input type="range" id="step-size" min="0.0" max="4.0" step="0.001" value="1.0" onchange="updateUniforms()"> step size</p>
+                <p><input type="range" id="step-size" min="0.0" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()"> step size</p>
                 <p><select class="data_select" id="size_select" onchange="updateSize()">
                     <option selected="selected" disabled="disabled">Select voxel grid size (n&sup3;)</option>
                     <option value="64">64&sup3;</option>
