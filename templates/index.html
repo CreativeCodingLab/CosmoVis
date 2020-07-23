@@ -587,10 +587,10 @@
             // var ping_pong_times = [];
             // var start_time;
             
-            // window.setInterval(function() {
-            //     start_time = (new Date).getTime();
-            //     socket.emit('my_ping');
-            // }, 1000);
+            window.setInterval(function() {
+                start_time = (new Date).getTime();
+                socket.emit('my_ping');
+            }, 1000);
             
             // socket.on('my_pong', function() {
             //     var latency = (new Date).getTime() - start_time;
@@ -1265,6 +1265,21 @@
         
         <div id="terminal" class="container">
             <hr>
+            select simulation
+            <p><select class="data_select" id="sim_size_select" onchange="checkSelectedSimID()">
+                <option disabled="disabled">select simulation (n&sup3;)</option>
+                <option value="RefL0012N0188" selected="selected">12 Mpc box (EAGLE)</option>
+                <option value="RefL0025N0376">25 Mpc box (EAGLE)</option>
+            </select></p>
+
+            select grid resolution
+            <p><select class="data_select" id="size_select" onchange="updateSize()">
+                <option disabled="disabled">Select voxel grid size (n&sup3;)</option>
+                <option selected="selected" value="64">64&sup3;</option>
+                <option value="128">128&sup3;</option>
+                <option value="256">256&sup3;</option>
+            </select></p>
+            <hr>
             <div id="density-mod" class="density-mod">
                 
                 <p><input type="checkbox" id="density-mod-check" onclick="updateUniforms()" checked> density opacity modulation</p>
@@ -1282,7 +1297,9 @@
             <hr>
             
             <div id="options">
+
                 
+
                 <p><input type="checkbox" id="dist-mod-check" onclick="updateUniforms()" checked> distance opacity modulation</p>
                 <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.1" oninput="updateUniforms()"> intensity</p>
 
@@ -1299,12 +1316,7 @@
                 <p><input type="checkbox" id="xyzguide-check" onclick="toggleXYZGuide()" > axes helper </p>
                 <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
                 <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()"> step size</p>
-                <p><select class="data_select" id="size_select" onchange="updateSize()">
-                    <option selected="selected" disabled="disabled">Select voxel grid size (n&sup3;)</option>
-                    <option value="64">64&sup3;</option>
-                    <option value="128">128&sup3;</option>
-                    <option value="256">256&sup3;</option>
-                </select></p>
+                
                 <hr>
             </div>
 
@@ -1335,7 +1347,7 @@
     <div id="log"></div> -->
     <script>
     namespace = '/test';
-    var socket = io(namespace, {reconnect: true, transport: ['websocket']});
+    var socket = io(namespace, {reconnect: true, transports: ['websocket']});
     </script>
     </body>
 

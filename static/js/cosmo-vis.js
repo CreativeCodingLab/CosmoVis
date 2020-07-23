@@ -8,6 +8,7 @@
  */
 
 var container //floating GUI containers
+
 var camera, scene, renderer, material, skewerScene //THREE.js environment variables
 var tex1 = new THREE.TextureLoader().load( "static/textures/blur.png" );
 const windowHalf = new THREE.Vector2( window.innerWidth / 2, window.innerHeight / 2 );
@@ -27,6 +28,8 @@ var climDMLimits = []
 var climStarLimits = []
 var climBHLimits = []
 var gridsize = 64
+var simID
+var simSize
 var staticGrid
 
 var blank_d = new Float32Array(gridsize * gridsize * gridsize)
@@ -57,7 +60,7 @@ var raycaster = new THREE.Raycaster();
 var plane = new THREE.Plane();
 var planeNormal = new THREE.Vector3();
 var point = new THREE.Vector3();
-var edges
+var edges = []
 var skewers = []
 var drawSkewers = false
 var line
@@ -157,20 +160,7 @@ function updateSize(){
 
         loadAttributes()
 
-        function loadAttributes(){
-            // if(document.getElementById("gas-eye-open").style.display == "inline-block"){
-                loadAttribute(gridsize,'PartType0','Temperature',true)
-            // }
-            // if(document.getElementById("dm-eye-open").style.display == "inline-block"){
-                loadAttribute(gridsize,'PartType1','density',true)
-            // }
-            // if(document.getElementById("star-eye-open").style.display = "inline-block"){
-                loadAttribute(gridsize,'PartType4','density',true)
-            // }
-            // if(document.getElementById("bh-eye-open").style.display = "inline-block"){
-                
-            // }
-        }
+
         
         createSkewerCube(gridsize)
         updateSkewerEndpoints(gridsize)
@@ -179,6 +169,21 @@ function updateSize(){
         toggleGrid()
         
     }
+}
+
+function loadAttributes(){
+    // if(document.getElementById("gas-eye-open").style.display == "inline-block"){
+        loadAttribute(gridsize,'PartType0','Temperature',true)
+    // }
+    // if(document.getElementById("dm-eye-open").style.display == "inline-block"){
+        loadAttribute(gridsize,'PartType1','density',true)
+    // }
+    // if(document.getElementById("star-eye-open").style.display = "inline-block"){
+        loadAttribute(gridsize,'PartType4','density',true)
+    // }
+    // if(document.getElementById("bh-eye-open").style.display = "inline-block"){
+        
+    // }
 }
 
 function toggleGrid(){
@@ -245,7 +250,7 @@ function createStaticGrid(){
     
     gridMaterial = new THREE.MeshBasicMaterial
 
-    var divisions = 25;
+    var divisions = simSize;
 
     staticGrid = new THREE.GridHelper( gridsize*1.7, divisions*1.7, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) )
     staticGrid.position.set(gridsize/2,gridsize/2,gridsize/2)
@@ -262,7 +267,7 @@ function createStaticGrid(){
 function createBoundariesGrid(){
     clearLayer(9)
         
-    divisions = 25
+    divisions = simSize
 
     var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x005817 ), new THREE.Color( 0x005817 ) );
     gridHelper.position.set(0,-gridsize/2,0)
@@ -626,7 +631,7 @@ async function asyncCall() {
 function loadDensity(size,type,attr){
     
     return new Promise(resolve => {
-        d3.json('static/data/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
+        d3.json('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
             arr = new Float32Array(size * size * size)
             for(x=0;x<size;x++){
                 for(y=0;y<size;y++){
@@ -689,7 +694,7 @@ function loadAttribute(size,type,attr,resolution_bool){
      */
     
      //load the desired dataset
-    d3.json('static/data/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
+    d3.json('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
         if(type == 'PartType0') clearLayer(0);
         if(type == 'PartType1') clearLayer(1)
         if(type == 'PartType4') clearLayer(3)
@@ -1056,7 +1061,7 @@ function createSkewerCube(size){
     scene.add( cube );
 
     edges_scaled = {
-        'left_edge' : [edges.left_edge[0],edges.left_edge[1],edges.left_edge[2]],
+        'left_edge' : [0,0,0],
         'right_edge' : [size,size,size]
     }
 }
@@ -1461,7 +1466,7 @@ function requestSpectrum(idx){
 
     function sendLine(idx,point1,point2){
         // socket.emit('selectRay',skewers.length-1, [point1.x,point1.y,point1.z],[point2.x,point2.y,point2.z])
-        socket.emit('selectRay',idx, [point1.x,point1.y,point1.z],[point2.x,point2.y,point2.z])
+        socket.emit('selectRay',simID,idx, [point1.x,point1.y,point1.z],[point2.x,point2.y,point2.z])
     }
 }
 
@@ -1872,6 +1877,86 @@ function downloadSpectra(){
 	a.click();
 }
 
+function checkSelectedSimID(){
+    let selection = document.getElementById("sim_size_select")
+    oldSimID = simID
+    simID = selection.value
+    
+    if(oldSimID != simID){
+        d3.json('static/data/'+simID+'/simMetaData.json').then(function(d){
+            edges.left_edge = d.left_edge
+            edges.right_edge = d.right_edge
+            field_list = d.field_list
+            createAttributeSelectors(field_list)
+            simSize = (edges.right_edge[0]-edges.left_edge[0])/0.6776999078
+            toggleGrid()
+
+        })
+        clearDropDowns()
+                
+        
+        function clearDropDowns(){
+            $("#gas_select").empty();
+            $("#dm_select").empty();
+            $("#star_select").empty();
+            $("#bh_select").empty();
+        }
+    }
+
+    // console.log(field_list);
+    
+    
+    function createAttributeSelectors(field_list){
+        var select = document.getElementById("gas_select"); 
+        var option = document.createElement("option");
+        option.disabled = "disabled"
+        option.selected = "selected"
+        option.text = "Select an attribute"
+        select.add(option);
+
+        var select = document.getElementById("bh_select"); 
+        var option = document.createElement("option");
+        option.disabled = "disabled"
+        option.selected = "selected"
+        option.text = "Select an attribute"
+        select.add(option);
+
+        for(i = 0; i < field_list.length; i++){
+            if(field_list[i][0] == 'PartType0'){
+                var select = document.getElementById("gas_select"); 
+                var option = document.createElement("option");
+                option.text = field_list[i][1];
+                select.add(option);
+            }
+            // if(field_list[i][0] == 'PartType1'){
+            //     var select = document.getElementById("dm_select"); 
+            //     var option = document.createElement("option");
+            //     option.text = field_list[i][1];
+            //     select.add(option);
+            // }
+            // if(field_list[i][0] == 'PartType4'){
+            //     var select = document.getElementById("star_select"); 
+            //     var option = document.createElement("option");
+            //     option.text = field_list[i][1];
+            //     select.add(option);
+            // }
+            if(field_list[i][0] == 'PartType5'){
+                var select = document.getElementById("bh_select");
+                var option = document.createElement("option");
+                option.text = field_list[i][1];
+                select.add(option);
+            }
+        }
+        // sendSimIDtoServer(simID)
+        loadAttributes()
+        
+    }
+
+    function sendSimIDtoServer(simID){
+        socket.emit('simIDtoServer',simID)
+    }
+}
+
 /**
  * * WAIT UNTIL PAGE IS LOADED
  */
@@ -1896,6 +1981,7 @@ $(document).ready(function(){
     
     function init(){
 
+        checkSelectedSimID()
         THREE.Cache.enabled = true
         canvas = document.createElement('canvas')
         context = canvas.getContext('webgl2', { antialias: true, alpha: true })
@@ -2175,6 +2261,8 @@ $(document).ready(function(){
                 else{
                     console.log('false')
                     let point1 = ray.clone()
+                    console.log(point1)
+                    console.log(dir)
                     delta = 0.01
                     
                     while(  (point1.x <= edges_scaled.left_edge[0] || point1.x >= edges_scaled.right_edge[0]) ||
@@ -2190,10 +2278,12 @@ $(document).ready(function(){
                                     point1.y -= delta*dir.y
                                     point1.z -= delta*dir.z
                                 }
+                                // console.log(point1)
                     }
                     // console.log('1/2')
 
                     let point2 = point1.clone()
+                    console.log(point2)
                     while(  (point2.x >= edges_scaled.left_edge[0] && point2.x <= edges_scaled.right_edge[0]) &&
                             (point2.y >= edges_scaled.left_edge[1] && point2.y <= edges_scaled.right_edge[1]) &&
                             (point2.z >= edges_scaled.left_edge[2] && point2.z <= edges_scaled.right_edge[2])){

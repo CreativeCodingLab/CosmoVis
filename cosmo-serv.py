@@ -31,22 +31,22 @@ app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)
+socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
 thread = None
 thread_lock = Lock()
 
 yt.enable_parallelism()
 # fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-ds = yt.load(fn)
-fl = sorted(ds.field_list) # contains list of fields in the dataset
-ad = ds.all_data()
-right_edge = [float(ad.right_edge[0]),float(ad.right_edge[1]),float(ad.right_edge[2])]
-left_edge = [float(ad.left_edge[0]),float(ad.left_edge[1]),float(ad.left_edge[2])]
+# # fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+# ds = yt.load(fn)
+# fl = sorted(ds.field_list) # contains list of fields in the dataset
+# ad = ds.all_data()
+# right_edge = [float(ad.right_edge[0]),float(ad.right_edge[1]),float(ad.right_edge[2])]
+# left_edge = [float(ad.left_edge[0]),float(ad.left_edge[1]),float(ad.left_edge[2])]
 sgs = []
 rpts = {}
 
-N = 1000000
+# N = 1000000
 
 spectrum_hdul = fits.HDUList()
 
@@ -68,207 +68,23 @@ def truncate(f, n):
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
 
-@socketio.on('requestPositions', namespace='/test')
-def sendPositions():
-    socketio.start_background_task(sendPositions_background)
-
-def sendPositions_background():
-    #gas particles
-    # ids = np.array(ad['PartType0', 'ParticleIDs'])
-    # ids = list(ids)
-    # positions = np.array(ad['PartType0', 'Coordinates']).tolist()
-    # lookup = tuple(zip(ids, positions))
-    # n = len(lookup)
-    # for i in range(100):
-    #     eventlet.sleep()
-    #     socketio.emit('positionData', { 'particle_type':'PartType0','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
-    #     print(i+1,'/10 Data Sent')
-    
-    ids = np.array(ad['PartType0', 'ParticleIDs'])
-    ids = list(ids)
-    positions = np.array(ad['PartType0', 'Coordinates'])
-    positions = np.around(positions,8)
-    positions = positions.tolist()
-    lookup = tuple(zip(ids, positions))
-    # n = len(lookup)
-    # for i in range(100):
-    #     eventlet.sleep()
-    #     socketio.emit('positionData', { 'particle_type':'PartType0','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
-    #     print(i+1,'/10 Data Sent')
-
-    with open('static/data/gasLookup-min.json', 'w') as file:
-        json.dump(lookup, file)
-    
-
-    #dark matter particles
-    ids = np.array(ad['PartType1', 'ParticleIDs'])
-    ids = list(ids)
-    positions = np.array(ad['PartType1', 'Coordinates']).tolist()
-    positions = np.around(positions,8)
-    positions = positions.tolist()
-    lookup = tuple(zip(ids, positions))
-    # n = len(lookup)
-
-    # for i in range(100):
-    #     eventlet.sleep()
-    #     socketio.emit('positionData', { 'particle_type':'PartType1','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
-    #     print(i+1,'/10 Data Sent')
-
-    with open('static/data/dmLookup-min.json', 'w') as file:
-        json.dump(lookup, file)
-    
-    #star particles
-    # ids = np.array(ad['PartType4', 'ParticleIDs'])
-    # ids = list(ids)
-    # positions = np.array(ad['PartType4', 'Coordinates']).tolist()
-    # lookup = tuple(zip(ids, positions))
-    # n = len(lookup)
-
-    # for i in range(10):
-    #     eventlet.sleep()
-    #     socketio.emit('positionData', { 'particle_type':'PartType4','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
-    #     print(i+1,'/10 Data Sent')
-
-    # with open('static/data/starLookup.json', 'w') as file:
-    #     json.dump(lookup, file)
-    
-    #black hole particles
-    # ids = np.array(ad['PartType5', 'ParticleIDs'])
-    # ids = list(ids)
-    # positions = np.array(ad['PartType5', 'Coordinates']).tolist()
-    # lookup = tuple(zip(ids, positions))
-    # n = len(lookup)
-    
-    # for i in range(10):
-    #     eventlet.sleep()
-    #     socketio.emit('positionData', { 'particle_type':'PartType5','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
-    #     print(i+1,'/10 Data Sent')
-    # with open('static/data/bhLookup.json', 'w') as file:
-    #     json.dump(lookup, file)
-
-
-
-
-@socketio.on('requestPoints', namespace='/test')
-def handle_attribute_selection(particle_type,attribute,renderCount):
-    socketio.start_background_task(handle_attribute_selection_background, particle_type,attribute,renderCount)
-
-def handle_attribute_selection_background(particle_type,attribute,renderCount):
-    #particle types: gas, dm, star, bh
-    # PartType0	gas
-    # PartType1	dark matter 'halo'
-    # PartType4	star
-    # PartType5	black hole
-    eventlet.sleep()
-    print('Received Request: ', particle_type, attribute )
-    print('Sending Data')
-    # particles = {}
-    # pmin = float(ad[particle_type, attribute].min())
-    # pmax = float(ad[particle_type, attribute].max())
-    # pmean = ad[particle_type, attribute].mean()
-    n = len(ad[particle_type, attribute])
-
-    # print(pmin,pmax,pmean)
-    print(len(ad[particle_type, attribute]))
-    # import pdb; pdb.set_trace() 
-    
-
-    N = 1000000
-    # ids = list(np.array(ad[particle_type, 'ParticleIDs']))
-    units = ''
-    
-    if str(ad[particle_type, attribute].units) == 'code_mass':
-        # attr = list(np.array(ad[particle_type, attribute].in_units('Msun')))
-        attr = np.array(ad[particle_type, attribute].in_units('Msun'))
-        attr = np.log10(attr)
-        pmin = np.around(float(attr.min()),3)
-        pmax = np.around(float(attr.max()),3)
-        attr = np.around(attr,3).tolist()
-        units = 'log(Msun)'
-    elif str(ad[particle_type, attribute].units) == 'K':
-        # attr = list(np.array(ad[particle_type, attribute]))
-        attr = np.array(ad[particle_type, attribute])
-        attr = np.log10(attr)
-        pmin = np.around(float(attr.min()),3)
-        pmax = np.around(float(attr.max()),3)
-        attr = np.around(attr,3).tolist()
-        units = 'log(K)'
-    elif attribute == 'Density':
-        # attr = list(np.array(ad[particle_type, attribute].in_cgs()))
-        attr = np.array(ad[particle_type, attribute].in_cgs())
-        attr = np.log10(attr)
-        pmin = np.around(float(attr.min()),3)
-        pmax = np.around(float(attr.max()),3)
-        attr = np.around(attr,3).tolist()
-        units = 'log(g/cm^3)'
-    elif str(ad[particle_type, attribute].units) == 'dimensionless':
-        # attr = list(np.array(ad[particle_type, attribute]))
-        attr = np.array(ad[particle_type, attribute])
-        attr = np.log10(attr)
-        pmin = np.around(float(attr.min()),3)
-        pmax = np.around(float(attr.max()),3)
-        attr = np.around(attr,3).tolist()
-        units = 'dimensionless'
-    else:
-        attr = np.array(ad[particle_type, attribute])
-        attr = np.log10(attr)
-        pmin = np.around(float(attr.min()),3)
-        pmax = np.around(float(attr.max()),3)
-        attr = np.around(attr,3).tolist()
-        units = str('log(',ad[particle_type, attribute].units,')')    
-
-    a = []
-    if particle_type == 'PartType0':
-        for i in range(renderCount*N):
-            a.append(attr[L_gas[i]])
-    elif particle_type == 'PartType5':
-        for i in range(renderCount*N):
-            a.append(attr[L_bh[i]])
-
-    # [:renderCount*N]
-    for i in range(renderCount):
-        socketio.emit('dataSentMsg',{'particle_type':particle_type,'value':i+1}, namespace='/test')
-        eventlet.sleep()
-        # socketio.emit('pointData',{'particle_type':particle_type,'i':i+1,'attribute':attribute, 'units':units,  'min':pmin, 'max':pmax, 'id': ids[int(i*n/10):int((i+1)*n/10)], 'attr': attr[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
-        socketio.emit('pointData',{'particle_type':particle_type,'i':i+1,'attribute':attribute, 'units':units,  'min':pmin, 'max':pmax, 'attr': a[int(i*N):int((i+1)*N)] }, namespace='/test')
-
-        print(i+1,'/',renderCount,'Data Sent')
-    
-    # for i in range(0,len(ad[particle_type, attribute])-1): 
-    #     eventlet.sleep()
-    #     particles = {
-    #         # 'particleID' : int(ad['PartType1', 'ParticleIDs'][i]),
-    #         'x' : float(ad[particle_type, 'Coordinates'][i][0]),
-    #         'y' : float(ad[particle_type, 'Coordinates'][i][1]),
-    #         'z' : float(ad[particle_type, 'Coordinates'][i][2]),
-    #         attribute : (float(ad[particle_type, attribute][i])-pmin)/(pmax-pmin)
-    #     }
-    #     # print(float(ad[particle_type, attribute][i]))
-    #     # print(particles[attribute])
-    #     socketio.emit('pointData',{'particle_type':particle_type,'i':int(100*(i/len(ad[particle_type, attribute]))),'attribute':attribute,'data':particles })
-    #     # print(particles)
-
-    print('Data Sent')
-    # import pdb; pdb.set_trace()
-    
-    # rpts.append({'particle_type':particle_type,'attribute':attribute,'data':particles })
-    # emit('pointData',{'particle_type':particle_type,'attribute':attribute,'data':particles })
-    # import pdb; pdb.set_trace()
-
-    
-
-
-
-
 # selectRay is called from index.html when 
 @socketio.on('selectRay', namespace='/test')
-def handle_ray_selection(idx, start, end):
-    socketio.start_background_task(handle_ray_selection_background,idx, start, end)
+def handle_ray_selection(simID,idx, start, end):
+    socketio.start_background_task(handle_ray_selection_background,simID,idx, start, end)
     
-def handle_ray_selection_background(idx, start, end):
+def handle_ray_selection_background(simID,idx,start,end):
     # socketio = SocketIO(message_queue='amqp://')
     socketio.emit( 'processingRay', {'index': idx}, namespace = '/test' )
-    eventlet.sleep()
+    # eventlet.sleep()
+    socketio.sleep(0)
+
+    fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    # fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    ds = yt.load(fn)
+    socketio.sleep(0)
+    ad = ds.all_data()
+
     print('received args: ' + str(start) + str(end))
 
     ray_start = list(np.float_(start))
@@ -291,7 +107,7 @@ def handle_ray_selection_background(idx, start, end):
     lines_data = open(path,"r")
     open(path2, 'w').close()
     lines_subset_test = open(path2,"a")
-
+    socketio.sleep(0)
     c = 0
     lines = {} # keeps track of lines and whether or not they are added to the subset
     for line in lines_data:
@@ -316,32 +132,49 @@ def handle_ray_selection_background(idx, start, end):
     lines_data.close()
     lines_subset_test.close()
 
+    print("making simple ray")
+    socketio.sleep(0)
     ray = trident.make_simple_ray(ds, start_position=ray_start,
                                end_position=ray_end,
                                data_filename="ray.h5",
-                               fields=[('gas', 'density'), ('gas', 'temperature'), ('gas', 'metallicity')])
+                               lines=line_list)
+    socketio.sleep(0)
     sg = trident.SpectrumGenerator(inst ,line_database="lines_subset_test.txt")
     # sg = trident.SpectrumGenerator('COS-G130M',line_database="lines.txt")
     
     # emit('my_response', {'data': 'Connected', 'count': -1})
+    socketio.sleep(0)
+    print('making spectrum')
     sg.make_spectrum(ray, lines=line_list)
+    socketio.sleep(0)
     sg.add_qso_spectrum(emitting_redshift=0.5)
     
 
     MW = False
     if MW == True:
         sg.add_milky_way_foreground()
-
+    socketio.sleep(0)
     sg.apply_lsf() #instrumental profile
-
+    socketio.sleep(0)
     noise = True
     SNR = 30
     if noise == True:
         sg.add_gaussian_noise(SNR)
-    
+    socketio.sleep(0)
     error = sg.error_func(sg.flux_field)
     
+    socketio.sleep(0)
     sgs.append([start,end,sg,idx])
+    socketio.sleep(0)
+    socketio.emit( 'sentRay', {'index': idx}, namespace = '/test' )
+    print('emitting spectrum')
+    socketio.sleep(0)
+    socketio.sleep(0)
+    socketio.sleep(0)
+    socketio.emit('synthetic_spectrum',{'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
+    socketio.sleep(0)
+
+
     # sg.save_spectrum('spec_raw.txt')
     # sg.plot_spectrum('spec_raw.png')
     # print(jsonify(sg.lambda_field.tolist()))
@@ -393,11 +226,50 @@ def handle_ray_selection_background(idx, start, end):
     
     # import pdb; pdb.set_trace()
     
-    socketio.emit( 'sentRay', {'index': idx}, namespace = '/test' )
-    eventlet.sleep()
-    socketio.emit('synthetic_spectrum',{'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
+    # socketio.emit( 'sentRay', {'index': idx}, namespace = '/test' )
+    # eventlet.sleep()
+    # socketio.emit('synthetic_spectrum',{'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
     # eventlet.sleep()
     print('sent spectrum')
+
+@socketio.on('simIDtoServer', namespace='/test')
+def updateSimID(simID):
+             
+    global fn
+    global ds
+    global fl 
+    global ad
+    global right_edge 
+    global left_edge
+
+
+    if simID == 'RefL0012N0188':
+        if fn != 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5':
+            fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+            ds = yt.load(fn)
+            fl = sorted(ds.field_list) # contains list of fields in the dataset
+            ad = ds.all_data()
+            right_edge = [float(ad.right_edge[0]),float(ad.right_edge[1]),float(ad.right_edge[2])]
+            left_edge = [float(ad.left_edge[0]),float(ad.left_edge[1]),float(ad.left_edge[2])]
+            emit('field_list', {'data': fl},namespace='/test')
+            emit('domain_edges', {'left_edge': left_edge, 'right_edge': right_edge},namespace='/test')
+    elif simID == 'RefL0025N0376':
+        if fn != 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5':
+            fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+            ds = yt.load(fn)
+            fl = sorted(ds.field_list) # contains list of fields in the dataset
+            ad = ds.all_data()
+            right_edge = [float(ad.right_edge[0]),float(ad.right_edge[1]),float(ad.right_edge[2])]
+            left_edge = [float(ad.left_edge[0]),float(ad.left_edge[1]),float(ad.left_edge[2])]
+            emit('field_list', {'data': fl},namespace='/test')
+            emit('domain_edges', {'left_edge': left_edge, 'right_edge': right_edge},namespace='/test')
+    with open('static/data/'+simID+'/simMetadata.json', 'w') as file:
+        simMetadata = {
+            "left_edge": left_edge,
+            "right_edge": right_edge,
+            "field_list": fl
+        }
+        json.dump(simMetadata, file)
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
@@ -407,13 +279,203 @@ def test_connect():
     #         thread = socketio.start_background_task(background_thread)
     print("connected")
     emit('my_response', {'data': 'Connected', 'count': 0})
-    emit('field_list', {'data': fl})
-    emit('domain_edges', {'left_edge': left_edge, 'right_edge': right_edge})
-    if len(sgs):
-        emit('synthetic_spectrum',{'index':sgs[-1][3],'start':sgs[-1][0],'end':sgs[-1][1],'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
-    if len(rpts):
-        emit('pointData',rpts[-1])
+    # emit('field_list', {'data': fl})
+    # emit('domain_edges', {'left_edge': left_edge, 'right_edge': right_edge})
+    # if len(sgs):
+    #     for i in range(sgs):
+    #         emit('synthetic_spectrum',{'index':sgs[i][3],'start':sgs[i][0],'end':sgs[i][1],'lambda':sgs[i][2].lambda_field.tolist(),'flux':sgs[0][2].flux_field.tolist()}, namespace='/test')
 
 if __name__ == '__main__':
     # socketio.run(app, debug=False)
-    socketio.run(app, host='0.0.0.0', debug=False)
+    socketio.run(app, host='0.0.0.0', port=80, threaded=True, debug=False)
+
+
+#@socketio.on('requestPositions', namespace='/test')
+# def sendPositions():
+#     socketio.start_background_task(sendPositions_background)
+
+# def sendPositions_background():
+#     #gas particles
+#     # ids = np.array(ad['PartType0', 'ParticleIDs'])
+#     # ids = list(ids)
+#     # positions = np.array(ad['PartType0', 'Coordinates']).tolist()
+#     # lookup = tuple(zip(ids, positions))
+#     # n = len(lookup)
+#     # for i in range(100):
+#     #     eventlet.sleep()
+#     #     socketio.emit('positionData', { 'particle_type':'PartType0','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
+#     #     print(i+1,'/10 Data Sent')
+    
+#     ids = np.array(ad['PartType0', 'ParticleIDs'])
+#     ids = list(ids)
+#     positions = np.array(ad['PartType0', 'Coordinates'])
+#     positions = np.around(positions,8)
+#     positions = positions.tolist()
+#     lookup = tuple(zip(ids, positions))
+#     # n = len(lookup)
+#     # for i in range(100):
+#     #     eventlet.sleep()
+#     #     socketio.emit('positionData', { 'particle_type':'PartType0','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
+#     #     print(i+1,'/10 Data Sent')
+
+#     with open('static/data/gasLookup-min.json', 'w') as file:
+#         json.dump(lookup, file)
+    
+
+#     #dark matter particles
+#     ids = np.array(ad['PartType1', 'ParticleIDs'])
+#     ids = list(ids)
+#     positions = np.array(ad['PartType1', 'Coordinates']).tolist()
+#     positions = np.around(positions,8)
+#     positions = positions.tolist()
+#     lookup = tuple(zip(ids, positions))
+#     # n = len(lookup)
+
+#     # for i in range(100):
+#     #     eventlet.sleep()
+#     #     socketio.emit('positionData', { 'particle_type':'PartType1','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
+#     #     print(i+1,'/10 Data Sent')
+
+#     with open('static/data/dmLookup-min.json', 'w') as file:
+#         json.dump(lookup, file)
+    
+#     #star particles
+#     # ids = np.array(ad['PartType4', 'ParticleIDs'])
+#     # ids = list(ids)
+#     # positions = np.array(ad['PartType4', 'Coordinates']).tolist()
+#     # lookup = tuple(zip(ids, positions))
+#     # n = len(lookup)
+
+#     # for i in range(10):
+#     #     eventlet.sleep()
+#     #     socketio.emit('positionData', { 'particle_type':'PartType4','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
+#     #     print(i+1,'/10 Data Sent')
+
+#     # with open('static/data/starLookup.json', 'w') as file:
+#     #     json.dump(lookup, file)
+    
+#     #black hole particles
+#     # ids = np.array(ad['PartType5', 'ParticleIDs'])
+#     # ids = list(ids)
+#     # positions = np.array(ad['PartType5', 'Coordinates']).tolist()
+#     # lookup = tuple(zip(ids, positions))
+#     # n = len(lookup)
+    
+#     # for i in range(10):
+#     #     eventlet.sleep()
+#     #     socketio.emit('positionData', { 'particle_type':'PartType5','i':i+1,'data': lookup[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
+#     #     print(i+1,'/10 Data Sent')
+#     # with open('static/data/bhLookup.json', 'w') as file:
+#     #     json.dump(lookup, file)
+
+
+
+
+# @socketio.on('requestPoints', namespace='/test')
+# def handle_attribute_selection(particle_type,attribute,renderCount):
+#     socketio.start_background_task(handle_attribute_selection_background, particle_type,attribute,renderCount)
+
+# def handle_attribute_selection_background(particle_type,attribute,renderCount):
+#     #particle types: gas, dm, star, bh
+#     # PartType0	gas
+#     # PartType1	dark matter 'halo'
+#     # PartType4	star
+#     # PartType5	black hole
+#     eventlet.sleep()
+#     print('Received Request: ', particle_type, attribute )
+#     print('Sending Data')
+#     # particles = {}
+#     # pmin = float(ad[particle_type, attribute].min())
+#     # pmax = float(ad[particle_type, attribute].max())
+#     # pmean = ad[particle_type, attribute].mean()
+#     n = len(ad[particle_type, attribute])
+
+#     # print(pmin,pmax,pmean)
+#     print(len(ad[particle_type, attribute]))
+#     # import pdb; pdb.set_trace() 
+    
+
+#     N = 1000000
+#     # ids = list(np.array(ad[particle_type, 'ParticleIDs']))
+#     units = ''
+    
+#     if str(ad[particle_type, attribute].units) == 'code_mass':
+#         # attr = list(np.array(ad[particle_type, attribute].in_units('Msun')))
+#         attr = np.array(ad[particle_type, attribute].in_units('Msun'))
+#         attr = np.log10(attr)
+#         pmin = np.around(float(attr.min()),3)
+#         pmax = np.around(float(attr.max()),3)
+#         attr = np.around(attr,3).tolist()
+#         units = 'log(Msun)'
+#     elif str(ad[particle_type, attribute].units) == 'K':
+#         # attr = list(np.array(ad[particle_type, attribute]))
+#         attr = np.array(ad[particle_type, attribute])
+#         attr = np.log10(attr)
+#         pmin = np.around(float(attr.min()),3)
+#         pmax = np.around(float(attr.max()),3)
+#         attr = np.around(attr,3).tolist()
+#         units = 'log(K)'
+#     elif attribute == 'Density':
+#         # attr = list(np.array(ad[particle_type, attribute].in_cgs()))
+#         attr = np.array(ad[particle_type, attribute].in_cgs())
+#         attr = np.log10(attr)
+#         pmin = np.around(float(attr.min()),3)
+#         pmax = np.around(float(attr.max()),3)
+#         attr = np.around(attr,3).tolist()
+#         units = 'log(g/cm^3)'
+#     elif str(ad[particle_type, attribute].units) == 'dimensionless':
+#         # attr = list(np.array(ad[particle_type, attribute]))
+#         attr = np.array(ad[particle_type, attribute])
+#         attr = np.log10(attr)
+#         pmin = np.around(float(attr.min()),3)
+#         pmax = np.around(float(attr.max()),3)
+#         attr = np.around(attr,3).tolist()
+#         units = 'dimensionless'
+#     else:
+#         attr = np.array(ad[particle_type, attribute])
+#         attr = np.log10(attr)
+#         pmin = np.around(float(attr.min()),3)
+#         pmax = np.around(float(attr.max()),3)
+#         attr = np.around(attr,3).tolist()
+#         units = str('log(',ad[particle_type, attribute].units,')')    
+
+#     a = []
+#     if particle_type == 'PartType0':
+#         for i in range(renderCount*N):
+#             a.append(attr[L_gas[i]])
+#     elif particle_type == 'PartType5':
+#         for i in range(renderCount*N):
+#             a.append(attr[L_bh[i]])
+
+#     # [:renderCount*N]
+#     for i in range(renderCount):
+#         socketio.emit('dataSentMsg',{'particle_type':particle_type,'value':i+1}, namespace='/test')
+#         eventlet.sleep()
+#         # socketio.emit('pointData',{'particle_type':particle_type,'i':i+1,'attribute':attribute, 'units':units,  'min':pmin, 'max':pmax, 'id': ids[int(i*n/10):int((i+1)*n/10)], 'attr': attr[int(i*n/10):int((i+1)*n/10)] }, namespace='/test')
+#         socketio.emit('pointData',{'particle_type':particle_type,'i':i+1,'attribute':attribute, 'units':units,  'min':pmin, 'max':pmax, 'attr': a[int(i*N):int((i+1)*N)] }, namespace='/test')
+
+#         print(i+1,'/',renderCount,'Data Sent')
+    
+#     # for i in range(0,len(ad[particle_type, attribute])-1): 
+#     #     eventlet.sleep()
+#     #     particles = {
+#     #         # 'particleID' : int(ad['PartType1', 'ParticleIDs'][i]),
+#     #         'x' : float(ad[particle_type, 'Coordinates'][i][0]),
+#     #         'y' : float(ad[particle_type, 'Coordinates'][i][1]),
+#     #         'z' : float(ad[particle_type, 'Coordinates'][i][2]),
+#     #         attribute : (float(ad[particle_type, attribute][i])-pmin)/(pmax-pmin)
+#     #     }
+#     #     # print(float(ad[particle_type, attribute][i]))
+#     #     # print(particles[attribute])
+#     #     socketio.emit('pointData',{'particle_type':particle_type,'i':int(100*(i/len(ad[particle_type, attribute]))),'attribute':attribute,'data':particles })
+#     #     # print(particles)
+
+#     print('Data Sent')
+#     # import pdb; pdb.set_trace()
+    
+#     # rpts.append({'particle_type':particle_type,'attribute':attribute,'data':particles })
+#     # emit('pointData',{'particle_type':particle_type,'attribute':attribute,'data':particles })
+#     # import pdb; pdb.set_trace()
+
+    
+
