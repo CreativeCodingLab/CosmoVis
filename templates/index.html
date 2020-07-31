@@ -41,6 +41,10 @@
         $( function() {
             $( "#terminal" ).draggable();
         } );
+
+        $( function() {
+            $( "#welcome-container" ).draggable();
+        } );
         // $( function() {
         //     $( ".icon" ).draggable();
         // } );
@@ -630,20 +634,20 @@
         function toggleLayer( l ){
             
             if(l==0){
-                if(!gasMesh){
-                    loadAttribute(gridsize,'PartType0','Temperature',false)
-                    visible = true
-                }
-                else{
-                    visible = !gasMesh.layers.test( camera.layers );
-                    camera.layers.toggle( l )
-                }
-                if(visible){
+                // if(!gasMesh){
+                //     // loadAttribute(gridsize,'PartType0','Temperature',false)
+                //     visible = true
+                // }
+                // else{
+                //     visible = !gasMesh.layers.test( camera.layers );
+                //     camera.layers.toggle( l )
+                // }
+                if((document.getElementById("gas-eye-open")).style.display != "inline-block"){
                     var x = document.getElementById("gas-eye-open");
                     x.style.display = "inline-block";
-
                     var y = document.getElementById("gas-eye-closed");
                     y.style.display = "none";
+                    volMaterial.uniforms["u_gasVisibility"].value = true;
 
                 }
                 else{
@@ -651,24 +655,28 @@
                     x.style.display = "none";
                     var y = document.getElementById("gas-eye-closed");
                     y.style.display = "inline-block";
+                    volMaterial.uniforms["u_gasVisibility"].value = false;
+
 
                 }
             }
             if(l==1){
-                if(!dmMesh){
-                    loadAttribute(gridsize,'PartType1','density',false)
-                    visible = true
-                }
-                else{
-                    visible = !dmMesh.layers.test( camera.layers )
-                    camera.layers.toggle( l )
-                }
-                if(visible){
+                // if(!dmMesh){
+                //     // loadAttribute(gridsize,'PartType1','density',false)
+                //     visible = true
+                // }
+                // else{
+                //     visible = !dmMesh.layers.test( camera.layers )
+                //     camera.layers.toggle( l )
+                // }
+                if((document.getElementById("dm-eye-open")).style.display != "inline-block"){
                     var x = document.getElementById("dm-eye-open");
                     x.style.display = "inline-block";
 
                     var y = document.getElementById("dm-eye-closed");
                     y.style.display = "none";
+                    volMaterial.uniforms["u_dmVisibility"].value = true;
+
 
                 }
                 else{
@@ -676,11 +684,13 @@
                     x.style.display = "none";
                     var y = document.getElementById("dm-eye-closed");
                     y.style.display = "inline-block";
+                    volMaterial.uniforms["u_dmVisibility"].value = false;
+
                 }
             }
             if(l==2){
                 if(!starMesh){
-                    loadAttribute(gridsize,'PartType4','density',false)
+                    // loadAttribute(gridsize,'PartType4','density',false)
                     visible = true
                 }
                 else{
@@ -744,7 +754,7 @@
         }
         function requestPoints(size,type,attr){
             if(attr != 'Select an attribute'){
-                loadAttribute(gridsize,type,attr)
+                loadGasDMAttributes(gridsize,attr,false)
             }
         }
         // function requestPoints(type,attr,renderCount){
@@ -1036,6 +1046,7 @@
             <!-- <br> -->
             
             
+            
             <label for="dm_select"><h3><img 
                 id="dm-eye-open"
                 class="eye-icon"
@@ -1164,13 +1175,13 @@
                 <div id="bh-min">
                 min: <input type="checkbox" id="bh-min-check" onclick="toggleValueThreshold('bh','min')"> clip: <input type="checkbox" id="bh-min-clip-check" onclick="clipPoints('bh','min')">
                 <br>
-                <input type="number" id="bh-minval-input" class="number-input minvalinput" name="bh-minval" oninput="changeValue('bh','min')"><p class="units bh-attr-units"></p>
+                <input type="number" id="bh-minval-input" class="number-input minvalinput" name="bh-minval" oninput="changeColor()"><p class="units bh-attr-units"></p>
 
                 </div>
                 <div id="bh-max">
                     max: <input type="checkbox" id="bh-max-check" onclick="toggleValueThreshold('bh','max')"> clip: <input type="checkbox" id="bh-max-clip-check" onclick="clipPoints('bh','max')">
                     <br>
-                    <input type="number" id="bh-maxval-input" class="number-input maxvalinput" name="bh-maxval" oninput="changeValue('bh','max')"><p class="units bh-attr-units"></p>
+                    <input type="number" id="bh-maxval-input" class="number-input maxvalinput" name="bh-maxval" oninput="changeColor()"><p class="units bh-attr-units"></p>
                 </div>
                 
                 <div id=bh-colorscale>
@@ -1300,13 +1311,13 @@
 
                 
 
-                <p><input type="checkbox" id="dist-mod-check" onclick="updateUniforms()" checked> distance opacity modulation</p>
+                <p><input type="checkbox" id="dist-mod-check" onclick="updateUniforms()"> distance opacity modulation</p>
                 <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.1" oninput="updateUniforms()"> intensity</p>
 
                 <p><input type="checkbox" id="val-mod-check" onclick="updateUniforms()" checked> value opacity modulation</p>
                 <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.3" oninput="updateUniforms()"> intensity</p>
 
-                <p><input type="checkbox" id="grayscale-mod-check" onclick="updateUniforms()" checked> grayscale depth filter</p>
+                <p><input type="checkbox" id="grayscale-mod-check" onclick="updateUniforms()"> grayscale depth filter</p>
 
                 <hr>
                 <p><input type="checkbox" id="grid-check" onclick="toggleGrid()" > grid </p>
@@ -1321,7 +1332,18 @@
             </div>
 
         </div>
+        <!-- <div id="welcome-container">
+            <h2>Welcome to CosmoVis</h2>
+            <p>CosmoVis is a tool that aims to help astronomers visually inspect cosmological simulations at various scales and make and collect observations through the interactive generation of spectral line plots. </p>
+            <p>To start, click on the layers button to the right.</p>
+            <p>Here are the different types of attributes available from the simulation: gas, dark matter, stars and black holes. Gas and dark matter are rendered volumetrically from 3D textures, whereas stars and black holes are rendered as points.</p>
+            <p>You can click on the eye icon to the left of particle type to toggle that layer on or off.</p>
+            <p>Pressing on the particle name, such as gas, expands options for that particle.</p>
+            <p></p>
+        </div> -->
     </div>
+
+
     
     <div hidden class="sidebar">
         <!-- <h1>cosmovis</h1> -->

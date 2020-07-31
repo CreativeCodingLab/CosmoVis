@@ -18,11 +18,12 @@ var gm, gmx, bhm, bhmx //used for changeValue()
 var brusher //used for spectra brush
 var gui //used to hold dat.GUI object
 // var material
-var cmtexture
+var cmtexture = []
+var gasTexture, dmTexture
 var uniforms
 var densityTexture, densityMin, densityMax
 var gasMesh, dmMesh, starMesh, bhMesh
-var gasMaterial, dmMaterial, starMaterial, bhMaterial
+var gasMaterial, dmMaterial, starMaterial, bhMaterial, volMaterial
 var climGasLimits = []
 var climDMLimits = []
 var climStarLimits = []
@@ -158,7 +159,7 @@ function updateSize(){
         //check to see which variables are visible and update those immediately
         
 
-        loadAttributes()
+        loadGasDMAttributes(gridsize,'Temperature',true)
 
 
         
@@ -361,7 +362,158 @@ function updateSkewerEndpoints(size){
     }
 }
 
-function updateUniforms() {
+function updateUniforms(){
+    if(volMaterial){
+        w = 256
+        h = 1
+        size = w * h
+        
+        
+        //check if grayscale depth is enabled
+        g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
+        volMaterial.uniforms[ "u_grayscaleDepthMod" ].value = g_mod;
+
+        //step size
+        volMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
+        
+        //cutting sliders
+        volMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
+        volMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+
+        volMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
+        volMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
+
+
+        d_mod = (document.getElementById("density-mod-check").checked ? 1.0 : 0.0);
+        
+        //do stuff with h_number_density
+        densityMin = document.getElementById('density-minval-input').value
+        densityMax = document.getElementById('density-maxval-input').value
+        if(d_mod == 1.0){
+            volMaterial.uniforms[ "u_density" ].value = densityTexture;
+            volMaterial.uniforms[ " u_grayscaleDepthMod" ]
+            volMaterial.uniforms[ "u_climDensity" ].value.set( densityMin, densityMax );
+        }
+        else{
+            volMaterial.uniforms[ "u_density" ].value = blankTexture;
+            volMaterial.uniforms[ "u_climDensity" ].value.set( 1.0, 1.0 );
+            // d = []
+        }
+        volMaterial.uniforms[  "u_densityDepthMod"  ].value = d_mod;
+        volMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
+        if((document.getElementById("density-mod-check")).checked){
+            volMaterial.uniforms[ "u_densityMod" ].value = 1.0;
+        }
+        else{
+            volMaterial.uniforms[ "u_densityMod" ].value = 0.0;
+        }
+
+
+        if((document.getElementById("dist-mod-check")).checked){
+            volMaterial.uniforms[ "u_distMod" ].value = 1.0;
+        }
+        else{
+            volMaterial.uniforms[ "u_distMod" ].value = 0.0;
+        }
+
+        if((document.getElementById("val-mod-check")).checked){
+            volMaterial.uniforms[ "u_valMod" ].value = 1.0;
+        }
+        else{
+            volMaterial.uniforms[ "u_valMod" ].value = 0.0;
+        }
+
+        //store values in local storage cache
+        localStorage.setItem('gasMinVal',(document.getElementById('gas-minval-input')).value);
+        localStorage.setItem('gasMaxVal',(document.getElementById('gas-maxval-input')).value);
+        
+        localStorage.setItem('dmMinVal', (document.getElementById('dm-minval-input')).value);
+        localStorage.setItem('dmMaxVal', (document.getElementById('dm-maxval-input')).value);
+
+        //check if "min/max" checks are enabled to disable the number input
+        document.getElementById("gas-minval-input").disabled = (document.getElementById("gas-min-check").checked);
+        document.getElementById("gas-maxval-input").disabled = (document.getElementById("gas-max-check").checked);
+
+        if(document.getElementById("gas-min-check").checked && document.getElementById("gas-max-check").checked){
+            volMaterial.uniforms[ "u_gasClim" ].value.set( climGasLimits[0] , climGasLimits[1] );
+        }
+        else if(document.getElementById("gas-min-check").checked && !document.getElementById("gas-max-check").checked){
+            volMaterial.uniforms[ "u_gasClim" ].value.set( climGasLimits[0] , document.querySelector('#gas-maxval-input').value );
+        }
+        else if(!document.getElementById("gas-min-check").checked && document.getElementById("gas-max-check").checked){
+            volMaterial.uniforms[ "u_gasClim" ].value.set( document.querySelector('#gas-minval-input').value , climGasLimits[1] );
+        }
+        else if(!document.getElementById("gas-min-check").checked && !document.getElementById("gas-max-check").checked){
+            volMaterial.uniforms[ "u_gasClim" ].value.set( document.querySelector('#gas-minval-input').value , document.querySelector('#gas-maxval-input').value );
+        }
+        else{
+
+        }
+
+        volMaterial.uniforms[ "u_gasClip" ].value = [ document.getElementById("gas-min-clip-check").checked, document.getElementById("gas-max-clip-check").checked ]
+        
+        gasMinCol = new THREE.Color(document.querySelector("#gasMinCol").value);
+        gasMidCol = new THREE.Color(document.querySelector("#gasMidCol").value);
+        gasMaxCol = new THREE.Color(document.querySelector("#gasMaxCol").value);
+        
+        gasColData = new Uint8Array(3 * 256)
+        for(i=0;i<w;i++){
+            stride = i * 3
+            a = i/w
+            if(i<w/2){
+                c = gasMinCol.clone().lerp(gasMidCol,a)
+            }
+            else{
+                c = gasMidCol.clone().lerp(gasMaxCol,a)
+            }
+            gasColData[stride] = Math.floor(c.r*255)
+            gasColData[stride+1] = Math.floor(c.g*255)
+            gasColData[stride+2] = Math.floor(c.b*255)
+        }
+        cmtexture['PartType0'] = new THREE.DataTexture(gasColData,w,h,THREE.RGBFormat)
+        gasColData = []
+        volMaterial.uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
+
+        //dm data
+
+        document.getElementById("dm-minval-input").disabled = (document.getElementById("dm-min-check").checked);
+        document.getElementById("dm-maxval-input").disabled = (document.getElementById("dm-max-check").checked);
+
+        if(document.getElementById("dm-min-check").checked && document.getElementById("dm-max-check").checked){
+            volMaterial.uniforms[ "u_dmClim" ].value.set( climDMLimits[0] , climDMLimits[1] );
+        }
+        else if(document.getElementById("dm-min-check").checked && !document.getElementById("dm-max-check").checked){
+            volMaterial.uniforms[ "u_dmClim" ].value.set( climDMLimits[0] , document.querySelector('#dm-maxval-input').value );
+        }
+        else if(!document.getElementById("dm-min-check").checked && document.getElementById("dm-max-check").checked){
+            volMaterial.uniforms[ "u_dmClim" ].value.set( document.querySelector('#dm-minval-input').value , climDMLimits[1] );
+        }
+        else if(!document.getElementById("dm-min-check").checked && !document.getElementById("dm-max-check").checked){
+            volMaterial.uniforms[ "u_dmClim" ].value.set( document.querySelector('#dm-minval-input').value , document.querySelector('#dm-maxval-input').value );
+        }
+        
+        volMaterial.uniforms[ "u_dmClip" ].value = [ document.getElementById("dm-min-clip-check").checked, document.getElementById("dm-max-clip-check").checked ]
+
+        dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
+        dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
+        
+        dmColData = new Uint8Array(3 * 256)
+        for(i=0;i<w;i++){
+            stride = i * 3
+            a = i/w
+            c = dmMinCol.clone().lerp(dmMaxCol.clone(),a)
+            dmColData[stride] = Math.floor(c.r*255)
+            dmColData[stride+1] = Math.floor(c.g*255)
+            dmColData[stride+2] = Math.floor(c.b*255)
+        }
+        cmtexture['PartType1'] = new THREE.DataTexture(dmColData,w,h,THREE.RGBFormat)
+        dmColData = []
+        volMaterial.uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
+    }
+    
+}
+
+function updateUniforms_deprecated() {
     // console.log('updateUniforms')
     w = 256
     h = 1
@@ -422,10 +574,18 @@ function updateUniforms() {
         gasMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
         gasMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         gasMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
-        
+
         gasMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
         gasMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
         gasMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
+
+        if((document.getElementById("density-mod-check")).checked){
+            gasMaterial.uniforms[ "u_densityMod" ].value = 1.0;
+        }
+        else{
+            gasMaterial.uniforms[ "u_densityMod" ].value = 0.0;
+        }
+
 
         if((document.getElementById("dist-mod-check")).checked){
             gasMaterial.uniforms[ "u_distMod" ].value = 1.0;
@@ -623,9 +783,9 @@ async function asyncCall() {
     // render()
     
     // loadAttribute(128,'PartType0','Temperature',true)
-    loadAttribute(gridsize,'PartType0','Temperature',true)
-    loadAttribute(gridsize,'PartType1','density',true)
-    loadAttribute(gridsize,'PartType4','density',true)
+    // loadAttribute(gridsize,'PartType0','Temperature',true)
+    // loadAttribute(gridsize,'PartType1','density',true)
+    // loadAttribute(gridsize,'PartType4','density',true)
 }
 
 function loadDensity(size,type,attr){
@@ -679,6 +839,216 @@ function loadDensity(size,type,attr){
 
 }
 
+function loadGasDMAttributes(size,attr,resolution_bool){
+
+    type='PartType0'
+    d3.json('static/data/'+simID+'/PartType0/' + size + '_' + type + '_' + attr +'.json').then(function(d){
+        clearLayer(0)
+        
+        //arr holds the flattened data in Float32Array to be used as a 3D texture
+        gasArr = new Float32Array(size * size * size)
+
+        let log
+        if(elements.includes(attr)){
+            log = false
+        }
+        else{
+            log = true
+        }    
+        
+        log = true
+        //fill arr array with loaded data
+        for(x=0;x<size;x++){
+            for(y=0;y<size;y++){
+                for(z=0;z<size;z++){
+                    if(log){
+                        gasArr[ x + y * size + z * size * size ] =  Math.log10(d[x][y][z])
+                    }
+                    else{
+                        gasArr[ x + y * size + z * size * size ] =  d[x][y][z]
+                    }
+                }
+            }
+        }
+        // console.log(arr)
+        d = [] //clear loaded data since it is no longer needed
+
+        //find the min and max values in the dataset and set the values in the container GUI input boxes
+        var min = gasArr.reduce(function(a, b) {
+            return Math.min(a, b);
+        });
+        var max = gasArr.reduce(function(a, b) {
+            return Math.max(a, b);
+        });
+        console.log(min)
+        if(min==-Infinity){min = -999999999999}
+        var x = document.getElementById("gas-eye-open");
+        x.style.display = "inline-block";
+        var y = document.getElementById("gas-eye-closed");
+        y.style.display = "none";
+        if(resolution_bool && localStorage.getItem('gasMinVal') != ""){
+            min = localStorage.getItem('gasMinVal')
+        }
+        if(resolution_bool && localStorage.getItem('gasMaxVal') != ""){
+            max = localStorage.getItem('gasMaxVal')
+        }
+        climGasLimits = [min, max]
+        let minval = document.getElementById('gas-minval-input')
+        minval.value = round(min,2)
+        let maxval = document.getElementById('gas-maxval-input')
+        maxval.value = round(max,2)
+
+        var gasTexture = new THREE.DataTexture3D( gasArr, size, size, size)
+        gasTexture.format = THREE.RedFormat
+        gasTexture.type = THREE.FloatType
+        gasTexture.minFilter = gasTexture.magFilter = THREE.LinearFilter
+        gasTexture.unpackAlignment = 1
+
+
+        
+        type='PartType1'
+        attr = 'density'
+        d3.json('static/data/'+simID+'/PartType1/' + size + '_' + type + '_' + attr +'.json').then(function(d){
+            // clearLayer(1)
+
+            dmArr = new Float32Array(size * size * size)
+
+            // let log = true
+            // if(elements.includes(attr)){
+            //     log = false
+            // }
+            // else{
+            //     log = true
+            // }    
+            
+            log = true
+            //fill arr array with loaded data
+            for(x=0;x<size;x++){
+                for(y=0;y<size;y++){
+                    for(z=0;z<size;z++){
+                        if(log){
+                            dmArr[ x + y * size + z * size * size ] =  Math.log10(d[x][y][z])
+                        }
+                        else{
+                            dmArr[ x + y * size + z * size * size ] =  d[x][y][z]
+                        }
+                    }
+                }
+            }
+
+            // console.log(arr)
+            d = [] //clear loaded data since it is no longer needed  
+            
+            var max = dmArr.reduce(function(a, b) {
+                return Math.max(a, b);
+            });
+            var min = dmArr.reduce(function(a, b) {
+                return Math.min(a, b);
+            });
+            console.log(min)
+            if(min==-Infinity){min = -999999999999}
+
+            var x = document.getElementById("dm-eye-open");
+            x.style.display = "inline-block";
+            var y = document.getElementById("dm-eye-closed");
+            y.style.display = "none";
+            if(localStorage.getItem('dmMinVal') != ""){
+                min = localStorage.getItem('dmMinVal')
+            }
+            if(localStorage.getItem('dmMaxVal') != ""){
+                max = localStorage.getItem('dmMaxVal')
+            }
+            climDMLimits = [min, max]
+
+            let minval = document.getElementById('dm-minval-input')
+            minval.value = round(min,2)
+            let maxval = document.getElementById('dm-maxval-input')
+            maxval.value = round(max,2)
+            
+            var dmTexture = new THREE.DataTexture3D( dmArr, size, size, size)
+            dmTexture.format = THREE.RedFormat
+            dmTexture.type = THREE.FloatType
+            dmTexture.minFilter = dmTexture.magFilter = THREE.LinearFilter
+            dmTexture.unpackAlignment = 1
+            var shader = THREE.VolumeRenderShader1;
+            var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+
+            gasArr = []
+            dmArr = []
+
+            initColor('PartType0')
+            initColor('PartType1')
+
+            // uniforms[ "u_data" ].value = texture;
+            uniforms[ "u_gasData" ].value = gasTexture;
+            uniforms[ "u_dmData" ].value = dmTexture;
+            uniforms[ "u_size" ].value.set( size, size, size );
+            uniforms[ "u_gasClim" ].value.set( climGasLimits[0], climGasLimits[1] );
+            uniforms[ "u_dmClim" ].value.set( climDMLimits[0], climDMLimits[1] );
+            uniforms[ "u_renderstyle" ].value = 'mip' == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
+            uniforms[ "u_renderthreshold" ].value = 1.0; // For ISO renderstyle
+            uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
+            uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
+            uniforms[ "u_gasClip" ].value = [true, true]
+            uniforms[ "u_dmClip" ].value = [true, true]
+
+
+            var material = new THREE.ShaderMaterial( {
+                uniforms: uniforms,
+                vertexShader: shader.vertexShader,
+                fragmentShader: shader.fragmentShader,
+                clipping: true,
+                side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
+                transparent: true,
+                // opacity: 0.05,
+
+                // blending: THREE.CustomBlending,
+                blendEquation: THREE.AddEquation,
+                blendSrc: THREE.OneFactor,
+                blendDst: THREE.OneMinusSrcAlphaFactor,
+                depthWrite: false,
+            } );
+
+            volMaterial = material
+
+            // THREE.Mesh
+            var geometry = new THREE.BoxGeometry( size, size, size );
+            geometry.translate( size / 2, size / 2, size / 2 );
+
+            createSkewerCube(size)
+
+            var mesh = new THREE.Mesh( geometry, material );
+            mesh.layers.set(0)
+            mesh.renderOrder = 1
+            volMesh = mesh
+
+            updateUniforms()
+            scene.add( mesh );
+
+            gm = document.querySelector('#gas-minval-input')
+            gm.addEventListener('input', updateUniforms);
+            gmx = document.querySelector('#gas-maxval-input')
+            gmx.addEventListener('input', updateUniforms);
+
+            dmm = document.querySelector('#dm-minval-input')
+            dmm.addEventListener('input', updateUniforms);
+            dmmx = document.querySelector('#dm-maxval-input')
+            dmmx.addEventListener('input', updateUniforms);
+
+            sm = document.querySelector('#star-minval-input')
+            sm.addEventListener('input', updateUniforms);
+            smx = document.querySelector('#star-maxval-input')
+            smx.addEventListener('input', updateUniforms);
+
+            bm = document.querySelector('#bh-minval-input')
+            bm.addEventListener('input', updateUniforms);
+            bmx = document.querySelector('#bh-maxval-input')
+            bmx.addEventListener('input', updateUniforms);
+
+
+        })
+    })
+}
 function loadAttribute(size,type,attr,resolution_bool){
     /**
      * * loadAttribute() is called when selecting an attribute from one of the dropdown menus
@@ -721,7 +1091,7 @@ function loadAttribute(size,type,attr,resolution_bool){
             log = true
         }    
         
-        log = true
+        // log = true
         //fill arr array with loaded data
         for(x=0;x<size;x++){
             for(y=0;y<size;y++){
@@ -848,7 +1218,8 @@ function loadAttribute(size,type,attr,resolution_bool){
         var texture = new THREE.DataTexture3D( arr, size, size, size)
         texture.format = THREE.RedFormat
         texture.type = THREE.FloatType
-        texture.minFilter = texture.magFilter = THREE.LinearFilter
+        texture.minFilter = THREE.LinearFilter
+        texture.magFilter = THREE.LinearFilter
         texture.unpackAlignment = 1
         var shader = THREE.VolumeRenderShader1;
         var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
@@ -896,7 +1267,7 @@ function loadAttribute(size,type,attr,resolution_bool){
         uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
         uniforms[ "u_cmdata" ].value = cmtexture;
         uniforms[ "u_clip" ].value = [false, false]
-
+        
         var material = new THREE.ShaderMaterial( {
             uniforms: uniforms,
             vertexShader: shader.vertexShader,
@@ -969,7 +1340,7 @@ function initColor(type){
         data[stride+1] = Math.floor(c.g*255)
         data[stride+2] = Math.floor(c.b*255)
     }
-    cmtexture = new THREE.DataTexture(data,w,h,THREE.RGBFormat)
+    cmtexture[type] = new THREE.DataTexture(data,w,h,THREE.RGBFormat)
 
 }
 function changeColor(){
@@ -984,12 +1355,6 @@ function changeColor(){
     dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
     bhMinCol = new THREE.Color(document.querySelector("#bhMinCol").value);
     bhMaxCol = new THREE.Color(document.querySelector("#bhMaxCol").value);
-        
-    if(material || gasMaterial || dmMaterial || starMaterial || bhMaterial){
-        updateUniforms()
-    }
-
-
 
     // dmCol = new THREE.Color(document.querySelector("#dmCol").value);
     dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
@@ -1044,6 +1409,11 @@ function changeColor(){
 
     localStorage.setItem('bhMinCol', "#" + bhMinCol.getHexString());
     localStorage.setItem('bhMaxCol', "#" + bhMaxCol.getHexString());
+
+    if(material || gasMaterial || dmMaterial || starMaterial || bhMaterial || volMaterial){
+        updateUniforms()
+    }
+
 }
 
 function createSkewerCube(size){
@@ -1152,7 +1522,7 @@ function loadData(){
 
         // THREE.Mesh
         var geometry = new THREE.BoxGeometry( size, size, size );
-        camera.position.set(size*1.5, size*1.5, size*1.5)
+        camera.position.set(size*2, size*2, size*2)
         camera.lookAt(size/2,  size/2,  size/2)
         camera.updateProjectionMatrix()
         controls.target.set( size/2,  size/2,  size/2 );
@@ -1948,7 +2318,7 @@ function checkSelectedSimID(){
             }
         }
         // sendSimIDtoServer(simID)
-        loadAttributes()
+        loadGasDMAttributes(64,'Temperature', false)
         
     }
 
@@ -2088,7 +2458,7 @@ $(document).ready(function(){
         controls = new THREE.OrbitControls(camera, renderer.domElement);
 
         // camera.position.set(8.47, 8.47, 8.47)
-        camera.position.set(gridsize*1.5, gridsize*1.5, gridsize*1.5)
+        camera.position.set(gridsize*2, gridsize*2, gridsize*2)
         camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
         camera.zoom = 6
         // camera.lookAt(0,0,0)

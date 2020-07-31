@@ -13,6 +13,31 @@ body {
     padding: 0px;
     overflow: hidden;
 }
+
+#welcome-container{
+    font-family: mr-eaves-modern, sans-serif;
+    font-weight: 300;
+    font-style: normal;
+    font-size: 1.4em;
+    width: 400px;
+    height: 300px;
+    /* position: absolute; */
+    background-color: #8fffdbd1;
+    background-blend-mode: darken;
+    opacity: 90%;
+    right: 1vw;
+    top: 10vh;
+    box-shadow: -8px 7px 2px black;
+    padding-left: 0.5vw;
+    padding-right: 0.5vw;
+    padding-top: 0.5vw;
+    padding-bottom: 0.5vw;
+    border-radius: 10px;
+    border-style: double;
+    border-color: #00ffca;
+
+}
+
 .sidebar {
     font-family: mr-eaves-modern, sans-serif;
     font-weight: 300;
@@ -355,6 +380,23 @@ progress{
 
 #skewer-eye-closed{
     display: none;
+}
+
+rect[Attributes Style]{
+
+}
+
+rect.handle--e{
+    width: 10px;
+    height: 40px;
+    fill: black;
+}
+
+rect.handle--w{
+    /* transform: translateY(-40px); */
+    width: 10px;
+    height: 40px;
+    fill: black;
 }
 
 input[type="color" i] {
