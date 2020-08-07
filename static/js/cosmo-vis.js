@@ -375,6 +375,7 @@ function updateUniforms(){
 
         //step size
         volMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
+        volMaterial.uniforms[ "u_exposure" ].value = document.getElementById("exposure").value
         
         //cutting sliders
         volMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
@@ -2253,7 +2254,7 @@ function checkSelectedSimID(){
     simID = selection.value
     
     if(oldSimID != simID){
-        d3.json('static/data/'+simID+'/simMetaData.json').then(function(d){
+        d3.json('static/data/'+simID+'/simMetadata.json').then(function(d){
             edges.left_edge = d.left_edge
             edges.right_edge = d.right_edge
             field_list = d.field_list
