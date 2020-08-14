@@ -926,6 +926,16 @@
             }
             else x.style.display = "block"
         }
+
+        function hideAlpha(type){
+            var x = document.getElementById(type)
+            // console.log(x)
+            if(x.style.display === "inline-flex"){
+                x.style.display = "none"
+            }
+            else x.style.display = "inline-flex"
+        }
+
         $
     </script>
     <!-- <script type="text/javascript" src="libs/Tween.js"></script>
@@ -1014,31 +1024,50 @@
                 alt="blend mode"
                 role="button"
                 onclick="toggleBlendMode( 0 )"/><div style="display: inline;" onclick="hideDetails('gas')" class="layers-details">gas</div></h3></label>
-            <br>
+            
+            <!-- <br> -->
             <div id="gas-data-details" class="data-details">
+                <hr>
+                select attribute:
+                <select class="data_select" id="gas_select" onchange="requestPoints(gridsize,'PartType0', document.getElementById('gas_select').value)">
+                    <option selected="selected" disabled="disabled">Select an attribute</option></select>
+                filter values:
+                <br>
+                
                 <div id="min">
                     min: <input type="checkbox" id="gas-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="gas-min-clip-check" onclick="updateUniforms()" checked> 
                     <br>
-                    <input type="number" step="0.01" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
-
+                    <div class="attr-min-max">
+                        <input width="3" type="number" step="0.01" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
+                    </div>
                     <!-- <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p> -->
                 </div>
                 <div id="max">
                     max: <input type="checkbox" id="gas-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="gas-max-clip-check" onclick="updateUniforms()" checked>
                     <br>
                     <!-- <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p> -->
-                    <input type="number" step="0.01" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
+                    <div class="attr-min-max">
+                        <input type="number" step="0.01" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
+                    </div>
                 </div>
-                
+                adjust color & alpha values:
+
                 <div id=gas-colorscale>
                     <input type="color" class="color-picker" value="#0000ff" id="gasMinCol" oninput="changeColor()"><input type="color" class="color-picker" value="#0000ff" id="gasMidCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol" oninput="changeColor()">
-                    <br>
-                </div> 
+                    <!-- <br> -->
+                </div>
+                <div id=gas-colorscale-alpha>
 
-                <br>
-                <select class="data_select" id="gas_select" onchange="requestPoints(gridsize,'PartType0', document.getElementById('gas_select').value)">
+                    <!-- <div id="alpha" class="alpha-min"></div><div id="alpha" class="alpha-mid">&alpha;</div><div id="alpha" class="alpha-max">&alpha;</div> -->
+
+                    <input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-min-range" id="gasMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-mid-range" id="gasMidA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-max-range"  id="gasMaxA" oninput="changeColor()">
+                    <!-- <br> -->
+                </div>
+
+                <!-- <br> -->
+                <!-- <select class="data_select" id="gas_select" onchange="requestPoints(gridsize,'PartType0', document.getElementById('gas_select').value)">
                     <option selected="selected" disabled="disabled">Select an attribute</option></select>
-                
+                 -->
                 <!-- sent data : <progress id="gas_progress_sent" value="0" max="100"><p>loading</p> </progress>
                 received data : <progress id="gas_progress" value="0" max="100"><p>loading</p> </progress> -->
             </div>
@@ -1068,24 +1097,33 @@
                 role="button"
                 onclick="toggleBlendMode( 1 )"/><div style="display: inline;" onclick="hideDetails('dm')" class="layers-details">dark matter</div></h3></label>
             
-            <br>
+            <!-- <br> -->
             <div id="dm-data-details" class="data-details">
-        
+                <hr>
+                filter density:
+                <br>
                 <div id="min">
                     min: <input type="checkbox" id="dm-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-min-clip-check" onclick="updateUniforms()" checked> 
                     <br>
-                    <input type="number" step="0.01" id="dm-minval-input" class="number-input minvalinput" name="dm-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
-
+                    <div class="attr-min-max">
+                        <input type="number" step="0.01" id="dm-minval-input" class="number-input minvalinput" name="dm-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
+                    </div>
                 </div>
                 <div id="max">
                     max: <input type="checkbox" id="dm-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-max-clip-check" onclick="updateUniforms()" checked>
                     <br>
-                    <input type="number" step="0.01" id="dm-maxval-input" class="number-input maxvalinput" name="dm-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
+                    <div class="attr-min-max">
+                        <input type="number" step="0.01" id="dm-maxval-input" class="number-input maxvalinput" name="dm-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
+                    </div>
                 </div>
                 
+                adjust color & alpha values:
                 <div id=dm-colorscale>
                     <input type="color" class="color-picker" value="#0000ff" id="dmMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="dmMaxCol" oninput="changeColor()">
                     <br>
+
+                    <input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-min-range" id="dmMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-max-range"  id="dmMaxA" oninput="changeColor()">
+                    <!-- <br> -->
                 </div> 
                 <br>
             </div>
@@ -1113,7 +1151,7 @@
                 alt="blend mode"
                 role="button"
                 onclick="toggleBlendMode( 4 )"/><div style="display: inline;" onclick="hideDetails('star')" class="layers-details">stars</div></h3></label>
-                <br>
+                <!-- <br> -->
                 <!-- <input type="color" class="color-picker" value="#ffffff" id="starCol"> -->
                 <div id="star-data-details"class="data-details">
                     <div id="min">
@@ -1167,7 +1205,7 @@
                 role="button"
                 onclick="toggleBlendMode( 5 )"/><div style="display: inline;" onclick="hideDetails('bh')" class="layers-details">black holes</div></h3></label>
             
-            <br>
+            <!-- <br> -->
             <!-- min: <input type="color" value="#0000ff" id="bhMinCol"> max: <input type="color" value="#ff0000" id="bhMaxCol">
             <br> -->
             <div id="bh-data-details" class="data-details">
@@ -1328,7 +1366,7 @@
                 <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
                 <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p>
 
-                <p><input type="range" id="exposure" min="0.05" max="4.0" step="0.001" value="3.0" oninput="updateUniforms()"> exposure</p>
+                <p><input type="range" id="exposure" min="0.05" max="8.0" step="0.001" value="3.0" oninput="updateUniforms()"> exposure</p>
 
                 <hr>
             </div>

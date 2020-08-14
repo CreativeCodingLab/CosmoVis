@@ -456,22 +456,35 @@ function updateUniforms(){
         gasMinCol = new THREE.Color(document.querySelector("#gasMinCol").value);
         gasMidCol = new THREE.Color(document.querySelector("#gasMidCol").value);
         gasMaxCol = new THREE.Color(document.querySelector("#gasMaxCol").value);
+
+        gasMinA = parseFloat(document.querySelector("#gasMinA").value);
+        gasMidA = parseFloat(document.querySelector("#gasMidA").value);
+        gasMaxA = parseFloat(document.querySelector("#gasMaxA").value);
         
-        gasColData = new Uint8Array(3 * 256)
+        gasColData = new Uint8Array(4 * 256)
+
+        function alphaLerp(start, end, t) {
+            return start * (1 - t) + end * t
+        }
+
         for(i=0;i<w;i++){
-            stride = i * 3
+            stride = i * 4
             a = i/w
             if(i<w/2){
                 c = gasMinCol.clone().lerp(gasMidCol,a)
+                alpha = alphaLerp(gasMinA,gasMidA,a)
+
             }
             else{
                 c = gasMidCol.clone().lerp(gasMaxCol,a)
+                alpha = alphaLerp(gasMidA,gasMaxA,a)
             }
             gasColData[stride] = Math.floor(c.r*255)
             gasColData[stride+1] = Math.floor(c.g*255)
             gasColData[stride+2] = Math.floor(c.b*255)
+            gasColData[stride+3] = Math.floor(alpha*255)
         }
-        cmtexture['PartType0'] = new THREE.DataTexture(gasColData,w,h,THREE.RGBFormat)
+        cmtexture['PartType0'] = new THREE.DataTexture(gasColData,w,h,THREE.RGBAFormat)
         gasColData = []
         volMaterial.uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
 
@@ -497,17 +510,23 @@ function updateUniforms(){
 
         dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
         dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
+
+        dmMinA = parseFloat(document.querySelector("#dmMinA").value);
+        dmMaxA = parseFloat(document.querySelector("#dmMaxA").value);
+
         
-        dmColData = new Uint8Array(3 * 256)
+        dmColData = new Uint8Array(4 * 256)
         for(i=0;i<w;i++){
-            stride = i * 3
+            stride = i * 4
             a = i/w
             c = dmMinCol.clone().lerp(dmMaxCol.clone(),a)
+            alpha = alphaLerp(dmMinA,dmMaxA,a)
             dmColData[stride] = Math.floor(c.r*255)
             dmColData[stride+1] = Math.floor(c.g*255)
             dmColData[stride+2] = Math.floor(c.b*255)
+            dmColData[stride+3] = Math.floor(alpha*255)
         }
-        cmtexture['PartType1'] = new THREE.DataTexture(dmColData,w,h,THREE.RGBFormat)
+        cmtexture['PartType1'] = new THREE.DataTexture(dmColData,w,h,THREE.RGBAFormat)
         dmColData = []
         volMaterial.uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
     }
@@ -899,6 +918,28 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         let maxval = document.getElementById('gas-maxval-input')
         maxval.value = round(max,2)
 
+        let gasUnits = document.getElementsByClassName('gas-attr-units')
+        for(i=0;i< gasUnits.length;i++){
+            if((attr == 'Temperature') || (attr == 'MaximumTemperature')){
+                gasUnits[i].innerHTML = 'log(K)'
+            }
+            else if(elements.includes(attr)){
+                gasUnits[i].innerHTML = 'unitless'
+            }
+            else if(attr == "Mass"){
+                gasUnits[i].innerHTML = 'log(Msun)'
+            }
+            else if(attr == "Density"){
+                gasUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+            }
+            else if(attr == "InternalEnergy"){
+                gasUnits[i].innerHTML = "log(erg/g)"
+            }
+            else{
+                gasUnits[i].innerHTML = 'dimensionless'
+            }
+        }
+
         var gasTexture = new THREE.DataTexture3D( gasArr, size, size, size)
         gasTexture.format = THREE.RedFormat
         gasTexture.type = THREE.FloatType
@@ -965,6 +1006,11 @@ function loadGasDMAttributes(size,attr,resolution_bool){
             minval.value = round(min,2)
             let maxval = document.getElementById('dm-maxval-input')
             maxval.value = round(max,2)
+
+            let dmUnits = document.getElementsByClassName('dm-attr-units')
+            for(i=0;i< dmUnits.length;i++){
+                dmUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+            }
             
             var dmTexture = new THREE.DataTexture3D( dmArr, size, size, size)
             dmTexture.format = THREE.RedFormat
@@ -998,7 +1044,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 uniforms: uniforms,
                 vertexShader: shader.vertexShader,
                 fragmentShader: shader.fragmentShader,
-                clipping: true,
+                clipping: false,
                 side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
                 transparent: true,
                 // opacity: 0.05,
@@ -1352,8 +1398,13 @@ function changeColor(){
     gasMinCol = new THREE.Color(document.querySelector("#gasMinCol").value);
     gasMidCol = new THREE.Color(document.querySelector("#gasMidCol").value);
     gasMaxCol = new THREE.Color(document.querySelector("#gasMaxCol").value);
+    gasMinA = document.querySelector("#gasMinA").value;
+    gasMidA = document.querySelector("#gasMidA").value;
+    gasMaxA = document.querySelector("#gasMaxA").value;
     dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
     dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
+    dmMinA = document.querySelector("#dmMinA").value;
+    dmMaxA = document.querySelector("#dmMaxA").value;
     bhMinCol = new THREE.Color(document.querySelector("#bhMinCol").value);
     bhMaxCol = new THREE.Color(document.querySelector("#bhMaxCol").value);
 
@@ -1400,11 +1451,18 @@ function changeColor(){
     localStorage.setItem('gasMinCol', "#" + gasMinCol.getHexString());
     localStorage.setItem('gasMidCol', "#" + gasMidCol.getHexString());
     localStorage.setItem('gasMaxCol', "#" + gasMaxCol.getHexString());
-    
+
+    localStorage.setItem('gasMinA', "#" + gasMinA);
+    localStorage.setItem('gasMidA', "#" + gasMidA);
+    localStorage.setItem('gasMaxA', "#" + gasMaxA);
+
     // localStorage.setItem('dmCol', "#" + dmCol.getHexString());
     localStorage.setItem('dmMinCol', "#" + dmMinCol.getHexString());
     localStorage.setItem('dmMaxCol', "#" + dmMaxCol.getHexString());
     
+    localStorage.setItem('dmMinA', "#" + dmMinA);
+    localStorage.setItem('dmMaxA', "#" + dmMaxA);
+
     localStorage.setItem('starMinCol', "#" + starMinCol.getHexString());
     localStorage.setItem('starMaxCol', "#" + starMaxCol.getHexString());
 
@@ -2461,7 +2519,7 @@ $(document).ready(function(){
         // camera.position.set(8.47, 8.47, 8.47)
         camera.position.set(gridsize*2, gridsize*2, gridsize*2)
         camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-        camera.zoom = 6
+        camera.zoom = 8
         // camera.lookAt(0,0,0)
         camera.updateProjectionMatrix();
 

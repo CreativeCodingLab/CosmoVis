@@ -14,6 +14,15 @@ body {
     overflow: hidden;
 }
 
+hr {
+    color: #0004;
+    background-color: #0004;
+    height: 2px;
+}
+input:hover{
+    cursor: pointer;
+}
+
 #welcome-container{
     font-family: mr-eaves-modern, sans-serif;
     font-weight: 300;
@@ -115,6 +124,7 @@ h1{
 }
 .layers-details:hover{
     color: white;
+    cursor: pointer;
 }
 
 #my-gui-container {
@@ -198,6 +208,8 @@ h1{
     /* margin-right: 1vw; */
     padding: 4.2vh 4.2vw 1vh 4.2vw;
     right: 0;
+
+    cursor: pointer;
 }
 
 .icon_caption{
@@ -223,6 +235,8 @@ h1{
 
 .pointLevels:hover{
     color:#8fffdbd1;
+
+    cursor: pointer;
 }
 
 #morePoints{
@@ -245,6 +259,8 @@ h1{
     display: inline-block;
     margin-right: 0.5vw;
     transform: translateY(0.5vh);
+
+    cursor: pointer;
 }
 
 .blend-icon{
@@ -261,6 +277,8 @@ h1{
     display: inline-block;
     margin-right: 0.5vw;
     transform: translateY(0.5vh);
+
+    cursor: pointer;
 }
 
 .laser-icon{
@@ -277,6 +295,8 @@ h1{
     display: inline-block;
     margin-right: 0.5vw;
     transform: translateY(0.5vh);
+
+    cursor: pointer;
 }
 
 .data_select {
@@ -310,6 +330,8 @@ h1{
 }
 .data_select:hover {
     border-color: #888;
+
+    cursor: pointer;
 }
 .data_select:focus {
     border-color: #aaa;
@@ -391,12 +413,24 @@ rect.handle--e{
     height: 40px;
     fill: black;
 }
+rect.handle--e:hover{
+    width: 10px;
+    height: 40px;
+    fill: white;
+}
 
 rect.handle--w{
     /* transform: translateY(-40px); */
     width: 10px;
     height: 40px;
     fill: black;
+}
+
+rect.handle--w:hover{
+    /* transform: translateY(-40px); */
+    width: 10px;
+    height: 40px;
+    fill: white;
 }
 
 input[type="color" i] {
@@ -411,7 +445,7 @@ input[type="color" i] {
 
 h3 {
     font-size: 1.5em;
-    margin-bottom: -1vh;
+    margin-bottom: 1%;
 }
 
 #gas-colorscale{
@@ -419,7 +453,6 @@ h3 {
     height:2.6vh;
     background: linear-gradient(0.25turn, #3f87a6, #ebf8e1, #f69d3c);
     display:inline-block;
-    margin-bottom: 1vh;
     border-radius: 0.25em;
     border: 1px solid #aaa;
     box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
@@ -500,15 +533,19 @@ h3 {
     width: 50%;
 }
 
+.attr-min-max{
+    display: inline-flex;
+    flex-direction: row;
+
+}
+
 #min{
     float: left;
     width:48%;
-    /* display:inline-block */
 }
 #max{
     float: right;
     width:48%;
-    /* display: inline-block; */
 }
 
 #bh-min{
@@ -524,7 +561,12 @@ h3 {
 
 .units{
     /* display: inline-block; */
-    margin-bottom:1vh;
+    /* margin-bottom:1vh; */
+    margin-top: 5%;
+    margin-left: 1%;
+    width: 40%;
+    /* font-size: medium; */
+    font-size: 0.8em;
 }
 
 .number-input {
@@ -535,8 +577,8 @@ h3 {
     color: #444;
     line-height: 1.3;
     padding: .6em 0.4em .5em .8em;
-    width: 100%;
-    max-width: 89%;
+    /* width: 100%; */
+    width: 40%;
     /* box-sizing: border-box; */
     margin: 0;
     border: 1px solid #aaa;
@@ -550,7 +592,7 @@ h3 {
     background-repeat: no-repeat, repeat;
     background-position: right .7em top 50%, 0 0;
     background-size: .65em auto, 100%;
-    margin-bottom: 1vh;
+    /* margin-bottom: 1vh; */
 }
 
 .data-details{
@@ -656,6 +698,8 @@ h3 {
     position: relative;
     display: inline-block;
     height: 0.8em;
+
+    cursor: pointer;
 }
 
 .retry-icon{
@@ -667,6 +711,7 @@ h3 {
     filter: invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%);
     height: 0.8em;
     display:inline-block;
+    cursor: pointer;
 }
 
 .spectra-status{
@@ -731,16 +776,21 @@ h3 {
 }
 
 #density-mod{
-    display: inline-grid;
+    /* display: inline-flex; */
     margin-left: 10px;
+    flex-direction: row;
+    margin-bottom: 0.5vh;
 }
 
 #density-min{
-    width: 60%;
+    width: 40%;
+    display: inline-block;
 }
 
 #density-max{
-    width: 60%;
+    width: 40%;
+    display: inline-block;
+    margin-left: 10px;
 }
 
 #options{
@@ -781,4 +831,52 @@ h3 {
     border-style: double;
     text-align: center;
     /* background: rgba(0,0,255,0.2); */
+}
+
+.alpha-picker{
+    width: 20%;
+    /* display: none; */
+    flex-direction: row;
+
+}
+
+.alpha-min{
+    margin-left: 2%;
+    display: inline-flex;
+    float: left;
+}
+.alpha-min-range{
+    /* margin-left: 2%; */
+    display: inline-flex;
+    float: left;
+}
+.alpha-mid{
+    width: 86%;
+    display: inline-block;
+    /* left:50%; */
+    text-align: center;
+}
+.alpha-mid-range{
+    margin-left: 21%;
+    display: inline-flex;
+    justify-content: center;
+    /* left:50%; */
+    /* text-align: center; */
+}
+.alpha-max{
+    margin-right: 2%;
+    display: inline-flex;
+    float: right;
+    text-align: right;
+}
+.alpha-max-range{
+    /* margin-right: 2%; */
+    /* display: inline-flex; */
+    float: right;
+    text-align: right;
+}
+
+#gas-colorscale-alpha{
+    flex: auto;
+    flex-direction: row;
 }
