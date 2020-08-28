@@ -448,6 +448,12 @@ h3 {
     margin-bottom: 1%;
 }
 
+#galaxylist{
+    display: none;
+    max-height: 50vh;
+    overflow: scroll;
+}
+
 #gas-colorscale{
     width: 100%;
     height:2.6vh;

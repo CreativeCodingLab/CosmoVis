@@ -27,6 +27,9 @@
         
         <script>
         $( function() {
+            $( "#galaxylist" ).draggable();
+        } );
+        $( function() {
             $( "#data_layers" ).draggable();
         } );
         $( function() {
@@ -802,6 +805,37 @@
         //     }
         // }
         
+        function galaxylist(){ 
+            var x = document.getElementById("galaxylist");
+            if (x.style.display === "block") {
+                x.style.display = "none";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter ="";
+
+            } else {
+                x.style.display = "block";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
+            }    
+        }
+
         function data_layers(){ 
             var x = document.getElementById("data_layers");
             if (x.style.display === "block") {
@@ -819,7 +853,10 @@
                 x.style.filter = "";
                 var x = document.getElementById("terminal_icon");
                 x.style.filter = "";
-                
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";
                 var x = document.getElementById("raySelection");
                 x.style.display = "none";
                 var x = document.getElementById("spectrum");
@@ -845,7 +882,10 @@
                 x.style.filter = "";
                 var x = document.getElementById("data_layers_icon");
                 x.style.filter = "";
-
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";
                 var x = document.getElementById("data_layers");
                 x.style.display = "none";
                 var x = document.getElementById("spectrum");
@@ -871,8 +911,10 @@
                 x.style.filter = "";
                 var x = document.getElementById("data_layers_icon");
                 x.style.filter = "";
-
-                
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";                
                 var x = document.getElementById("data_layers");
                 x.style.display = "none";
                 var x = document.getElementById("raySelection");
@@ -908,7 +950,10 @@
                 x.style.filter = "";
                 var x = document.getElementById("data_layers_icon");
                 x.style.filter = "";
-
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";
                 var x = document.getElementById("data_layers");
                 x.style.display = "none";
                 var x = document.getElementById("spectrum");
@@ -962,6 +1007,13 @@
     
     <div id="icon_container">
         
+        <div id="galaxy_list" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/spiral.svg" 
+            alt="galaxy catalog"
+            role="button"
+            onclick="galaxylist()"/>galaxies</div>
+
         <div id="data_layers_icon" class="icon_caption"><img 
             class="icon"
             src="static/assets/layers.svg" 
@@ -996,7 +1048,8 @@
         </div> -->
         
     </div>
-    <div id="containers">    
+    <div id="containers">
+        <div id="galaxylist" class="container"></div>    
         <div id="data_layers" class="container">
             <!-- <h2>attribute visualization</h2>
             <br> -->
@@ -1413,6 +1466,6 @@
     </script>
     </body>
 
-    <footer hidden><div>Refresh icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Delete icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Laser icon made by  <a href="https://www.flaticon.com/authors/those-icons" title="Those Icons">Those Icons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Layer icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>Telescope icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>,<a href="https://www.flaticon.com/authors/dinosoftlabs" title="DinosoftLabs">DinosoftLabs</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Line Graph Icon made by Zach Bogart from the Noun Project, Wrench Icon by Icon Lauk from the Noun Project</div></footer>
+    <footer hidden><div><div>Galaxy icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a>Refresh icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Delete icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Laser icon made by  <a href="https://www.flaticon.com/authors/those-icons" title="Those Icons">Those Icons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Layer icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>Telescope icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>,<a href="https://www.flaticon.com/authors/dinosoftlabs" title="DinosoftLabs">DinosoftLabs</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Line Graph Icon made by Zach Bogart from the Noun Project, Wrench Icon by Icon Lauk from the Noun Project</div></footer>
 
 </html>

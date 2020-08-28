@@ -35,7 +35,7 @@ socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeou
 thread = None
 thread_lock = Lock()
 
-yt.enable_parallelism()
+# yt.enable_parallelism()
 # fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
 # # fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
 # ds = yt.load(fn)
@@ -287,7 +287,7 @@ def test_connect():
 
 if __name__ == '__main__':
     # socketio.run(app, debug=False)
-    socketio.run(app, host='0.0.0.0', debug=False)
+    socketio.run(app, host='0.0.0.0', debug=True)
 
 
 #@socketio.on('requestPositions', namespace='/test')

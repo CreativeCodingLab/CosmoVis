@@ -216,7 +216,7 @@ THREE.VolumeRenderShader1 = {
 
 		// Decide how many steps to take
 		// "				int nsteps = int(-distance / relative_step_size + 0.5);",
-		"				int nsteps = int(length(distance))*1;",// / u_stepSize );",
+		"				int nsteps = int(length(distance));",// / u_stepSize );",
 		"				if ( nsteps < 1 )",
 		"						discard;",
 
@@ -335,7 +335,7 @@ THREE.VolumeRenderShader1 = {
 		"				vec4 path_L = 0.4*vec4(0.0156,0.0234,0.0898,0.0);",
 		"				float tau = 0.0;",
 		"				float rho0 = sampleDensity(loc);",
-		"				rho0 = ((rho0 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]));",
+		"				rho0 = max(0.0,((rho0 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
 
 		"				for (int iter=0; iter<nsteps; iter++) {",//int(float(MAX_STEPS)/u_stepSize
 		"						if (iter > nsteps)",
@@ -377,9 +377,10 @@ THREE.VolumeRenderShader1 = {
 		// "								c_i.rgba = vec4(0.0,0.0,0.0,0.0);",
 		"							}",
 
-		"							if(c_i.a > 0.0){;",
-		"								float rho1 = ((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]));",
-		"								float rho = length(step)*float(iter)*0.5*(rho0 + rho1);",
+		"							if(c_i.a > 0.0){",
+		"								float rho = max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
+		// "								float rho = 0.5*(rho0 + rho1);",
+		// "								rho0=rho1;",
 		"								tau += rho;",
 		"								float transmittance = exp(-(sigma_a+sigma_s)*tau);",
 		"								if(transmittance < 0.001){",
@@ -387,10 +388,9 @@ THREE.VolumeRenderShader1 = {
 		"								}",
 		"								vec3 emission = vec3(0.0,0.0,0.0);",				
 		"								emission += c_i.rgb;",
-								
 		"								path_L.rgb += transmittance * rho * sigma_e * emission;",
 		"								path_L.a += c_i.a;",
-		"								if(path_L.a == 0.99){",
+		"								if(path_L.a >= 0.99){",
 		"									break;",
 		"								}",
 				// Advance location deeper into the volume
