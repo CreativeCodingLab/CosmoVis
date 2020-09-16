@@ -34,6 +34,7 @@ THREE.VolumeRenderShader1 = {
 		// "u_clip": {value: [ false, false ]},
 		"u_gasVisibility": {value: true },
 		"u_dmVisibility": {value: true },
+		"u_starVisibility": {value: true },
 		"u_gasClip": {value: [ true, true ]},
 		"u_dmClip": {value: [ true, true ]},
 		"u_stepSize": { value: 1.0 },
@@ -48,7 +49,15 @@ THREE.VolumeRenderShader1 = {
 		"u_distMod": {value: null},
 		"u_distModI": {value: null},
 		"u_valMod": {value: null},
-		"u_valModI": {value: null}
+		"u_valModI": {value: null},
+
+		"u_starDiffuse": {value: null},
+		"u_starDepth": {value: null},
+		"u_starCol": {value: new THREE.Vector3( 1.0, 1.0 , 0.0 )},
+		"u_cameraNear": { value: 0.00001 },
+		"u_cameraFar": { value: 4000.0 },
+		"u_screenWidth": {value : null},
+		"u_screenHeight": {value : null},
     },
 	vertexShader: [
 		
@@ -129,8 +138,10 @@ THREE.VolumeRenderShader1 = {
 		"		}",
 	].join( "\n" ),
 	fragmentShader: [
+		"		#include <packing>",
 		"		precision highp float;",
-		"		precision mediump sampler3D;",
+		"		precision highp sampler3D;",
+		"		precision highp sampler2D;",
 
 		"		uniform vec3 u_size;",
 		"		uniform int u_renderstyle;",
@@ -146,6 +157,7 @@ THREE.VolumeRenderShader1 = {
 
 		" 		uniform bool u_gasVisibility;",
 		" 		uniform bool u_dmVisibility;",
+		" 		uniform bool u_starVisibility;",
 
 		"		uniform sampler3D u_data;",
 		"		uniform sampler3D u_gasData;",
@@ -170,10 +182,19 @@ THREE.VolumeRenderShader1 = {
 		"		uniform sampler2D u_cmGasData;",
 		"		uniform sampler2D u_cmDMData;",
 
+		"		uniform sampler2D u_starDiffuse;",
+		"		uniform sampler2D u_starDepth;",
+		"		uniform vec3 u_starCol;",		
+
 		"		varying vec3 v_cameraPosition;",
 		"		varying vec3 v_position;",
 		"		varying vec4 v_nearpos;",
 		"		varying vec4 v_farpos;",
+
+		"		uniform float u_cameraNear;",
+		"		uniform float u_cameraFar;",
+		"		uniform float u_screenWidth;",
+		"		uniform float u_screenHeight;",
 		
 
 		// The maximum distance through our rendering volume is sqrt(3)*size.
@@ -272,6 +293,33 @@ THREE.VolumeRenderShader1 = {
 		"			vec3 outputColor = mix(inputColor.rgb, grayscale(inputColor.rgb), amount/1.6);",
 		"			return outputColor;",
 		"		}",
+		
+		"		vec3 WorldPosFromDepth(float depth) {",
+		"			vec2 ndc;",
+		"			vec3 eye;",
+		"			ndc.x = ( ( gl_FragCoord.x * (1.0/u_screenWidth)  ) - 0.5) * 2.0;",
+		"			ndc.y = ( ( gl_FragCoord.y * (1.0/u_screenHeight) ) - 0.5) * 2.0;",
+		"			eye.z = u_cameraNear * u_cameraFar / ((depth * (u_cameraFar - u_cameraNear)) - u_cameraNear);",
+		"			eye.x = ( -ndc.x * eye.z ) * 1.0 / u_cameraNear;",
+		"			eye.y = ( -ndc.y * eye.z ) * 1.0 / u_cameraNear;",
+		
+		"			return eye;",
+		"		}",
+
+		"		vec2 worldToScreenSpace(vec3 loc){",
+		"			vec2 ndc;",
+		"			ndc.x = ( ( gl_FragCoord.x * (1.0/u_screenWidth)  ) - 0.5) * 2.0;",
+		"			ndc.y = ( ( gl_FragCoord.y * (1.0/u_screenHeight) ) - 0.5) * 2.0;",
+		"			return ndc;",			
+		"		}",
+		// "			float z = depth * 2.0 - 1.0;",
+		// "			vec4 clipSpacePosition = vec4(gl_FragCoord.xy * 2.0 - 1.0, z, 1.0);",
+		// "			vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;",
+		// 	// Perspective division
+		// "			viewSpacePosition /= viewSpacePosition.w;",
+		// "			vec4 worldSpacePosition = viewMatrixInv * viewSpacePosition;",
+		// "			return worldSpacePosition.xyz;",
+		// "		}",
 
 		"		vec4 apply_dvr_colormap(float val, bvec2 clip, vec2 clim, sampler2D cm_texture, float density, float dist, vec3 texcoords, int iter) {",
 		"				float a;",
@@ -322,6 +370,7 @@ THREE.VolumeRenderShader1 = {
 		"				float gasVal = sampleData(u_gasData, loc);",
 		"				float dmVal = sampleData(u_dmData, loc);",
 		"				float density = sampleDensity(loc);",
+		// "				float starDepth = texture2D( u_starDepth, loc.xy ).x;",
 		"				float sigma_a = 0.9;",
 		"				float sigma_s = 0.4;",
 		"				float sigma_e = 1.0;",
@@ -344,7 +393,10 @@ THREE.VolumeRenderShader1 = {
 		// "						float val = sample1(loc);",
 		"						float gasVal = sampleData(u_gasData, loc);",
 		"						float dmVal = sampleData(u_dmData, loc);",
-		"						float density = sampleDensity(loc);",					
+		"						float density = sampleDensity(loc);",
+		"						float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		"						float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		"						float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
 
 		// Apply composite step
 		"						float dist;",
@@ -374,10 +426,9 @@ THREE.VolumeRenderShader1 = {
 		"								c_i = c_i_gas;",
 		"							}",
 		"							else{",
-		// "								c_i.rgba = vec4(0.0,0.0,0.0,0.0);",
+		"								c_i.rgba = vec4(0.0,0.0,0.0,0.0);",
 		"							}",
-
-		"							if(c_i.a > 0.0){",
+		"							if((c_i.a != 0.0)){",
 		"								float rho = max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
 		// "								float rho = 0.5*(rho0 + rho1);",
 		// "								rho0=rho1;",
@@ -386,16 +437,33 @@ THREE.VolumeRenderShader1 = {
 		"								if(transmittance < 0.001){",
 		"									break;",
 		"								}",
-		"								vec3 emission = vec3(0.0,0.0,0.0);",				
-		"								emission += c_i.rgb;",
+		"								vec3 emission = vec3(0.0,0.0,0.0);",
+		// "								vec3 starEmission = vec3(0.0,0.0,0.0);",				
+		"								if( (u_gasVisibility == true) && (c_i_gas.a > 0.0) ){",
+		"									emission += c_i_gas.rgb;",
+		"									path_L.a += c_i_gas.a;",
+		"								}",
+		"								if( (u_dmVisibility == true) && (c_i_dm.a > 0.0) ){",
+		"									emission += c_i_dm.rgb;",
+		"									path_L.a += c_i_dm.a;",
+		"								}",
+		// "								emission += c_i.rgb;",
+		"								if(u_starVisibility == true){",
+		// "									if( ( distance(WorldPosFromDepth(fragCoordZ),loc) >= 0.0  ) && ( (distance(WorldPosFromDepth(fragCoordZ),loc)) <= (u_size.x) )){",
+		"										emission += texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",//vec3(1.0-starDepth,1.0-starDepth,0.0);",
+		"									if((u_gasVisibility == false) && (u_dmVisibility == false)){",	
+		"										path_L.a += 1.0;",
+		"									}",
+		"									else path_L.a += starDepth/u_size.x;",
+		"								}",
 		"								path_L.rgb += transmittance * rho * sigma_e * emission;",
-		"								path_L.a += c_i.a;",
+		"								path_L.a = clamp(path_L.a,0.0,1.0);",
 		"								if(path_L.a >= 0.99){",
 		"									break;",
 		"								}",
+		"							}",
 				// Advance location deeper into the volume
 
-		"							}",
 		// "							loc += step;",
 		"						}",
 		// "						else{",

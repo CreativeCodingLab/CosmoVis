@@ -69,6 +69,11 @@ var lines = []
 var container_hover //used to determine if the mouse is over a GUI container when drawing skewers
 var edges_scaled = []
 var domainXYZ = [0.0,1.0,0.0,1.0,0.0,1.0]
+
+var starScene
+var target //used for rendering star particles to depth texture
+var boxOfStarPoints
+
 var galaxy_centers
 /**
  * * used with refreshLoop() to get fps
@@ -369,12 +374,15 @@ function updateUniforms(){
         size = w * h
         
         
+        volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
+        volMaterial.uniforms["u_screenWidth"].value = window.innerWidth
+
         //check if grayscale depth is enabled
         g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
         volMaterial.uniforms[ "u_grayscaleDepthMod" ].value = g_mod;
 
         //step size
-        volMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
+        // volMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
         volMaterial.uniforms[ "u_exposure" ].value = document.getElementById("exposure").value
         
         //cutting sliders
@@ -765,78 +773,162 @@ function loadGasDMAttributes(size,attr,resolution_bool){
             gasArr = []
             dmArr = []
 
-            initColor('PartType0')
-            initColor('PartType1')
+            d3.json( 'static/data/' + simID + '/PartType4/star_particles.json' ).then( function( d ){
+                console.log( Object.keys(d).length )
+                n = Object.keys(d).length
+                m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
+                var starGeometry = new THREE.BufferGeometry();
+                var starPositions = new Float32Array(n * 3)
+                if( Object.keys(d).length > 0 ){
+                    for ( i = 0; i < n; i++ ){
+                        let vertex = new THREE.Vector3( d[i].x*m, d[i].y*m, d[i].z*m )
+                        vertex.toArray( starPositions, i * 3 )
+                        // console.log(vertex)
+                    }
+                    console.log(starPositions)
+                    starScene.remove( boxOfStarPoints )
+                    starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
+                    // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
+                    boxOfStarPoints = new THREE.Points( starGeometry, starMaterial );
+                    starScene.add ( boxOfStarPoints );
+                    var x = document.getElementById("star-eye-open");
+                    x.style.display = "inline-block";
+                    var y = document.getElementById("star-eye-closed");
+                    y.style.display = "none";
+                    // renderer.setRenderTarget( target )
+                    // renderer.render( starScene, camera );
+                    // renderer.setRenderTarget( null )
 
-            // uniforms[ "u_data" ].value = texture;
-            uniforms[ "u_gasData" ].value = gasTexture;
-            uniforms[ "u_dmData" ].value = dmTexture;
-            uniforms[ "u_size" ].value.set( size, size, size );
-            uniforms[ "u_gasClim" ].value.set( climGasLimits[0], climGasLimits[1] );
-            uniforms[ "u_dmClim" ].value.set( climDMLimits[0], climDMLimits[1] );
-            uniforms[ "u_renderstyle" ].value = 'mip' == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-            uniforms[ "u_renderthreshold" ].value = 1.0; // For ISO renderstyle
-            uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
-            uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
-            uniforms[ "u_gasClip" ].value = [true, true]
-            uniforms[ "u_dmClip" ].value = [true, true]
+                }
+                initColor('PartType0')
+                initColor('PartType1')
 
-
-            var material = new THREE.ShaderMaterial( {
-                uniforms: uniforms,
-                vertexShader: shader.vertexShader,
-                fragmentShader: shader.fragmentShader,
-                clipping: false,
-                side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
-                transparent: true,
-                // opacity: 0.05,
-
-                // blending: THREE.CustomBlending,
-                blendEquation: THREE.AddEquation,
-                blendSrc: THREE.OneFactor,
-                blendDst: THREE.OneMinusSrcAlphaFactor,
-                depthWrite: false,
-            } );
-
-            volMaterial = material
-
-            // THREE.Mesh
-            var geometry = new THREE.BoxGeometry( size, size, size );
-            geometry.translate( size / 2, size / 2, size / 2 );
-
-            createSkewerCube(size)
-
-            var mesh = new THREE.Mesh( geometry, material );
-            mesh.layers.set(0)
-            mesh.renderOrder = 1
-            volMesh = mesh
-
-            updateUniforms()
-            scene.add( mesh );
-
-            gm = document.querySelector('#gas-minval-input')
-            gm.addEventListener('input', updateUniforms);
-            gmx = document.querySelector('#gas-maxval-input')
-            gmx.addEventListener('input', updateUniforms);
-
-            dmm = document.querySelector('#dm-minval-input')
-            dmm.addEventListener('input', updateUniforms);
-            dmmx = document.querySelector('#dm-maxval-input')
-            dmmx.addEventListener('input', updateUniforms);
-
-            sm = document.querySelector('#star-minval-input')
-            sm.addEventListener('input', updateUniforms);
-            smx = document.querySelector('#star-maxval-input')
-            smx.addEventListener('input', updateUniforms);
-
-            bm = document.querySelector('#bh-minval-input')
-            bm.addEventListener('input', updateUniforms);
-            bmx = document.querySelector('#bh-maxval-input')
-            bmx.addEventListener('input', updateUniforms);
+                // uniforms[ "u_data" ].value = texture;
+                uniforms[ "u_gasData" ].value = gasTexture;
+                uniforms[ "u_dmData" ].value = dmTexture;
+                uniforms[ "u_size" ].value.set( size, size, size );
+                uniforms[ "u_gasClim" ].value.set( climGasLimits[0], climGasLimits[1] );
+                uniforms[ "u_dmClim" ].value.set( climDMLimits[0], climDMLimits[1] );
+                uniforms[ "u_renderstyle" ].value = 'mip' == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
+                uniforms[ "u_renderthreshold" ].value = 1.0; // For ISO renderstyle
+                uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
+                uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
+                uniforms[ "u_gasClip" ].value = [true, true]
+                uniforms[ "u_dmClip" ].value = [true, true]
+                uniforms[ "u_starDiffuse" ].value = target.texture
+                uniforms[ "u_starDepth" ].value = target.depthTexture
 
 
+                var material = new THREE.ShaderMaterial( {
+                    uniforms: uniforms,
+                    vertexShader: shader.vertexShader,
+                    fragmentShader: shader.fragmentShader,
+                    clipping: false,
+                    side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
+                    transparent: true,
+                    // opacity: 0.05,
+
+                    // blending: THREE.CustomBlending,
+                    blendEquation: THREE.AddEquation,
+                    blendSrc: THREE.OneFactor,
+                    blendDst: THREE.OneMinusSrcAlphaFactor,
+                    depthWrite: false,
+                } );
+
+                volMaterial = material
+
+                // THREE.Mesh
+                var geometry = new THREE.BoxGeometry( size, size, size );
+                geometry.translate( size / 2, size / 2, size / 2 );
+
+                createSkewerCube(size)
+
+                var mesh = new THREE.Mesh( geometry, material );
+                mesh.layers.set(0)
+                mesh.renderOrder = 1
+                volMesh = mesh
+
+                updateUniforms()
+                scene.add( mesh );
+
+                gm = document.querySelector('#gas-minval-input')
+                gm.addEventListener('input', updateUniforms);
+                gmx = document.querySelector('#gas-maxval-input')
+                gmx.addEventListener('input', updateUniforms);
+
+                dmm = document.querySelector('#dm-minval-input')
+                dmm.addEventListener('input', updateUniforms);
+                dmmx = document.querySelector('#dm-maxval-input')
+                dmmx.addEventListener('input', updateUniforms);
+
+                sm = document.querySelector('#star-minval-input')
+                sm.addEventListener('input', updateUniforms);
+                smx = document.querySelector('#star-maxval-input')
+                smx.addEventListener('input', updateUniforms);
+
+                bm = document.querySelector('#bh-minval-input')
+                bm.addEventListener('input', updateUniforms);
+                bmx = document.querySelector('#bh-maxval-input')
+                bmx.addEventListener('input', updateUniforms);
+                
+            })
+
+            
         })
     })
+}
+
+function disposeArray() {
+    this.array = null;
+}
+
+function setupStarScene(){
+    starScene = new THREE.Scene();
+    starScene.background = new THREE.Color("rgb(4,6,23)")
+    starCol = new THREE.Color( 1,1,0 )
+    console.log(starCol)
+    starMaterial = new THREE.ShaderMaterial( {
+
+        uniforms: {
+            Col: { value: new THREE.Vector4(starCol.r,starCol.g,starCol.b,1.0) },
+            // maxCol: { value: new THREE.Vector4(starMaxCol.r,starMaxCol.g,starMaxCol.b,1.0) }
+        },
+        vertexShader:   document.getElementById( 'vertexshader-star' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentshader-star' ).textContent,
+
+        // // blending:       THREE.AdditiveBlending,
+        blending:       THREE.CustomBlending,
+        blendEquation:  THREE.AddEquation, //default
+        blendSrc:       THREE.OneFactor,
+        blendDst:       THREE.ZeroFactor,
+        depthTest:      true,
+        depthWrite:     true,
+        transparent:    false,
+        // alphaTest:      0.3
+
+    });
+}
+
+function setupRenderTarget(){
+
+    if( target ) target.dispose();
+
+    var format = THREE.DepthFormat
+    var type = THREE.FloatType
+
+    target = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
+    target.texture.format = THREE.RGBAFormat;
+    target.texture.minFilter = THREE.NearestFilter;
+    target.texture.magFilter = THREE.NearestFilter;
+    target.texture.generateMipMaps = false
+    target.stencilBuffer = ( format === THREE.DepthStencilFormat ) ? true : false;
+    target.depthBuffer = true;
+    target.depthTexture = new THREE.DepthTexture();
+    target.depthTexture.format = format
+    target.depthTexture.type = type;
+
+
+    setupStarScene()
 }
 
 function loadHaloCenters(){
@@ -850,9 +942,9 @@ function loadHaloCenters(){
             str += "</p>" 
         }
         str += "</div>"
-        console.log(str)
+        // console.log(str)
         div.innerHTML = str
-        console.log(galaxy_centers)
+        // console.log(galaxy_centers)
     }) 
 }
 function goToPoint(x,y,z){
@@ -1430,9 +1522,23 @@ function render() {
      * * render()
      */
 
-    requestAnimationFrame( render );
+    // requestAnimationFrame( render );
     controls.update()
 
+    //render stars into target
+    
+    // renderer.setRenderTarget( null )
+
+    if( target ){
+        renderer.setRenderTarget( target )
+        renderer.render( starScene, camera );   
+        if( volMaterial ){
+            volMaterial.uniforms[ "u_starDiffuse" ].value = target.texture
+            volMaterial.uniforms[ "u_starDepth" ].value = target.depthTexture    
+        }
+        renderer.setRenderTarget( null )
+    }
+    
     let divGrid = (document.getElementById("grid-check")).checked
     let divGridRadio1 = (document.getElementById("grid-radio-1")).checked
     if(divGrid && divGridRadio1){
@@ -1443,7 +1549,9 @@ function render() {
         staticGrid.lookAt(camera.position.x,camera.position.y,camera.position.z)
         staticGrid.rotateX(Math.PI/2)
     }
-    renderer.render( scene, camera );   
+    renderer.render( scene, camera );
+    requestAnimationFrame( render );
+   
 };
 
 function round(value, decimals) {
@@ -2234,6 +2342,7 @@ $(document).ready(function(){
     
     function init(){
 
+        setupRenderTarget()
         checkSelectedSimID()
         THREE.Cache.enabled = true
         canvas = document.createElement('canvas')
@@ -2336,8 +2445,10 @@ $(document).ready(function(){
         renderer.sortPoints = true;
         renderer.gammaFactor = 2.2;
         renderer.gammaOutput = true;
-        renderer.logarithmicDepthBuffer = false
-        
+        renderer.logarithmicDepthBuffer = true
+        var dpr = renderer.getPixelRatio();
+        target.setSize( window.innerWidth * dpr, window.innerHeight * dpr );
+    
         controls = new THREE.OrbitControls(camera, renderer.domElement);
 
         // camera.position.set(8.47, 8.47, 8.47)

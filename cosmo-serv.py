@@ -18,6 +18,7 @@ from itertools import product
 from flask import Response
 from flask_socketio import SocketIO, emit, join_room, leave_room, close_room, rooms, disconnect
 import random
+import mpi4py
 
 
 #Flask is used as web framework to run python scripts
@@ -35,7 +36,7 @@ socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeou
 thread = None
 thread_lock = Lock()
 
-# yt.enable_parallelism()
+yt.enable_parallelism()
 # fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
 # # fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
 # ds = yt.load(fn)
