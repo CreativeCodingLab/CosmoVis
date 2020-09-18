@@ -81,6 +81,8 @@ var galaxy_centers
 const times = [];
 let fps;
 var camPos;
+var oldSize
+var oldPos
 
 // var staticGrid;
 
@@ -146,27 +148,18 @@ function updateSize(){
     s = document.getElementById("size_select").value
     //check to see if selected size is different than the current configuration
 
-    let oldSize = gridsize
-    let oldPos = camera.position
+    oldSize = gridsize
+    oldPos = camera.position
 
 
     if(gridsize != s){
         gridsize = s
-
-        camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
-        // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-        // camera.zoom = 6
-        camera.updateProjectionMatrix()
-        controls.target.set( gridsize/2,  gridsize/2,  gridsize/2 );
     
-        
         asyncCall()
         //check to see which variables are visible and update those immediately
-        
-
+        checkSelectedSimID()
         loadGasDMAttributes(gridsize,'Temperature',true)
-
-
+        // loadHaloCenters()
         
         createSkewerCube(gridsize)
         updateSkewerEndpoints(gridsize)
@@ -373,6 +366,10 @@ function updateUniforms(){
         h = 1
         size = w * h
         
+        starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
+        starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+        starMaterial.uniforms[ "u_gridsize" ].value = gridsize
+
         
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
         volMaterial.uniforms["u_screenWidth"].value = window.innerWidth
@@ -613,7 +610,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
 
     type='PartType0'
     d3.json('static/data/'+simID+'/PartType0/' + size + '_' + type + '_' + attr +'.json').then(function(d){
-        clearLayer(0)
+        
         
         //arr holds the flattened data in Float32Array to be used as a 3D texture
         gasArr = new Float32Array(size * size * size)
@@ -621,6 +618,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         let log
         if(elements.includes(attr)){
             log = false
+            min = 4.5
         }
         else{
             log = true
@@ -644,6 +642,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         d = [] //clear loaded data since it is no longer needed
 
         //find the min and max values in the dataset and set the values in the container GUI input boxes
+        
         var min = gasArr.reduce(function(a, b) {
             return Math.min(a, b);
         });
@@ -651,7 +650,9 @@ function loadGasDMAttributes(size,attr,resolution_bool){
             return Math.max(a, b);
         });
         console.log(min)
+        
         if(min==-Infinity){min = -999999999999}
+        
         var x = document.getElementById("gas-eye-open");
         x.style.display = "inline-block";
         var y = document.getElementById("gas-eye-closed");
@@ -662,12 +663,17 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         if(resolution_bool && localStorage.getItem('gasMaxVal') != ""){
             max = localStorage.getItem('gasMaxVal')
         }
+        
         climGasLimits = [min, max]
         let minval = document.getElementById('gas-minval-input')
+        
         minval.value = round(min,2)
         let maxval = document.getElementById('gas-maxval-input')
         maxval.value = round(max,2)
-
+        // if(elements.includes(attr)){
+        min = 4.5
+        minval.value = 4.5 
+        // }
         let gasUnits = document.getElementsByClassName('gas-attr-units')
         for(i=0;i< gasUnits.length;i++){
             if((attr == 'Temperature') || (attr == 'MaximumTemperature')){
@@ -791,7 +797,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                     // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
                     boxOfStarPoints = new THREE.Points( starGeometry, starMaterial );
                     starScene.add ( boxOfStarPoints );
-                    var x = document.getElementById("star-eye-open");
+                    var x = document.getElementById("star-eye-open"); 
                     x.style.display = "inline-block";
                     var y = document.getElementById("star-eye-closed");
                     y.style.display = "none";
@@ -815,8 +821,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
                 uniforms[ "u_gasClip" ].value = [true, true]
                 uniforms[ "u_dmClip" ].value = [true, true]
-                uniforms[ "u_starDiffuse" ].value = target.texture
-                uniforms[ "u_starDepth" ].value = target.depthTexture
+                
 
 
                 var material = new THREE.ShaderMaterial( {
@@ -843,11 +848,19 @@ function loadGasDMAttributes(size,attr,resolution_bool){
 
                 createSkewerCube(size)
 
+
+                clearLayer(0)
+                if(oldPos && oldSize){
+                    camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+                    // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
+                    // camera.zoom = 6
+                    camera.updateProjectionMatrix()
+                    controls.target.set( gridsize/2,  gridsize/2,  gridsize/2 );
+                }
                 var mesh = new THREE.Mesh( geometry, material );
                 mesh.layers.set(0)
                 mesh.renderOrder = 1
                 volMesh = mesh
-
                 updateUniforms()
                 scene.add( mesh );
 
@@ -871,6 +884,8 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 bmx = document.querySelector('#bh-maxval-input')
                 bmx.addEventListener('input', updateUniforms);
                 
+
+                loadHaloCenters()
             })
 
             
@@ -891,6 +906,9 @@ function setupStarScene(){
 
         uniforms: {
             Col: { value: new THREE.Vector4(starCol.r,starCol.g,starCol.b,1.0) },
+            u_xyzMin: {value: null},
+            u_xyzMax: {value: null},
+            u_gridsize: {value: gridsize}
             // maxCol: { value: new THREE.Vector4(starMaxCol.r,starMaxCol.g,starMaxCol.b,1.0) }
         },
         vertexShader:   document.getElementById( 'vertexshader-star' ).textContent,
@@ -898,7 +916,7 @@ function setupStarScene(){
 
         // // blending:       THREE.AdditiveBlending,
         blending:       THREE.CustomBlending,
-        blendEquation:  THREE.AddEquation, //default
+        // blendEquation:  THREE.AddEquation, //default
         blendSrc:       THREE.OneFactor,
         blendDst:       THREE.ZeroFactor,
         depthTest:      true,
@@ -907,6 +925,8 @@ function setupStarScene(){
         // alphaTest:      0.3
 
     });
+    checkSelectedSimID()
+
 }
 
 function setupRenderTarget(){
@@ -926,6 +946,8 @@ function setupRenderTarget(){
     target.depthTexture = new THREE.DepthTexture();
     target.depthTexture.format = format
     target.depthTexture.type = type;
+    target.scissorTest = true;
+    target.scissor
 
 
     setupStarScene()
@@ -937,6 +959,7 @@ function loadHaloCenters(){
         div = document.getElementById("galaxylist")
         str = '<div id="galaxy-list">'
         for(i=0;i<Object.keys(galaxy_centers).length;i++){
+            m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
             str += '<button onclick="goToPoint(' + galaxy_centers[i].x + ',' + galaxy_centers[i].y + ',' + galaxy_centers[i].z + ')">'
             str += i + '<br>'
             str += "</p>" 
@@ -952,18 +975,27 @@ function goToPoint(x,y,z){
     // x*=0.6776999078
     // y*=0.6776999078
     // z*=0.6776999078
-    console.log(x,y,z)
-    controls.target.set( x*gridsize,  y*gridsize,  z*gridsize );
-    camera.lookAt(x*gridsize,y*gridsize,z*gridsize)
-
-    delta = 0.2
-    domainXYZ[0]=x-delta
-    domainXYZ[1]=x+delta
-    domainXYZ[2]=y-delta
-    domainXYZ[3]=y+delta
-    domainXYZ[4]=z-delta
-    domainXYZ[5]=z+delta
     
+    
+    m = (edges.right_edge[0]-edges.left_edge[0]) / gridsize
+    
+    x*=m
+    y*=m
+    z*=m
+    console.log( x, y, z )
+    camera.lookAt( x/m, y/m, z/m)
+    controls.target.set( x/m, y/m, z/m );
+
+    delta = 0.1
+    domainXYZ[0] = (x / m) - delta
+    domainXYZ[1] = (x / m) + delta
+    domainXYZ[2] = (y / m) - delta
+    domainXYZ[3] = (y / m) + delta
+    domainXYZ[4] = (z / m) - delta
+    domainXYZ[5] = (z / m) + delta
+    updateXYZDomain('x', domainXYZ[0], domainXYZ[1])
+    updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
+    updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
     
     let margin = {top: 20, right: 15, bottom: 30, left: 20};
     let width = 300, height = 40
@@ -984,11 +1016,9 @@ function goToPoint(x,y,z){
         // .range([domainXYZ[4], domainXYZ[5]]);
     zBrush.call(zBrusher).call(zBrusher.move,z.range())
 
-    updateXYZDomain('x', domainXYZ[0], domainXYZ[1])
-    updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
-    updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
+    
 
-
+    updateUniforms()
     // d3.select('.x-brush').call(d3.brush().move, [domainXYZ[0], domainXYZ[1]])
 
     // xBrusher.move(xBrush,[domainXYZ[0], domainXYZ[1]])
@@ -1527,7 +1557,7 @@ function render() {
 
     //render stars into target
     
-    // renderer.setRenderTarget( null )
+    renderer.setRenderTarget( null )
 
     if( target ){
         renderer.setRenderTarget( target )
@@ -2251,7 +2281,8 @@ function checkSelectedSimID(){
             createAttributeSelectors(field_list)
             simSize = (edges.right_edge[0]-edges.left_edge[0])/0.6776999078
             toggleGrid()
-
+            updateUniforms()
+            
         })
         clearDropDowns()
                 
@@ -2309,7 +2340,7 @@ function checkSelectedSimID(){
             }
         }
         // sendSimIDtoServer(simID)
-        loadGasDMAttributes(64,'Temperature', false)
+        loadGasDMAttributes(gridsize,'Temperature', false)
         
     }
 
@@ -2343,7 +2374,7 @@ $(document).ready(function(){
     function init(){
 
         setupRenderTarget()
-        checkSelectedSimID()
+        
         THREE.Cache.enabled = true
         canvas = document.createElement('canvas')
         context = canvas.getContext('webgl2', { antialias: true, alpha: true })
@@ -2443,7 +2474,7 @@ $(document).ready(function(){
         renderer.precision = 'highp';
         renderer.powerPreference = 'high-performance'
         renderer.sortPoints = true;
-        renderer.gammaFactor = 2.2;
+        renderer.gammaFactor = 4.2;
         renderer.gammaOutput = true;
         renderer.logarithmicDepthBuffer = true
         var dpr = renderer.getPixelRatio();
@@ -2543,7 +2574,7 @@ $(document).ready(function(){
         toggleGrid()
 
         camPos = camera.position
-        loadHaloCenters()
+        
 
         
         // loadData()
@@ -2951,7 +2982,15 @@ $(document).ready(function(){
         camera.updateProjectionMatrix();
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
-
+        
+        var pixelRatio = window.devicePixelRatio;
+        var newWidth = window.innerWidth / pixelRatio;
+        var newHeight = window.innerHeight / pixelRatio;
+        target.setSize( window.innerWidth, window.innerHeight )
+        updateUniforms()
+        
+        // setupRenderTarget()
+        
         // renderer.setSize( window.innerWidth, window.innerHeight );
         // resizeRendererToDisplaySize(renderer)
         // function resizeRendererToDisplaySize(renderer) {
