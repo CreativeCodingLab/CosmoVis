@@ -304,7 +304,7 @@ h1{
     font-size: 16px;
     /* font-family: sans-serif; */
     font-family: mr-eaves-modern, sans-serif;
-    font-weight: 700;
+    font-weight: 300;
     color: #444;
     line-height: 1.5;
     padding: 0.0em 1.4em 0.0em .8em;
@@ -446,6 +446,7 @@ input[type="color" i] {
 h3 {
     font-size: 1.5em;
     margin-bottom: 1%;
+    font-weight: 300;
 }
 
 #galaxylist{
@@ -886,3 +887,15 @@ h3 {
     flex: auto;
     flex-direction: row;
 }
+
+table {
+    border-collapse: collapse;
+}
+thead {
+    font-weight: 700;
+}
+th,td {
+    border: 1px solid black;
+    padding: 10px 15px;
+}
+  

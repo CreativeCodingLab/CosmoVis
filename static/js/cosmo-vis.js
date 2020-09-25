@@ -763,6 +763,12 @@ function loadGasDMAttributes(size,attr,resolution_bool){
             let maxval = document.getElementById('dm-maxval-input')
             maxval.value = round(max,2)
 
+            min = -30
+            minval.value = -30 
+
+            max = -25
+            maxval.value = -25 
+
             let dmUnits = document.getElementsByClassName('dm-attr-units')
             for(i=0;i< dmUnits.length;i++){
                 dmUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
@@ -885,7 +891,8 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 bmx.addEventListener('input', updateUniforms);
                 
 
-                loadHaloCenters()
+                // loadHaloCenters()
+
             })
 
             
@@ -920,7 +927,7 @@ function setupStarScene(){
         blendSrc:       THREE.OneFactor,
         blendDst:       THREE.ZeroFactor,
         depthTest:      true,
-        depthWrite:     true,
+        depthWrite:     false,
         transparent:    false,
         // alphaTest:      0.3
 
@@ -936,7 +943,13 @@ function setupRenderTarget(){
     var format = THREE.DepthFormat
     var type = THREE.FloatType
 
-    target = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
+    var devicePixelRatio = window.devicePixelRatio || 1;
+    // canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
+    // canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
+    const size = new THREE.Vector2()
+    renderer.getSize( size );
+
+    target = new THREE.WebGLRenderTarget( size.x, size.y );
     target.texture.format = THREE.RGBAFormat;
     target.texture.minFilter = THREE.NearestFilter;
     target.texture.magFilter = THREE.NearestFilter;
@@ -2012,6 +2025,72 @@ function updateGraph(){
     }
 }
 
+function createGalaxyFilteringBrushes(attr){
+    d3.select('#galaxy-filter-criteria').append('div').attr('id',attr+'galaxy-brush-label').attr('class','galaxy-brush').append('text').text(attr)
+    let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id',attr+'galaxy-brush').attr('class','galaxy-brush').append('svg')
+
+    var check = document.createElement("INPUT");
+    check.setAttribute("type", "checkbox");
+    document.getElementById(attr+'galaxy-brush-label').prepend(check)
+
+
+    let margin = {top: 20, right: 15, bottom: 30, left: 20};
+    let width = 300, height = 40
+    let axis = svg.append('g');
+    let brush = svg.append("g")
+        .attr("class", "brush")
+    
+    var attrScale = d3.scaleLinear()
+        .domain([0.0,1.0])
+        .range([margin.left, width]);
+    
+    galaxyBrushResize()
+    drawGalaxyAttrBrush(attr)    
+    
+    function galaxyBrushResize(){
+        var w = width - margin.right;
+        var h = 60;
+
+        var aspect = w / h;
+        var vw = width;
+        var vh = vw / aspect;
+
+        width = vw;
+        height = vh - margin.bottom;
+
+        svg
+            //.style("font-size", "2px")
+            .attr('width', w).attr('height', h)
+            .attr("viewBox", "0 0 " + vw + " " + vh)
+            //.attr("text", "white")
+
+        attrScale.range([margin.left, width - margin.right]);
+        axis.attr('transform', 'translate(0,' + height + ')')
+            .call(d3.axisBottom(attrScale).ticks(6))
+    }
+    function drawGalaxyAttrBrush(attr) {
+        if (!attr) { return; }
+        galaxyAttrBrush = brush
+        galaxyAttrBrusher = d3.brushX()
+            .extent([[margin.left, 0], [width - margin.right, height]])
+            .on("brush end", galaxyAttrBrushed);
+        galaxyAttrBrush.call(galaxyAttrBrusher)
+            .call(galaxyAttrBrusher.move, attrScale.range());
+    }
+
+    function galaxyAttrBrushed() {
+
+        var s = d3.event.selection || attrScale.range();
+        ret = s.map(attrScale.invert, attrScale);        
+        // console.log(s)
+        // console.log(ret)
+
+        if (ret[0] !== ret[1]) {
+            // updateXYZDomain(xyz,ret[0],ret[1])
+        }
+    }
+}
+
 function createXYZBrush(xyz){
     // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
     // d3.select('#terminal').selectAll('.depth-brush').remove();
@@ -2373,10 +2452,13 @@ $(document).ready(function(){
     
     function init(){
 
-        setupRenderTarget()
         
         THREE.Cache.enabled = true
         canvas = document.createElement('canvas')
+        var devicePixelRatio = window.devicePixelRatio || 1;
+        canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
+        canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
+
         context = canvas.getContext('webgl2', { antialias: true, alpha: true })
         
         scene = new THREE.Scene();
@@ -2468,8 +2550,10 @@ $(document).ready(function(){
         
 
         renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context });
-        renderer.setPixelRatio( window.devicePixelRatio );
+        // renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setPixelRatio(1);
+
         renderer.antialias = true;
         renderer.precision = 'highp';
         renderer.powerPreference = 'high-performance'
@@ -2477,8 +2561,16 @@ $(document).ready(function(){
         renderer.gammaFactor = 4.2;
         renderer.gammaOutput = true;
         renderer.logarithmicDepthBuffer = true
-        var dpr = renderer.getPixelRatio();
-        target.setSize( window.innerWidth * dpr, window.innerHeight * dpr );
+        // var dpr = renderer.getPixelRatio();
+        
+        setupRenderTarget()
+
+        
+        // const size = new THREE.Vector2()
+        // renderer.getDrawingBufferSize( size );
+        
+        
+        // target.setSize( size.width, size.height );
     
         controls = new THREE.OrbitControls(camera, renderer.domElement);
 
@@ -2575,7 +2667,8 @@ $(document).ready(function(){
 
         camPos = camera.position
         
-
+        createGalaxyFilteringBrushes('sfr')
+        createGalaxyFilteringBrushes('mass')
         
         // loadData()
     }
@@ -2878,7 +2971,7 @@ $(document).ready(function(){
             document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
         }
         else{
-            let col = new THREE.Color('rgb(0,200,240)')
+            let col = new THREE.Color('rgb(42,27,243)')
             document.querySelector("#gasMinCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
@@ -2888,7 +2981,7 @@ $(document).ready(function(){
             document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
         }
         else{
-            let col = new THREE.Color('rgb(255,213,0)')
+            let col = new THREE.Color('rgb(255,221,0)')
             document.querySelector("#gasMidCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
@@ -2898,7 +2991,7 @@ $(document).ready(function(){
             document.querySelector("#gasMaxCol").value = localStorage.getItem('gasMaxCol');
         }
         else{
-            let col = new THREE.Color('rgb(210,0,0)')
+            let col = new THREE.Color('rgb(255,0,0)')
             document.querySelector("#gasMaxCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMaxCol").style.backgroundColor = document.querySelector("#gasMaxCol").value
@@ -2908,7 +3001,7 @@ $(document).ready(function(){
             document.querySelector("#dmMinCol").value = localStorage.getItem('dmMinCol');
         }
         else{
-            let col = new THREE.Color('rgb(255,0,255)')
+            let col = new THREE.Color('rgb(11,158,0)')
             document.querySelector("#dmMinCol").value = '#'+col.getHexString();
         }
         document.querySelector("#dmMinCol").style.backgroundColor = document.querySelector("#dmMinCol").value
@@ -2917,7 +3010,7 @@ $(document).ready(function(){
             document.querySelector("#dmMaxCol").value = localStorage.getItem('dmMaxCol');
         }
         else{
-            let col = new THREE.Color('rgb(255,0,255)')
+            let col = new THREE.Color('rgb(24,106,1)')
             document.querySelector("#dmMaxCol").value = '#'+col.getHexString();
         }
         document.querySelector("#dmMaxCol").style.backgroundColor = document.querySelector("#dmMaxCol").value
@@ -2980,13 +3073,26 @@ $(document).ready(function(){
         camera.bottom = window.innerHeight/-2
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
         
-        var pixelRatio = window.devicePixelRatio;
-        var newWidth = window.innerWidth / pixelRatio;
-        var newHeight = window.innerHeight / pixelRatio;
-        target.setSize( window.innerWidth, window.innerHeight )
+
+        var devicePixelRatio = window.devicePixelRatio || 1;
+
+        // canvas.style.width = window.innerWidth*devicePixelRatio + "px";
+        // canvas.style.height = window.innerHeight*devicePixelRatio + "px";
+
+        // canvas.width = Math.floor(canvas.clientWidth * devicePixelRatio);
+        // canvas.height = Math.floor(canvas.clientHeight * devicePixelRatio);
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setPixelRatio( 1 );
+        // const size = new THREE.Vector2()
+        // renderer.getSize( size );
+
+        
+        // var pixelRatio = window.devicePixelRatio;
+        // var newWidth = window.innerWidth / pixelRatio;
+        // var newHeight = window.innerHeight / pixelRatio;
+        // target.setSize( size.x, size.y )
         updateUniforms()
         
         // setupRenderTarget()

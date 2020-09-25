@@ -188,7 +188,7 @@
             uniform vec3 u_xyzMin;
             uniform vec3 u_xyzMax;
             uniform float u_gridsize;
-            varying vec3 vPosition;
+            // varying vec3 vPosition;
             
             //uniform vec4 maxCol;
             //varying vec4 vMaxCol;
@@ -220,10 +220,8 @@
             //uniform sampler2D texture;
             //varying float vStarAttribute;
             varying vec4 vCol;
-            varying vec3 vPosition;
+            // varying vec3 vPosition;
             //varying vec4 vMaxCol;
-            uniform vec3 u_xyzMin;
-            uniform vec3 u_xyzMax;
             highp float rand(vec2 co)
             {
                 highp float a = 12.9898;
@@ -1078,7 +1076,32 @@
         
     </div>
     <div id="containers">
-        <div id="galaxylist" class="container"></div>    
+        <div id="galaxylist" class="container">
+            <!-- https://www.w3schools.com/howto/howto_js_sort_table.asp -->
+            <table>
+                <caption>galaxy query results</caption>
+                <thead>
+                    <tr>
+                        <td>image</td>
+                        <td>mass</td>
+                        <td>sfr</td>
+                        <td> ... </td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>img goes here</td>
+                        <td>mass goes here</td>
+                        <td>sfr goes here</td>
+                        <td> ... </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div id="galaxy-filter-criteria">
+                
+            </div>
+        </div>    
         <div id="data_layers" class="container">
             <!-- <h2>attribute visualization</h2>
             <br> -->
@@ -1135,7 +1158,7 @@
                 adjust color & alpha values:
 
                 <div id=gas-colorscale>
-                    <input type="color" class="color-picker" value="#0000ff" id="gasMinCol" oninput="changeColor()"><input type="color" class="color-picker" value="#0000ff" id="gasMidCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol" oninput="changeColor()">
+                    <input type="color" class="color-picker" value="#2a1bf3" id="gasMinCol" oninput="changeColor()"><input type="color" class="color-picker" value="#ffdd00" id="gasMidCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol" oninput="changeColor()">
                     <!-- <br> -->
                 </div>
                 <div id=gas-colorscale-alpha>
@@ -1201,7 +1224,7 @@
                 
                 adjust color & alpha values:
                 <div id=dm-colorscale>
-                    <input type="color" class="color-picker" value="#0000ff" id="dmMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="dmMaxCol" oninput="changeColor()">
+                    <input type="color" class="color-picker" value="#0b9e00" id="dmMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#186a01" id="dmMaxCol" oninput="changeColor()">
                     <br>
 
                     <input type="range" min="0" max="1" step="0.0001" value="0.1" class="alpha-picker alpha-min-range" id="dmMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.9" class="alpha-picker alpha-max-range"  id="dmMaxA" oninput="changeColor()">
