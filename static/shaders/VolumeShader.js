@@ -363,142 +363,69 @@ THREE.VolumeRenderShader1 = {
 
 		
 		"		void cast_dvr(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
-		// "				float max_val = -1e6;",
-		// "				int max_i = 100;",
-		"				vec3 loc = start_loc - step*rnd(vec2(-0.5,0.5));",
-		// "				float val = sample1(loc);",
+		"			vec3 loc = start_loc - step*rnd(vec2(-0.5,0.5));",
+		"			float sigma_a = 0.1;",
+		"			float sigma_s = 0.4;",
+		"			float sigma_e = 1.0;",
+		"			vec4 c = vec4(0.0,0.0,0.0,0.0);",
+		"			vec4 c_gas = vec4(0.0,0.0,0.0,0.0);",
+		"			vec4 c_dm = vec4(0.0,0.0,0.0,0.0);",
+		"			vec4 path_L = 0.4*vec4(0.0156,0.0234,0.0898,0.0);",
+		"			float tau = 0.0;",
+		"			float rho0 = sampleDensity(loc);",
+		"			rho0 = max(0.0,((rho0 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
+					// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
+					// non-constant expression. So we use a hard-coded max, and an additional condition
+					// inside the loop.
+		"			for (int iter=0; iter<nsteps; iter++) {",//int(float(MAX_STEPS)/u_stepSize
+		"				if (iter > nsteps){",
+		"					break;",
+		"				}",
+						// Sample from the 3D textures
 		"				float gasVal = sampleData(u_gasData, loc);",
 		"				float dmVal = sampleData(u_dmData, loc);",
 		"				float density = sampleDensity(loc);",
-		// "				float starDepth = texture2D( u_starDepth, loc.xy ).x;",
-		"				float sigma_a = 0.9;",
-		"				float sigma_s = 0.4;",
-		"				float sigma_e = 1.0;",
-		"				vec4 c = vec4(0.0,0.0,0.0,0.0);",
-		"				vec4 c_gas = vec4(0.0,0.0,0.0,0.0);",
-		"				vec4 c_dm = vec4(0.0,0.0,0.0,0.0);",
-		
-		// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
-		// non-constant expression. So we use a hard-coded max, and an additional condition
-		// inside the loop.
-		"				vec4 path_L = 0.4*vec4(0.0156,0.0234,0.0898,0.0);",
-		"				float tau = 0.0;",
-		"				float rho0 = sampleDensity(loc);",
-		"				rho0 = max(0.0,((rho0 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
+		"				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		"				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		"				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		"				float dist;",
 
-		"				for (int iter=0; iter<nsteps; iter++) {",//int(float(MAX_STEPS)/u_stepSize
-		"						if (iter > nsteps)",
-		"								break;",
-		// Sample from the 3D texture
-		// "						float val = sample1(loc);",
-		"						float gasVal = sampleData(u_gasData, loc);",
-		"						float dmVal = sampleData(u_dmData, loc);",
-		"						float density = sampleDensity(loc);",
-		"						float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
-		"						float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-		"						float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
-
-		// Apply composite step
-		"						float dist;",
-		"						vec4 c_i = vec4(0.0,0.0,0.0,0.0);",
-		"						vec4 c_i_gas = vec4(0.0,0.0,0.0,0.0);",
-		"						vec4 c_i_dm = vec4(0.0,0.0,0.0,0.0);",
-		"						if((loc.x>u_xyzMin[0] && loc.x<=u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<=u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<=u_xyzMax[2])){",			
-		"							if(u_gasVisibility == true && u_dmVisibility == true){",
-		"								c_i_gas = apply_dvr_colormap(gasVal,u_gasClip,u_gasClim,u_cmGasData,density,0.0,loc,iter);",
-		"								c_i_dm = apply_dvr_colormap(dmVal,u_dmClip,u_dmClim,u_cmDMData,density,0.0,loc,iter);",
-		"								if(c_i_dm.a > c_i_gas.a){",
-		"									c_i = c_i_dm;",
-		"								}",
-		"								else if(c_i_gas.a > c_i_dm.a){",
-		"									c_i = c_i_gas;",
-		"								}",
-		"								else{",
-		"									c_i = mix(c_i_gas,c_i_dm,0.5);",
-		"								}",
-		"							}",
-		"							else if(u_gasVisibility != true && u_dmVisibility == true){",
-		"								c_i_dm = apply_dvr_colormap(dmVal,u_dmClip,u_dmClim,u_cmDMData,density,0.0,loc,iter);",
-		"								c_i = c_i_dm;",
-		"							}",
-		"							else if(u_gasVisibility == true && u_dmVisibility != true){",
-		"								c_i_gas = apply_dvr_colormap(gasVal,u_gasClip,u_gasClim,u_cmGasData,density,0.0,loc,iter);",
-		"								c_i = c_i_gas;",
-		"							}",
-		"							else{",
-		"								c_i.rgba = vec4(0.0,0.0,0.0,0.0);",
-		"							}",
-		"							if((c_i.a != 0.0) || ((u_gasVisibility == false) && (u_dmVisibility == false))){",
-										// apply colormaps here
-		"								float rho = max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
-		// "								float rho = 0.5*(rho0 + rho1);",
-		// "								rho0=rho1;",
-		"								tau += rho;", // number of occluded particles (do this twice, DM + Gas)
-		"								float transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
-		"								if(transmittance < 0.0001){",
-		"									break;",
-		"								}",
-		"								vec3 emission = vec3(0.0,0.0,0.0);",
-		// "								vec3 starEmission = vec3(0.0,0.0,0.0);",				
-		"								if( (u_gasVisibility == true) && (c_i_gas.a > 0.0) ){",
-		"									emission += c_i_gas.rgb;",
-		"									path_L.a += c_i_gas.a;",
-		"								}",
-		"								if( (u_dmVisibility == true) && (c_i_dm.a > 0.0) ){",
-		"									emission += c_i_dm.rgb;",
-		"									path_L.a += c_i_dm.a;",
-		"								}",
-		// "								emission += c_i.rgb;",
-		"								if(u_starVisibility == true){",
-		// "									if( ( distance(WorldPosFromDepth(fragCoordZ),loc) >= 0.0  ) && ( (distance(WorldPosFromDepth(fragCoordZ),loc)) <= (u_size.x) )){",
-		"										emission += (1.0/(exp(starDepth)))*texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",//vec3(1.0-starDepth,1.0-starDepth,0.0);",
-		// "										path_L.a += (1.0/(starDepth*starDepth));",
-		"									if((u_gasVisibility == false) && (u_dmVisibility == false)){",	
-		"										path_L.a += 1.0;",       
-		"										path_L.rgb = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
-		"										path_L.a = clamp(path_L.a,0.0,1.0);",
-		"										break;",
-		"									}",
-		// "									else path_L.a += starDepth/u_size.x;",
-		"								}",
-		"								path_L.rgb += transmittance * rho * sigma_e * emission;", //multiply by step size
-		"								path_L.a = clamp(path_L.a,0.0,1.0);",
-		"								if(path_L.a >= 0.99){",
-		"									break;",
-		"								}",
-		"							}",
-				// Advance location deeper into the volume
-
-		// "							loc += step;",
-		"						}",
-		// "						else{",
-		// Advance location deeper into the volume
-		"							loc += step;",
-		// "						}",
-
-
-		// "						c_i.a = 0.1;",
-
-		// "						emission += c_i_gas.rgb;",
-		// "						emission += c_i_dm.rgb;",
-		// "						path_L += transmittance * rho * emission;",
-
-
-
+		"				if((loc.x>u_xyzMin[0] && loc.x<=u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<=u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<=u_xyzMax[2])){",
+		"					vec4 c_gas = apply_dvr_colormap(gasVal,u_gasClip,u_gasClim,u_cmGasData,density,0.0,loc,iter);",
+		"					vec4 c_dm = apply_dvr_colormap(dmVal,u_dmClip,u_dmClim,u_cmDMData,density,0.0,loc,iter);",
+		"					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+		"					vec3 emission = vec3(0.0,0.0,0.0);",
+		"					float transmittance = 0.0;",			
+		"					float rho = max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
+		"					if( u_gasVisibility == true ){",
+		"						tau += length(step)*c_gas.a*rho;", // number of occluded particles (do this twice, DM + Gas)
+		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		"						emission += c_gas.a*c_gas.rgb;",
+		"						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
+		"					}",
+		"					if( u_dmVisibility == true ){",
+		"						tau += length(step)*c_dm.a*rho;", // number of occluded particles (do this twice, DM + Gas)
+		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		"						emission += c_dm.a * c_dm.rgb;",
+		"						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
+		"					}",
+		"					if(u_starVisibility == true){",
+		"						tau += (1.0/(exp(starDepth)))*length(step)*rho;", // number of occluded particles (do this twice, DM + Gas)
+		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		"						emission += c_stars;",
+		"						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
+		"					}",
+		"					if(transmittance < 0.0001){",
+		"						break;",
+		"					}",
+		"					path_L.rgb += transmittance * rho * sigma_e * emission;", //multiply by step size
 		"				}",
-
-		// Refine location, gives crispier images
-		// "				vec3 iloc = start_loc + step * (float(max_i) - 0.5);",
-		// "				vec3 istep = step / float(REFINEMENT_STEPS);",
-		// "				for (int i=0; i<REFINEMENT_STEPS; i++) {",
-		// "						max_val = max(max_val, sample1(iloc));",
-		// "						iloc += istep;",
-		// "				}",
-
-		// Resolve final color
-		// "				c = vec4(1.0,1.0,1.0,1.0) - exp(-2.0*c);",
+						// Resolve final color
+		"				path_L.a = 1.0;",
 		"				c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L.rgba);",
 		"				gl_FragColor = c;",
+		"				loc += step;",
+		"			}",
 		"		}",
 
 
