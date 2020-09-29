@@ -104,6 +104,8 @@ h1{
 }
 #raySelection{
     display: none;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 .rayCoordField {
     padding: 3% 4%;

@@ -851,10 +851,6 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 // THREE.Mesh
                 var geometry = new THREE.BoxGeometry( size, size, size );
                 geometry.translate( size / 2, size / 2, size / 2 );
-
-                createSkewerCube(size)
-
-
                 clearLayer(0)
                 if(oldPos && oldSize){
                     camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
@@ -889,7 +885,8 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 bm.addEventListener('input', updateUniforms);
                 bmx = document.querySelector('#bh-maxval-input')
                 bmx.addEventListener('input', updateUniforms);
-                
+                updateUniforms()
+                createSkewerCube(size)
 
                 // loadHaloCenters()
 
@@ -1435,8 +1432,8 @@ function createSkewerCube(size){
      * size = voxels per edge
      */
     
-    var geometry = new THREE.BoxBufferGeometry( size,size,size );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffffff, wireframe: true, transparent: true, opacity: 0.0} );
+    var geometry = new THREE.BoxBufferGeometry(size,size,size );
+    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true, transparent: false, opacity: 1.0, side: THREE.DoubleSide} );
     material.depthWrite = false;
     cube = new THREE.Mesh( geometry, material );
     cube.position.set(size/2, size/2, size/2);
@@ -2704,254 +2701,180 @@ $(document).ready(function(){
             ray1 = new THREE.Vector3(point.x,point.y,point.z)
             cd = new THREE.Vector3()
             camera.getWorldDirection(cd)
-            
+            var intersects = raycaster.intersectObject(object=cube,recursive=true)
             //check to see if the mouse click intersects with invisible cube around the data
             if(raycaster.intersectObject(cube).length>0){
+                points = []
+                for(i=0;i<intersects.length;i++){
+                    points[i]=intersects[i].point
+                }
                 //runs algorithm that finds two end points on surface of the cube
-                findLineEnds(ray1,cd)    
+                // findLineEnds(ray1,cd)    
             }
             
-            function findLineEnds(ray,dir){
-                /**
-                 * * findLineEnds() gets the start and end points of a line drawn at the intersection between the mouse position and near and far sides of the cube
-                 */
+            if(points[0].x < 0) points[0].x = 0
+            if(points[0].y < 0) points[0].y = 0
+            if(points[0].z < 0) points[0].z = 0
+            if(points[0].x > gridsize) points[0].x = gridsize
+            if(points[0].y > gridsize) points[0].y = gridsize
+            if(points[0].z > gridsize) points[0].z = gridsize
+            if(points[1].x < 0) points[1].x = 0
+            if(points[1].y < 0) points[1].y = 0
+            if(points[1].z < 0) points[1].z = 0
+            if(points[1].x > gridsize) points[1].x = gridsize
+            if(points[1].y > gridsize) points[1].y = gridsize
+            if(points[1].z > gridsize) points[1].z = gridsize
+            console.log(points[0],points[1])
 
-                //checks to see if the selected point is inside or outside of the domain of the data
-                //in order to determine direction to move the points. incrementally moves the point
-                //in the camera direction at a size delta until it reaches the boundary
-                if(checkIfInside(ray)){
-                    let point1 = ray.clone()
-                    let point2 = ray.clone()
-                    delta = 0.01
+                // printLine(point1,point2)...
+                // console.log('2/2')
+            handleLine(cd,points[0],points[1])
+                // printLine(dir,point1,point2)
+        }
+        function handleLine(dir,point1,point2){
+            /**
+             * * handleLine() sends the line data to several destinations, to be drawn, saved, etc
+             */
 
-                    console.log('true')
-                    
+            idx = skewers.length
+            updateSkewerList(dir,idx,point1,point2)
+            saveLine(idx,point1,point2)
+            // sendLine(idx,point1,point2)
+            printLine(idx,point1,point2)
+        }
+        function printLine(idx,point1,point2){
+            /**
+             * * printLine() draws the skewer in the scene
+             */
 
-                    while(  (point1.x >= edges_scaled.left_edge[0] && point1.x <= edges_scaled.right_edge[0]) &&
-                            (point1.y >= edges_scaled.left_edge[1] && point1.y <= edges_scaled.right_edge[1]) &&
-                            (point1.z >= edges_scaled.left_edge[2] && point1.z <= edges_scaled.right_edge[2])){
-                                
-                                point1.x += delta*dir.x
-                                point1.y += delta*dir.y
-                                point1.z += delta*dir.z
-                                
-                    }
-                    while(  (point2.x >= edges_scaled.left_edge[0] && point2.x <= edges_scaled.right_edge[0]) &&
-                            (point2.y >= edges_scaled.left_edge[1] && point2.y <= edges_scaled.right_edge[1]) &&
-                            (point2.z >= edges_scaled.left_edge[2] && point2.z <= edges_scaled.right_edge[2])){
-                                
-                                point2.x -= delta*dir.x
-                                point2.y -= delta*dir.y
-                                point2.z -= delta*dir.z
-                    }
-                    
-                    printLine(point1,point2)
-                }
-                else{
-                    console.log('false')
-                    let point1 = ray.clone()
-                    console.log(point1)
-                    console.log(dir)
-                    delta = 0.01
-                    
-                    while(  (point1.x <= edges_scaled.left_edge[0] || point1.x >= edges_scaled.right_edge[0]) ||
-                            (point1.y <= edges_scaled.left_edge[1] || point1.y >= edges_scaled.right_edge[1]) ||
-                            (point1.z <= edges_scaled.left_edge[2] || point1.z >= edges_scaled.right_edge[2])){            
-                                if( dir.x+dir.y+dir.z <= 0 )  {   
-                                    point1.x -= delta*dir.x
-                                    point1.y -= delta*dir.y
-                                    point1.z -= delta*dir.z
-                                }
-                                else{
-                                    point1.x -= delta*dir.x
-                                    point1.y -= delta*dir.y
-                                    point1.z -= delta*dir.z
-                                }
-                                // console.log(point1)
-                    }
-                    // console.log('1/2')
+            positions = []
+            geometry = new THREE.LineGeometry();
+            console.log(point1,point2)
+            positions.push(point1.x,point1.y,point1.z);
+            positions.push(point2.x,point2.y,point2.z);
+            geometry.setPositions(positions)
+            scene.remove(lines[idx])
+            var material = new THREE.LineMaterial( { 
+                color: 0xff5522,
+                linewidth: 0.0025,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending
 
-                    let point2 = point1.clone()
-                    console.log(point2)
-                    while(  (point2.x >= edges_scaled.left_edge[0] && point2.x <= edges_scaled.right_edge[0]) &&
-                            (point2.y >= edges_scaled.left_edge[1] && point2.y <= edges_scaled.right_edge[1]) &&
-                            (point2.z >= edges_scaled.left_edge[2] && point2.z <= edges_scaled.right_edge[2])){
-                                if( dir.x+dir.y+dir.z <= 0 )  {
-                                    point2.x -= delta*dir.x
-                                    point2.y -= delta*dir.y
-                                    point2.z -= delta*dir.z
-                                }
-                                else{
-                                    point2.x -= delta*dir.x
-                                    point2.y -= delta*dir.y
-                                    point2.z -= delta*dir.z
-                                }
+            } );
+            lines[idx] = new THREE.Line2( geometry, material );
+            lines[idx].layers.set(4)
+            scene.add( lines[idx] );
+        }
 
-                    }
-                    // console.log('2/2')
-                    handleLine(dir,point1,point2)
-                    // printLine(dir,point1,point2)
-                }
-                function handleLine(dir,point1,point2){
-                    /**
-                     * * handleLine() sends the line data to several destinations, to be drawn, saved, etc
-                     */
+            
 
-                    idx = skewers.length
-                    updateSkewerList(dir,idx,point1,point2)
-                    saveLine(idx,point1,point2)
-                    // sendLine(idx,point1,point2)
-                    printLine(idx,point1,point2)
-                }
-                function printLine(idx,point1,point2){
-                    /**
-                     * * printLine() draws the skewer in the scene
-                     */
+        function updateSkewerList(dir,idx,point1,point2){
 
-                    positions = []
-                    geometry = new THREE.LineGeometry();
-                    positions.push(point1.x,point1.y,point1.z);
-                    positions.push(point2.x,point2.y,point2.z);
-                    geometry.setPositions(positions)
-                    scene.remove(lines[idx])
-                    var material = new THREE.LineMaterial( { 
-                        color: 0xff5522,
-                        linewidth: 0.0025,
-                        transparent: true,
-                        opacity: 0.7,
-                        blending: THREE.AdditiveBlending
+            /**
+             * * updateSkewerList() updates the skewer container UI for the corresponding line
+             */
 
-                    } );
-                    lines[idx] = new THREE.Line2( geometry, material );
-                    lines[idx].layers.set(4)
-                    scene.add( lines[idx] );
-                }
+            dist = Math.sqrt( Math.pow((point1.x - point2.x),2) + Math.pow((point1.y - point2.y),2) + Math.pow((point1.z - point2.z),2))
+            //create div to hold skewer details
+            div = document.getElementById('skewer-coords')
+            id = 'skewer-coords-' + idx
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords" id="' + id + '"></div>');
+            
+            $("#" + id).hover(function(){
+                lines[idx].material.color = new THREE.Color(0,1,0)
+                }, function(){
+                    lines[idx].material.color = new THREE.Color(0xff5522)
+            });
+            
+            //create div to show the line idx
+            div = document.getElementById(id)
+            id = 'skewer-coords-number-' + idx
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-number" id='+ id +'>' + idx + ' <img id="delete-icon-"' + idx + '" class="delete-icon" src="static/assets/delete.svg" alt="delete line" role="button" onclick="deleteLine('+idx+')"  /> <img id="retry-icon-"' + idx + '" class="retry-icon" src="static/assets/refresh.svg" alt="retry line" role="button" onclick="retryLine('+idx+')"  /> </div>')
 
+            //create div to show pt1 details and range slider
+            id = 'skewer-coords-' + idx
+            div = document.getElementById(id)
+            id = 'skewer-coords-pt1-range-' + idx + ''
+            id_range = "p1-range-" + idx + ''
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
+            div = document.getElementById(id)
+            id = "skewer-coords-point1-" + idx + ''
+            div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x,3) + ', ' + round(point1.y,3) + ', ' + round(point1.z,3) + ' )</div>')
+
+            //create div to show pt2 details and range slider
+            id = 'skewer-coords-' + idx
+            div = document.getElementById(id)
+            id = 'skewer-coords-pt2-range-' + idx + ''
+            id_range = "p2-range-" + idx + ''
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
+            div = document.getElementById(id)
+            id = "skewer-coords-point2-" + idx + ''
+            div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x,3) + ', ' + round(point2.y,3) + ', ' + round(point2.z,3) + ' ) </div>')
+
+            //create event listeners for the range sliders
+            p1slider = document.getElementById('p1-range-' + idx + '')
+            p1slider.oninput = function() {
+                slider = document.getElementById('p1-range-' + idx + '')
+                pt1 = []
+                pt1.x = point1.x - slider.value*dir.x
+                pt1.y = point1.y - slider.value*dir.y
+                pt1.z = point1.z - slider.value*dir.z
+
+                slider = document.getElementById('p2-range-' + idx + '')
+                pt2 = []
+                pt2.x = point2.x + slider.value*dir.x
+                pt2.y = point2.y + slider.value*dir.y
+                pt2.z = point2.z + slider.value*dir.z
+
+                id = "skewer-coords-point1-" + idx + ''
+                div = document.getElementById(id)
+                div.innerHTML = ''
+                div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt1.x,3) + ', ' + round(pt1.y,3) + ', ' + round(pt1.z,3) + ' )</div>')    
+                printLine(idx,pt1,pt2)
+                saveLine(idx,pt1,pt2)
+            }
+
+            //create event listeners for the range sliders
+            p2slider = document.getElementById('p2-range-' + idx + '')
+            p2slider.oninput = function() {
+                slider = document.getElementById('p1-range-' + idx + '')
+                pt1 = []
+                pt1.x = point1.x - slider.value*dir.x
+                pt1.y = point1.y - slider.value*dir.y
+                pt1.z = point1.z - slider.value*dir.z
+
+                slider = document.getElementById('p2-range-' + idx + '')
+                pt2 = []
+                pt2.x = point2.x + slider.value*dir.x
+                pt2.y = point2.y + slider.value*dir.y
+                pt2.z = point2.z + slider.value*dir.z
                 
+                id = "skewer-coords-point2-" + idx + ''
+                div = document.getElementById(id)
+                div.innerHTML = ''
+                div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt2.x,3) + ', ' + round(pt2.y,3) + ', ' + round(pt2.z,3) + ' )</div>')    
+                printLine(idx,pt1,pt2)
+                saveLine(idx,pt1,pt2)   
+            }
 
-                function updateSkewerList(dir,idx,point1,point2){
+            //create div for REQUEST button and STATUS message below skewer details
+            id = 'skewer-coords-' + idx
+            div = document.getElementById(id)
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum('+idx+')" class="request-button button spectra-status" id="request-button-' + idx + '">request spectrum</button> </div>');
+            div.insertAdjacentHTML('afterend', '<hr>')
+            
+        }
 
-                    /**
-                     * * updateSkewerList() updates the skewer container UI for the corresponding line
-                     */
-
-                    dist = Math.sqrt( Math.pow((point1.x - point2.x),2) + Math.pow((point1.y - point2.y),2) + Math.pow((point1.z - point2.z),2))
-                    //create div to hold skewer details
-                    div = document.getElementById('skewer-coords')
-                    id = 'skewer-coords-' + idx
-                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords" id="' + id + '"></div>');
-                    
-                    $("#" + id).hover(function(){
-                        lines[idx].material.color = new THREE.Color(0,1,0)
-                        }, function(){
-                            lines[idx].material.color = new THREE.Color(0xff5522)
-                    });
-                    
-                    //create div to show the line idx
-                    div = document.getElementById(id)
-                    id = 'skewer-coords-number-' + idx
-                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-number" id='+ id +'>' + idx + ' <img id="delete-icon-"' + idx + '" class="delete-icon" src="static/assets/delete.svg" alt="delete line" role="button" onclick="deleteLine('+idx+')"  /> <img id="retry-icon-"' + idx + '" class="retry-icon" src="static/assets/refresh.svg" alt="retry line" role="button" onclick="retryLine('+idx+')"  /> </div>')
-
-                    //create div to show pt1 details and range slider
-                    id = 'skewer-coords-' + idx
-                    div = document.getElementById(id)
-                    id = 'skewer-coords-pt1-range-' + idx + ''
-                    id_range = "p1-range-" + idx + ''
-                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
-                    div = document.getElementById(id)
-                    id = "skewer-coords-point1-" + idx + ''
-                    div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x,3) + ', ' + round(point1.y,3) + ', ' + round(point1.z,3) + ' )</div>')
-
-                    //create div to show pt2 details and range slider
-                    id = 'skewer-coords-' + idx
-                    div = document.getElementById(id)
-                    id = 'skewer-coords-pt2-range-' + idx + ''
-                    id_range = "p2-range-" + idx + ''
-                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
-                    div = document.getElementById(id)
-                    id = "skewer-coords-point2-" + idx + ''
-                    div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x,3) + ', ' + round(point2.y,3) + ', ' + round(point2.z,3) + ' ) </div>')
-
-                    //create event listeners for the range sliders
-                    p1slider = document.getElementById('p1-range-' + idx + '')
-                    p1slider.oninput = function() {
-                        slider = document.getElementById('p1-range-' + idx + '')
-                        pt1 = []
-                        pt1.x = point1.x - slider.value*dir.x
-                        pt1.y = point1.y - slider.value*dir.y
-                        pt1.z = point1.z - slider.value*dir.z
-
-                        slider = document.getElementById('p2-range-' + idx + '')
-                        pt2 = []
-                        pt2.x = point2.x + slider.value*dir.x
-                        pt2.y = point2.y + slider.value*dir.y
-                        pt2.z = point2.z + slider.value*dir.z
-
-                        id = "skewer-coords-point1-" + idx + ''
-                        div = document.getElementById(id)
-                        div.innerHTML = ''
-                        div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt1.x,3) + ', ' + round(pt1.y,3) + ', ' + round(pt1.z,3) + ' )</div>')    
-                        printLine(idx,pt1,pt2)
-                        saveLine(idx,pt1,pt2)
-                    }
-
-                    //create event listeners for the range sliders
-                    p2slider = document.getElementById('p2-range-' + idx + '')
-                    p2slider.oninput = function() {
-                        slider = document.getElementById('p1-range-' + idx + '')
-                        pt1 = []
-                        pt1.x = point1.x - slider.value*dir.x
-                        pt1.y = point1.y - slider.value*dir.y
-                        pt1.z = point1.z - slider.value*dir.z
-
-                        slider = document.getElementById('p2-range-' + idx + '')
-                        pt2 = []
-                        pt2.x = point2.x + slider.value*dir.x
-                        pt2.y = point2.y + slider.value*dir.y
-                        pt2.z = point2.z + slider.value*dir.z
-                        
-                        id = "skewer-coords-point2-" + idx + ''
-                        div = document.getElementById(id)
-                        div.innerHTML = ''
-                        div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt2.x,3) + ', ' + round(pt2.y,3) + ', ' + round(pt2.z,3) + ' )</div>')    
-                        printLine(idx,pt1,pt2)
-                        saveLine(idx,pt1,pt2)   
-                    }
-
-                    //create div for REQUEST button and STATUS message below skewer details
-                    id = 'skewer-coords-' + idx
-                    div = document.getElementById(id)
-                    div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum('+idx+')" class="request-button button spectra-status" id="request-button-' + idx + '">request spectrum</button> </div>');
-                    div.insertAdjacentHTML('afterend', '<hr>')
-                    
-                }
-
-                function saveLine(idx,point1,point2){
-                    /**
-                     * * saveLine() stores the coordinates in the skewer array for later reference
-                     */
-                    skewers[idx] = {
-                        point1: point1,
-                        point2: point2
-                    }
-                }
-
-                function checkIfInside(ray){
-                    /**
-                     * * checkIfInside() is used to determine if the raycasted ray is within the boundaries of the data cube
-                     */
-                    if( (ray.x >= edges_scaled.left_edge[0] && ray.x <= edges_scaled.right_edge[0]) &&
-                        (ray.y >= edges_scaled.left_edge[1] && ray.y <= edges_scaled.right_edge[1]) &&
-                        (ray.z >= edges_scaled.left_edge[2] && ray.z <= edges_scaled.right_edge[2]) ){
-                            return true
-                        }
-                    else{
-                        return false
-                    }
-                }
+        function saveLine(idx,point1,point2){
+            /**
+             * * saveLine() stores the coordinates in the skewer array for later reference
+             */
+            skewers[idx] = {
+                point1: point1,
+                point2: point2
             }
         }
-        
     }
     
     function onMouseWheel( event ) {
