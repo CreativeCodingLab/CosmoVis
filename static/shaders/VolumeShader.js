@@ -370,7 +370,7 @@ THREE.VolumeRenderShader1 = {
 		"			vec4 c = vec4(0.0,0.0,0.0,0.0);",
 		"			vec4 c_gas = vec4(0.0,0.0,0.0,0.0);",
 		"			vec4 c_dm = vec4(0.0,0.0,0.0,0.0);",
-		"			vec4 path_L = 0.4*vec4(0.0156,0.0234,0.0898,0.0);",
+		"			vec4 path_L = vec4(0.0,0.0,0.0,0.0);",//0.4*vec4(0.0156,0.0234,0.0898,0.0);",
 		"			float tau = 0.0;",
 		"			float rho0 = sampleDensity(loc);",
 		"			rho0 = max(0.0,((rho0 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
@@ -396,24 +396,24 @@ THREE.VolumeRenderShader1 = {
 		"					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 		"					vec3 emission = vec3(0.0,0.0,0.0);",
 		"					float transmittance = 0.0;",			
-		"					float rho = max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
+		"					float rho = 4.0*max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
 		"					if( u_gasVisibility == true ){",
-		"						tau += length(step)*c_gas.a*rho;", // number of occluded particles (do this twice, DM + Gas)
+		"						tau = length(step)*c_gas.a*rho;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_gas.a*c_gas.rgb;",
 		"						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		"					}",
 		"					if( u_dmVisibility == true ){",
-		"						tau += length(step)*c_dm.a*rho;", // number of occluded particles (do this twice, DM + Gas)
+		"						tau = length(step)*c_dm.a*rho;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_dm.a * c_dm.rgb;",
 		"						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		"					}",
 		"					if(u_starVisibility == true){",
-		"						tau += (1.0/(exp(starDepth)))*length(step)*rho;", // number of occluded particles (do this twice, DM + Gas)
+		"						tau = (1.0/(exp(starDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_stars;",
-		"						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
+		"						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
 		"					if(transmittance < 0.0001){",
 		"						break;",

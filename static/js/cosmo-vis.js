@@ -906,7 +906,7 @@ function disposeArray() {
 
 function setupStarScene(){
     starScene = new THREE.Scene();
-    starScene.background = new THREE.Color("rgb(4,6,23)")
+    starScene.background = new THREE.Color("rgb(0,0,0)")
     starCol = new THREE.Color( 1,1,0 )
     console.log(starCol)
     starMaterial = new THREE.ShaderMaterial( {
