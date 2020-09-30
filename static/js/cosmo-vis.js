@@ -2817,15 +2817,15 @@ $(document).ready(function(){
             p1slider.oninput = function() {
                 slider = document.getElementById('p1-range-' + idx + '')
                 pt1 = []
-                pt1.x = point1.x - slider.value*dir.x
-                pt1.y = point1.y - slider.value*dir.y
-                pt1.z = point1.z - slider.value*dir.z
+                pt1.x = point1.x - slider.value*dir.x*(-1)
+                pt1.y = point1.y - slider.value*dir.y*(-1)
+                pt1.z = point1.z - slider.value*dir.z*(-1)
 
                 slider = document.getElementById('p2-range-' + idx + '')
                 pt2 = []
-                pt2.x = point2.x + slider.value*dir.x
-                pt2.y = point2.y + slider.value*dir.y
-                pt2.z = point2.z + slider.value*dir.z
+                pt2.x = point2.x + slider.value*dir.x*(-1)
+                pt2.y = point2.y + slider.value*dir.y*(-1)
+                pt2.z = point2.z + slider.value*dir.z*(-1)
 
                 id = "skewer-coords-point1-" + idx + ''
                 div = document.getElementById(id)
@@ -2840,15 +2840,15 @@ $(document).ready(function(){
             p2slider.oninput = function() {
                 slider = document.getElementById('p1-range-' + idx + '')
                 pt1 = []
-                pt1.x = point1.x - slider.value*dir.x
-                pt1.y = point1.y - slider.value*dir.y
-                pt1.z = point1.z - slider.value*dir.z
+                pt1.x = point1.x - slider.value*dir.x*(-1)
+                pt1.y = point1.y - slider.value*dir.y*(-1)
+                pt1.z = point1.z - slider.value*dir.z*(-1)
 
                 slider = document.getElementById('p2-range-' + idx + '')
                 pt2 = []
-                pt2.x = point2.x + slider.value*dir.x
-                pt2.y = point2.y + slider.value*dir.y
-                pt2.z = point2.z + slider.value*dir.z
+                pt2.x = point2.x + slider.value*dir.x*(-1)
+                pt2.y = point2.y + slider.value*dir.y*(-1)
+                pt2.z = point2.z + slider.value*dir.z*(-1)
                 
                 id = "skewer-coords-point2-" + idx + ''
                 div = document.getElementById(id)
