@@ -649,7 +649,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         var max = gasArr.reduce(function(a, b) {
             return Math.max(a, b);
         });
-        console.log(min)
+        // console.log(min)
         
         if(min==-Infinity){min = -999999999999}
         
@@ -743,7 +743,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
             var min = dmArr.reduce(function(a, b) {
                 return Math.min(a, b);
             });
-            console.log(min)
+            // console.log(min)
             if(min==-Infinity){min = -999999999999}
 
             var x = document.getElementById("dm-eye-open");
@@ -786,7 +786,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
             dmArr = []
 
             d3.json( 'static/data/' + simID + '/PartType4/star_particles.json' ).then( function( d ){
-                console.log( Object.keys(d).length )
+                // console.log( Object.keys(d).length )
                 n = Object.keys(d).length
                 m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
                 var starGeometry = new THREE.BufferGeometry();
@@ -797,7 +797,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                         vertex.toArray( starPositions, i * 3 )
                         // console.log(vertex)
                     }
-                    console.log(starPositions)
+                    // console.log(starPositions)
                     starScene.remove( boxOfStarPoints )
                     starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
                     // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
@@ -905,7 +905,7 @@ function setupStarScene(){
     starScene = new THREE.Scene();
     starScene.background = new THREE.Color("rgb(0,0,0)")
     starCol = new THREE.Color( 1,1,0 )
-    console.log(starCol)
+    // console.log(starCol)
     starMaterial = new THREE.ShaderMaterial( {
 
         uniforms: {
@@ -1433,7 +1433,7 @@ function createSkewerCube(size){
      */
     
     var geometry = new THREE.BoxBufferGeometry(size,size,size );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true, transparent: false, opacity: 1.0, side: THREE.DoubleSide} );
+    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true, transparent: true, opacity: 0.0, side: THREE.DoubleSide} );
     material.depthWrite = false;
     cube = new THREE.Mesh( geometry, material );
     cube.position.set(size/2, size/2, size/2);
@@ -2724,7 +2724,7 @@ $(document).ready(function(){
             if(points[1].x > gridsize) points[1].x = gridsize
             if(points[1].y > gridsize) points[1].y = gridsize
             if(points[1].z > gridsize) points[1].z = gridsize
-            console.log(points[0],points[1])
+            // console.log(points[0],points[1])
 
                 // printLine(point1,point2)...
                 // console.log('2/2')
@@ -2749,7 +2749,7 @@ $(document).ready(function(){
 
             positions = []
             geometry = new THREE.LineGeometry();
-            console.log(point1,point2)
+            // console.log(point1,point2)
             positions.push(point1.x,point1.y,point1.z);
             positions.push(point2.x,point2.y,point2.z);
             geometry.setPositions(positions)
@@ -2861,9 +2861,7 @@ $(document).ready(function(){
             //create div for REQUEST button and STATUS message below skewer details
             id = 'skewer-coords-' + idx
             div = document.getElementById(id)
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum('+idx+')" class="request-button button spectra-status" id="request-button-' + idx + '">request spectrum</button> </div>');
-            div.insertAdjacentHTML('afterend', '<hr>')
-            
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum('+idx+')" class="request-button button spectra-status" id="request-button-' + idx + '">request spectrum</button> <hr> </div>');            
         }
 
         function saveLine(idx,point1,point2){

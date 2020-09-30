@@ -72,12 +72,16 @@ def index():
 # selectRay is called from index.html when 
 @socketio.on('selectRay', namespace='/test')
 def handle_ray_selection(simID,idx, start, end):
-    socketio.start_background_task(handle_ray_selection_background,simID,idx, start, end)
+    try:
+        socketio.start_background_task(handle_ray_selection_background,simID,idx, start, end)
+    except:
+        socketio.emit( 'spectrumError', {'index': idx}, namespace = '/test' )
+
     
 def handle_ray_selection_background(simID,idx,start,end):
     # socketio = SocketIO(message_queue='amqp://')
     socketio.emit( 'processingRay', {'index': idx}, namespace = '/test' )
-    # eventlet.sleep()
+    eventlet.sleep()
     socketio.sleep(0)
 
     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'

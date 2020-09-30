@@ -353,6 +353,8 @@ h1{
     font-size: 1.4em;
     width: 300px;
     height: auto;
+    max-height: 90vh;
+    overflow-y: auto;
     /* position: absolute; */
     background-color: #8fffdbd1;
     background-blend-mode: darken;

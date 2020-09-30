@@ -614,6 +614,14 @@
                 }
                 plotSyntheticSpectrum(msg);
             });
+
+            socket.on('spectrumError',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'Network timeout, retrying . . . '
+                requestSpectrum(idx)
+            });
             
             // socket.on('dataC', function(msg) {
             //     // c.push(msg.data)
@@ -1514,7 +1522,7 @@
     <div id="log"></div> -->
     <script>
     namespace = '/test';
-    var socket = io(namespace, {reconnect: true, transports: ['websocket']});
+    var socket = io(namespace, {reconnect: true, transports: ['websocket'], timeout: 120000});
     </script>
     </body>
 
