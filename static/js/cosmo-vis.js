@@ -1880,8 +1880,9 @@ function plotSyntheticSpectrum(points) {
         data[i] = { 'lambda': points.lambda[i], 'flux': points.flux[i] }
     }
     
+
     skewers[points.index] = ({'point1': {'x': points.start[0],'y': points.start[1],'z': points.start[2]}, 'point2':{'x': points.end[0],'y': points.end[1],'z': points.end[2]}, 'lambda': points.lambda, 'flux': points.flux })
-    skewerData.push([points,data])
+    skewerData[points.index]=([points,data])
     
     
     // console.log(data)

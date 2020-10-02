@@ -97,7 +97,7 @@ def handle_ray_selection_background(simID,idx,start,end):
     print(ds.domain_left_edge)
     print(ds.domain_right_edge)
     line_list = ['H', 'C', 'N', 'O', 'Mg']
-    
+
     instrument = 'COS'
     grating = 'G130M'
     inst = instrument + '-' + grating
@@ -172,13 +172,14 @@ def handle_ray_selection_background(simID,idx,start,end):
     sgs.append([start,end,sg,idx])
     socketio.sleep(0)
     socketio.emit( 'sentRay', {'index': idx}, namespace = '/test' )
+    socketio.sleep(0)
     print('emitting spectrum')
     socketio.sleep(0)
     socketio.sleep(0)
     socketio.sleep(0)
     socketio.emit('synthetic_spectrum',{'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
     socketio.sleep(0)
-
+    print('sent spectrum')
 
     # sg.save_spectrum('spec_raw.txt')
     # sg.plot_spectrum('spec_raw.png')
@@ -229,13 +230,24 @@ def handle_ray_selection_background(simID,idx,start,end):
     spectrum_hdul.append(hdul)
     spectrum_hdul.writeto('static/data/spectra.fits', overwrite=True)
     
+    socketio.sleep(0)
+
+    spec = {'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}
+    socketio.sleep()
+    with open('static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json', 'w') as file:
+        json.dump(spec, file)
+    socketio.sleep(0)
+    socketio.emit( 'synthetic_spectrum_saved', {'index': 'static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json'}, namespace = '/test' )
+    socketio.sleep(0)
+    print("spectrum saved")
+
     # import pdb; pdb.set_trace()
     
     # socketio.emit( 'sentRay', {'index': idx}, namespace = '/test' )
     # eventlet.sleep()
     # socketio.emit('synthetic_spectrum',{'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
     # eventlet.sleep()
-    print('sent spectrum')
+    
 
 @socketio.on('simIDtoServer', namespace='/test')
 def updateSimID(simID):
