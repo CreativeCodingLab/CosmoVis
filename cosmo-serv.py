@@ -97,7 +97,7 @@ def handle_ray_selection_background(simID,idx,start,end):
     print(ds.domain_left_edge)
     print(ds.domain_right_edge)
     line_list = ['H', 'C', 'N', 'O', 'Mg']
-
+    
     instrument = 'COS'
     grating = 'G130M'
     inst = instrument + '-' + grating
