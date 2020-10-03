@@ -1921,105 +1921,111 @@ function updateGraph(){
         // console.log(skewerData.length)
         for(i=0;i<skewerData.length;i++){   
             // console.log(i)
-            let data = []
-            let idx = skewerData[i][0].index
-            // console.log(idx)
-            x = Array.from(skewers[idx].lambda)
-            y = Array.from(skewers[idx].flux)
+            if(skewerData[i][0].index){
 
-            if(ele == "Angstroms" && document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)"){
-                // domainLambda = d3.extent(x)
+                let data = []
+                let idx = skewerData[i][0].index
+                // console.log(idx)
+                x = Array.from(skewers[idx].lambda)
+                y = Array.from(skewers[idx].flux)
 
-                for(j=0;j<x.length;j++){
-                    data[j] = { 'lambda': x[j], 'flux': y[j] }
+                if(ele == "Angstroms" && document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)"){
+                    // domainLambda = d3.extent(x)
+
+                    for(j=0;j<x.length;j++){
+                        data[j] = { 'lambda': x[j], 'flux': y[j] }
+                    }
                 }
-            }
-            else if(ele == "Velocity Space" && document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)"){
-                let rest_lambda = parseFloat(document.getElementById("common-wavelengths").value)
-                let c = 3e5;
-                for( j = 0; j < x.length; j++ ){
-                    delta_lambda = x[j] - rest_lambda;
-                    x[j] = ( c * delta_lambda ) / rest_lambda;
+                else if(ele == "Velocity Space" && document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)"){
+                    let rest_lambda = parseFloat(document.getElementById("common-wavelengths").value)
+                    let c = 3e5;
+                    for( j = 0; j < x.length; j++ ){
+                        delta_lambda = x[j] - rest_lambda;
+                        x[j] = ( c * delta_lambda ) / rest_lambda;
+                    }
+                    // domainLambda = d3.extent(x)
+                    for(j=0;j<x.length;j++){
+                        data[j] = { 'lambda': x[j], 'flux': skewers[idx].flux[j] }
+                    }
                 }
-                // domainLambda = d3.extent(x)
-                for(j=0;j<x.length;j++){
-                    data[j] = { 'lambda': x[j], 'flux': skewers[idx].flux[j] }
+                else{
+                    for(j=0;j<x.length;j++){
+                        data[j] = { 'lambda': x[j], 'flux': skewers[idx].flux[j] }
+                    }
                 }
-            }
-            else{
-                for(j=0;j<x.length;j++){
-                    data[j] = { 'lambda': x[j], 'flux': skewers[idx].flux[j] }
+
+                // console.log("plotted " + idx)
+
+                var svg = d3.select("#spectrum")
+                    .append("svg")
+                    .attr("class","graph")
+                    .attr("id","graph-" + idx + '')
+                    .attr("width", width + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                svg.append("defs").append("clipPath")
+                    .attr("id", "clip")
+                    .append("rect")
+                    .attr("width", width)
+                    .attr("height", height);
+                // xScale = d3.scaleLinear()
+                //     .range([0, width])
+                //     .domain(d3.extent(skewerData[i].lambda));
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(xScale).ticks(6));
+            
+                // text label for the x axis
+                svg.append("text")             
+                    .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 30) + ")")
+                    .style("text-anchor", "middle")
+                    .text("λ")
+                
+                var yScale = d3.scaleLinear()
+                    .range([height, 0])
+                    .domain(d3.extent(skewers[idx].flux));
+                svg.append("g")
+                    .call(d3.axisLeft(yScale));
+                
+                // text label for the y axis
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0 - margin.left)
+                    .attr("x", 0 - (height / 2))
+                    .attr("dy", "0.9em")
+                    .style("text-anchor", "middle")
+                    .text("flux");
+
+                var line = d3.line()
+                    .x(d => xScale(d.lambda))
+                    .y(d => yScale(d.flux))      
+
+                svg.append("path")
+                    .datum(data)
+                    .attr("class", "line")
+                    .attr("d", line)
+
+                svg.append("text")
+                    .attr("transform", "translate(-40,10)")
+                    .text(idx)
+                
+                
+                if(lines[idx]){
+                    let id = "#graph-" + idx + ''
+                    $(id).hover(function(){
+                        
+                        lines[idx].material.color = new THREE.Color(0,1,0)
+                        }, function(){
+                            lines[idx].material.color = new THREE.Color(0xff5522)
+                    });
                 }
+
             }
 
-            // console.log("plotted " + idx)
-
-            var svg = d3.select("#spectrum")
-                .append("svg")
-                .attr("class","graph")
-                .attr("id","graph-" + idx + '')
-                .attr("width", width + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            svg.append("defs").append("clipPath")
-                .attr("id", "clip")
-                .append("rect")
-                .attr("width", width)
-                .attr("height", height);
-            // xScale = d3.scaleLinear()
-            //     .range([0, width])
-            //     .domain(d3.extent(skewerData[i].lambda));
-            svg.append("g")
-                .attr("transform", "translate(0," + height + ")")
-                .call(d3.axisBottom(xScale).ticks(6));
-           
-            // text label for the x axis
-            svg.append("text")             
-                .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 30) + ")")
-                .style("text-anchor", "middle")
-                .text("λ")
-            
-            var yScale = d3.scaleLinear()
-                .range([height, 0])
-                .domain(d3.extent(skewers[idx].flux));
-            svg.append("g")
-                .call(d3.axisLeft(yScale));
-            
-            // text label for the y axis
-            svg.append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 0 - margin.left)
-                .attr("x", 0 - (height / 2))
-                .attr("dy", "0.9em")
-                .style("text-anchor", "middle")
-                .text("flux");
-
-            var line = d3.line()
-                .x(d => xScale(d.lambda))
-                .y(d => yScale(d.flux))      
-
-            svg.append("path")
-                .datum(data)
-                .attr("class", "line")
-                .attr("d", line)
-
-            svg.append("text")
-                .attr("transform", "translate(-40,10)")
-                .text(idx)
-            
-            
-            if(lines[idx]){
-                let id = "#graph-" + idx + ''
-                $(id).hover(function(){
-                    
-                    lines[idx].material.color = new THREE.Color(0,1,0)
-                    }, function(){
-                        lines[idx].material.color = new THREE.Color(0xff5522)
-                });
-            }
         }
+
     }
 }
 

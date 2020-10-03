@@ -618,12 +618,6 @@
             socket.on('synthetic_spectrum_saved', function(msg) {
                 console.log(msg)
                 d3.json(msg.index).then(function(d){
-                    includesIdx = false
-                    for(i=0;i<skewerData.length;i++){
-                        if(skewerData[i][0].index == d.index){
-                            includesIdx = true
-                        } 
-                    }
                     plotSyntheticSpectrum(d);
                 })
             });
