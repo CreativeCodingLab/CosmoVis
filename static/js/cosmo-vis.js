@@ -1823,7 +1823,7 @@ function deleteLine(idx){
     del.remove()
     // let stat = document.getElementById('spectra-status-skewer-coords-' + idx + '')
     // stat.remove()
-    scene.remove(lines[idx])
+    starScene.remove(lines[idx])
 }
 
 function retryLine(idx){
@@ -1921,7 +1921,7 @@ function updateGraph(){
         // console.log(skewerData.length)
         for(i=0;i<skewerData.length;i++){   
             // console.log(i)
-            if(skewerData[i][0].index){
+            if(skewerData[i]){
 
                 let data = []
                 let idx = skewerData[i][0].index
@@ -2463,6 +2463,11 @@ $(document).ready(function(){
         canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
         canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
 
+        // canvas.addEventListener("webglcontextlost", function(event) {
+        //     event.preventDefault();
+        // }, false);
+        // canvas.addEventListener(
+        //     "webglcontextrestored", setupWebGLStateAndResources, false);        
         context = canvas.getContext('webgl2', { antialias: true, alpha: true })
         
         scene = new THREE.Scene();
@@ -2771,7 +2776,7 @@ $(document).ready(function(){
             } );
             lines[idx] = new THREE.Line2( geometry, material );
             lines[idx].layers.set(4)
-            scene.add( lines[idx] );
+            starScene.add( lines[idx] );
         }
 
             
