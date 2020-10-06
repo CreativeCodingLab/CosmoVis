@@ -53,6 +53,8 @@ THREE.VolumeRenderShader1 = {
 
 		"u_starDiffuse": {value: null},
 		"u_starDepth": {value: null},
+		"u_skewerDiffuse": {value: null},
+		"u_skewerDepth": {value: null},
 		"u_starCol": {value: new THREE.Vector3( 1.0, 1.0 , 0.0 )},
 		"u_cameraNear": { value: 0.00001 },
 		"u_cameraFar": { value: 4000.0 },
@@ -184,7 +186,10 @@ THREE.VolumeRenderShader1 = {
 
 		"		uniform sampler2D u_starDiffuse;",
 		"		uniform sampler2D u_starDepth;",
-		"		uniform vec3 u_starCol;",		
+		"		uniform vec3 u_starCol;",
+
+		"		uniform sampler2D u_skewerDiffuse;",
+		"		uniform sampler2D u_skewerDepth;",
 
 		"		varying vec3 v_cameraPosition;",
 		"		varying vec3 v_position;",
@@ -388,12 +393,17 @@ THREE.VolumeRenderShader1 = {
 		"				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
 		"				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 		"				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		"				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
+		"				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		"				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
 		"				float dist;",
 
 		"				if((loc.x>u_xyzMin[0] && loc.x<=u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<=u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<=u_xyzMax[2])){",
 		"					vec4 c_gas = apply_dvr_colormap(gasVal,u_gasClip,u_gasClim,u_cmGasData,density,0.0,loc,iter);",
 		"					vec4 c_dm = apply_dvr_colormap(dmVal,u_dmClip,u_dmClim,u_cmDMData,density,0.0,loc,iter);",
 		"					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+		"					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+
 		"					vec3 emission = vec3(0.0,0.0,0.0);",
 		"					float transmittance = 0.0;",			
 		"					float rho = 4.0*max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
@@ -413,6 +423,13 @@ THREE.VolumeRenderShader1 = {
 		"						tau = (1.0/(exp(starDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_stars;",
+		"						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
+		"					}",
+		"					bool u_skewerVisibility = true;",
+		"					if(u_skewerVisibility == true){",
+		"						tau = (1.0/(exp(skewerDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
+		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		"						emission += c_skewers;",
 		"						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
 		"					if(transmittance < 0.0001){",
