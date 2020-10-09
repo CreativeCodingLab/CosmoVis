@@ -371,6 +371,7 @@ function updateUniforms(){
         starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
         starMaterial.uniforms[ "u_gridsize" ].value = gridsize
+        starMaterial.uniforms[ "u_starSize" ].value = document.getElementById("star-size-slider").value
 
         
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
@@ -852,7 +853,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 volMaterial = material
 
                 // THREE.Mesh
-                var geometry = new THREE.BoxGeometry( size, size, size );
+                var geometry = new THREE.BoxBufferGeometry( size, size, size );
                 geometry.translate( size / 2, size / 2, size / 2 );
                 clearLayer(0)
                 if(oldPos && oldSize){
@@ -917,7 +918,8 @@ function setupStarScene(){
             Col: { value: new THREE.Vector4(starCol.r,starCol.g,starCol.b,1.0) },
             u_xyzMin: {value: null},
             u_xyzMax: {value: null},
-            u_gridsize: {value: gridsize}
+            u_gridsize: {value: gridsize},
+            u_starSize: {value: document.getElementById("star-size-slider").value }
             // maxCol: { value: new THREE.Vector4(starMaxCol.r,starMaxCol.g,starMaxCol.b,1.0) }
         },
         vertexShader:   document.getElementById( 'vertexshader-star' ).textContent,
@@ -2777,7 +2779,7 @@ $(document).ready(function(){
             plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
             raycaster.setFromCamera(mouse, camera);
             raycaster.ray.intersectPlane(plane, point);
-            var geometry = new THREE.Geometry();
+            var geometry = new THREE.BufferGeometry();
             ray1 = new THREE.Vector3(point.x,point.y,point.z)
             cd = new THREE.Vector3()
             camera.getWorldDirection(cd)
