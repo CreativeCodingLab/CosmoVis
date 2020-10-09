@@ -902,4 +902,44 @@ th,td {
     border: 1px solid black;
     padding: 10px 15px;
 }
+
+#loading-animation {
+    position:absolute;
+    bottom: 1vw;
+    left: 1vw;
+    display: none;
+}
+
+.lds-ripple {
+    display: inline-block;
+    position: relative;
+    width: 6vw;
+    height: 6vw;
+  }
+  .lds-ripple div {
+    position: absolute;
+    border: 2px solid #fff;
+    opacity: 0.6;
+    border-radius: 50%;
+    animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  }
+  .lds-ripple div:nth-child(2) {
+    animation-delay: -0.5s;
+  }
+  @keyframes lds-ripple {
+    0% {
+      top: 2.5vw;
+      left: 2.5vw;
+      width: 0;
+      height: 0;
+      opacity: 1;
+    }
+    100% {
+      top: 0px;
+      left: 0px;
+      width: 5vw;
+      height: 5vw;
+      opacity: 0;
+    }
+  }
   

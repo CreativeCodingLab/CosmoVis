@@ -70,8 +70,9 @@ var container_hover //used to determine if the mouse is over a GUI container whe
 var edges_scaled = []
 var domainXYZ = [0.0,1.0,0.0,1.0,0.0,1.0]
 
-var starScene
+var starScene, skewerScene
 var target //used for rendering star particles to depth texture
+var skewerTarget
 var boxOfStarPoints
 
 var galaxy_centers
@@ -237,6 +238,7 @@ function toggleXYZGuide(){
 }
 
 function updateSkewerEndpoints(size){
+    console.log('update skewer endpoints')
     for(i=0;i<lines.length;i++){
         lines[i].scale.x = size/64
         lines[i].scale.y = size/64
@@ -352,13 +354,13 @@ function toggleXYZGuide(){
     }
 }
 
-function updateSkewerEndpoints(size){
-    for(i=0;i<lines.length;i++){
-        lines[i].scale.x = size/64
-        lines[i].scale.y = size/64
-        lines[i].scale.z = size/64
-    }
-}
+// function updateSkewerEndpoints(size){
+//     for(i=0;i<lines.length;i++){
+//         lines[i].scale.x = size
+//         lines[i].scale.y = size
+//         lines[i].scale.z = size
+//     }
+// }
 
 function updateUniforms(){
     if(volMaterial){
@@ -369,6 +371,7 @@ function updateUniforms(){
         starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
         starMaterial.uniforms[ "u_gridsize" ].value = gridsize
+        starMaterial.uniforms[ "u_starSize" ].value = document.getElementById("star-size-slider").value
 
         
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
@@ -607,7 +610,8 @@ function loadDensity(size,type,attr){
 }
 
 function loadGasDMAttributes(size,attr,resolution_bool){
-
+    loading = document.getElementById("loading-animation")
+    loading.style.display = "inline-block"
     type='PartType0'
     d3.json('static/data/'+simID+'/PartType0/' + size + '_' + type + '_' + attr +'.json').then(function(d){
         
@@ -849,7 +853,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 volMaterial = material
 
                 // THREE.Mesh
-                var geometry = new THREE.BoxGeometry( size, size, size );
+                var geometry = new THREE.BoxBufferGeometry( size, size, size );
                 geometry.translate( size / 2, size / 2, size / 2 );
                 clearLayer(0)
                 if(oldPos && oldSize){
@@ -888,6 +892,8 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 updateUniforms()
                 createSkewerCube(size)
 
+                loading = document.getElementById("loading-animation")
+                loading.style.display = "none"
                 // loadHaloCenters()
 
             })
@@ -912,7 +918,8 @@ function setupStarScene(){
             Col: { value: new THREE.Vector4(starCol.r,starCol.g,starCol.b,1.0) },
             u_xyzMin: {value: null},
             u_xyzMax: {value: null},
-            u_gridsize: {value: gridsize}
+            u_gridsize: {value: gridsize},
+            u_starSize: {value: document.getElementById("star-size-slider").value }
             // maxCol: { value: new THREE.Vector4(starMaxCol.r,starMaxCol.g,starMaxCol.b,1.0) }
         },
         vertexShader:   document.getElementById( 'vertexshader-star' ).textContent,
@@ -933,7 +940,42 @@ function setupStarScene(){
 
 }
 
+function setupSkewerScene(){
+    skewerScene = new THREE.Scene();
+    skewerScene.background = new THREE.Color("rgb(0,0,0)")
+    // skewerCol = new THREE.Color( 1,1,0 )
+    // console.log(starCol)
+    // skewerMaterial = new THREE.ShaderMaterial( {
+
+    //     uniforms: {
+    //         Col: { value: new THREE.Vector4(starCol.r,starCol.g,starCol.b,1.0) },
+    //         u_xyzMin: {value: null},
+    //         u_xyzMax: {value: null},
+    //         u_gridsize: {value: gridsize}
+    //         // maxCol: { value: new THREE.Vector4(starMaxCol.r,starMaxCol.g,starMaxCol.b,1.0) }
+    //     },
+    //     vertexShader:   document.getElementById( 'vertexshader-star' ).textContent,
+    //     fragmentShader: document.getElementById( 'fragmentshader-star' ).textContent,
+
+    //     // // blending:       THREE.AdditiveBlending,
+    //     blending:       THREE.CustomBlending,
+    //     // blendEquation:  THREE.AddEquation, //default
+    //     blendSrc:       THREE.OneFactor,
+    //     blendDst:       THREE.ZeroFactor,
+    //     depthTest:      true,
+    //     depthWrite:     false,
+    //     transparent:    false,
+    //     // alphaTest:      0.3
+
+    // });
+    // checkSelectedSimID()
+
+}
+
 function setupRenderTarget(){
+
+
+    //STAR SCENE TARGET
 
     if( target ) target.dispose();
 
@@ -960,7 +1002,25 @@ function setupRenderTarget(){
     target.scissor
 
 
+    //SKEWER SCENE TARGET
+
+    if( skewerTarget ) skewerTarget.dispose();
+
+    skewerTarget = new THREE.WebGLRenderTarget( size.x, size.y );
+    skewerTarget.texture.format = THREE.RGBAFormat;
+    skewerTarget.texture.minFilter = THREE.NearestFilter;
+    skewerTarget.texture.magFilter = THREE.NearestFilter;
+    skewerTarget.texture.generateMipMaps = false
+    skewerTarget.stencilBuffer = ( format === THREE.DepthStencilFormat ) ? true : false;
+    skewerTarget.depthBuffer = true;
+    skewerTarget.depthTexture = new THREE.DepthTexture();
+    skewerTarget.depthTexture.format = format
+    skewerTarget.depthTexture.type = type;
+    skewerTarget.scissorTest = true;
+    skewerTarget.scissor
+
     setupStarScene()
+    setupSkewerScene()
 }
 
 function loadHaloCenters(){
@@ -1578,6 +1638,16 @@ function render() {
         }
         renderer.setRenderTarget( null )
     }
+
+    if( skewerTarget ){
+        renderer.setRenderTarget( skewerTarget )
+        renderer.render( skewerScene, camera );   
+        if( volMaterial ){
+            volMaterial.uniforms[ "u_skewerDiffuse" ].value = skewerTarget.texture
+            volMaterial.uniforms[ "u_skewerDepth" ].value = skewerTarget.depthTexture    
+        }
+        renderer.setRenderTarget( null )
+    }
     
     let divGrid = (document.getElementById("grid-check")).checked
     let divGridRadio1 = (document.getElementById("grid-radio-1")).checked
@@ -1823,7 +1893,7 @@ function deleteLine(idx){
     del.remove()
     // let stat = document.getElementById('spectra-status-skewer-coords-' + idx + '')
     // stat.remove()
-    starScene.remove(lines[idx])
+    skewerScene.remove(lines[idx])
 }
 
 function retryLine(idx){
@@ -2709,7 +2779,7 @@ $(document).ready(function(){
             plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
             raycaster.setFromCamera(mouse, camera);
             raycaster.ray.intersectPlane(plane, point);
-            var geometry = new THREE.Geometry();
+            var geometry = new THREE.BufferGeometry();
             ray1 = new THREE.Vector3(point.x,point.y,point.z)
             cd = new THREE.Vector3()
             camera.getWorldDirection(cd)
@@ -2765,18 +2835,18 @@ $(document).ready(function(){
             positions.push(point1.x,point1.y,point1.z);
             positions.push(point2.x,point2.y,point2.z);
             geometry.setPositions(positions)
-            scene.remove(lines[idx])
+            skewerScene.remove(lines[idx])
             var material = new THREE.LineMaterial( { 
-                color: 0xff5522,
+                color: 0x0000ff,//0xff5522,
                 linewidth: 0.0025,
                 transparent: true,
-                opacity: 0.7,
+                opacity: 1.0,
                 blending: THREE.AdditiveBlending
 
             } );
             lines[idx] = new THREE.Line2( geometry, material );
             lines[idx].layers.set(4)
-            starScene.add( lines[idx] );
+            skewerScene.add( lines[idx] );
         }
 
             
@@ -2794,9 +2864,9 @@ $(document).ready(function(){
             div.insertAdjacentHTML('beforeend', '<div class="skewer-coords" id="' + id + '"></div>');
             
             $("#" + id).hover(function(){
-                lines[idx].material.color = new THREE.Color(0,1,0)
+                lines[idx].material.color = new THREE.Color(1,0,1)
                 }, function(){
-                    lines[idx].material.color = new THREE.Color(0xff5522)
+                    lines[idx].material.color = new THREE.Color(0x0000ff)
             });
             
             //create div to show the line idx
