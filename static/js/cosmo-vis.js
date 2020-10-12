@@ -85,6 +85,8 @@ var camPos;
 var oldSize
 var oldPos
 
+let renderRequested = false
+
 // var staticGrid;
 
 /**
@@ -539,6 +541,7 @@ function updateUniforms(){
         dmColData = []
         volMaterial.uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
     }
+    render()
     
 }
 
@@ -896,6 +899,8 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 loading.style.display = "none"
                 // loadHaloCenters()
 
+                render()
+
             })
 
             
@@ -1085,6 +1090,8 @@ function goToPoint(x,y,z){
         .range([margin.left+width*domainXYZ[4], margin.left+width*domainXYZ[5]]);
         // .range([domainXYZ[4], domainXYZ[5]]);
     zBrush.call(zBrusher).call(zBrusher.move,z.range())
+    
+
 
     
 
@@ -1623,10 +1630,10 @@ function render() {
      */
 
     // requestAnimationFrame( render );
-    controls.update()
+    // controls.update()
 
+    renderRequested = false;
     //render stars into target
-    
     renderer.setRenderTarget( null )
 
     if( target ){
@@ -1660,9 +1667,16 @@ function render() {
         staticGrid.rotateX(Math.PI/2)
     }
     renderer.render( scene, camera );
-    requestAnimationFrame( render );
+    // requestAnimationFrame( render );
    
 };
+
+function requestRenderIfNotRequested(){
+    if(!renderRequested){
+        renderRequested = true;
+        requestAnimationFrame(render)
+    }
+}
 
 function round(value, decimals) {
     /**
@@ -2666,10 +2680,12 @@ $(document).ready(function(){
 
         controls.target.set( gridsize/2, gridsize/2, gridsize/2 );
 
-        controls.update()
+        // controls.update()
 
         controls.enableDamping = true
-        controls.dampingFactor = 0.14;
+        controls.dampingFactor = 0.75;
+
+        controls.addEventListener('change', requestRenderIfNotRequested)
 
         // initMaterial();
         initColor();
