@@ -435,7 +435,7 @@ THREE.VolumeRenderShader1 = {
 		"					if(transmittance < 0.0001){",
 		"						break;",
 		"					}",
-		"					path_L.rgb += length(step)*transmittance * rho * sigma_e * emission;", //multiply by step size
+		"					path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;", //multiply by step size
 		"				}",
 						// Resolve final color
 		"				path_L.a = 1.0;",

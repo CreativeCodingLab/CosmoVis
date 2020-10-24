@@ -28,7 +28,7 @@ var climGasLimits = []
 var climDMLimits = []
 var climStarLimits = []
 var climBHLimits = []
-var gridsize = 64
+var gridsize = 64//parseInt(document.getElementById('size_select').value)
 var simID
 var simSize
 var staticGrid
@@ -207,6 +207,7 @@ function toggleGrid(){
         toggleXYZGuide()
         updateUniforms()
 
+
     }
     else{
         clearLayer(9)
@@ -375,7 +376,7 @@ function updateUniforms(){
         starMaterial.uniforms[ "u_gridsize" ].value = gridsize
         starMaterial.uniforms[ "u_starSize" ].value = document.getElementById("star-size-slider").value
 
-        
+        // volMaterial.uniforms["u_dmVisibility"].value = false        
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
         volMaterial.uniforms["u_screenWidth"].value = window.innerWidth
 
@@ -569,7 +570,8 @@ function loadDensity(size,type,attr){
             for(x=0;x<size;x++){
                 for(y=0;y<size;y++){
                     for(z=0;z<size;z++){
-                        arr[ x + y * size + z * size * size ] = Math.log10(d[x][y][z])
+                        if(size==384 || size==512) arr[ x + y * size + z * size * size ] =d[x][y][z]
+                        else arr[ x + y * size + z * size * size ] = Math.log10(d[x][y][z])
                     }
                 }
             }
@@ -606,6 +608,7 @@ function loadDensity(size,type,attr){
             //     densityMin = 0.0000000000001
             // }
             arr = []
+            updateUniforms()
             resolve([densityTexture, densityMin, densityMax])
         })
     })
@@ -625,18 +628,27 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         let log
         if(elements.includes(attr)){
             log = false
-            min = 4.5
+            if(attr=="Temperature"){
+                min = 3.745
+                max = 7
+            }
         }
         else{
             log = true
-        }    
+        }
+        if(attr=="GFM_Metallicity") log = false
         
-        log = true
+        console.log(log)
+        if(attr == "Temperature" && (gridsize == 512 || gridsize == 384)) log = false
+        // else log = true
         //fill arr array with loaded data
         for(x=0;x<size;x++){
             for(y=0;y<size;y++){
                 for(z=0;z<size;z++){
-                    if(log){
+                    if(simID=="TNG100" && attr =="GFM_Metallicity"){
+                        gasArr[ x + y * size + z * size * size ] =  d[x][y][z]
+                    }
+                    else if(log){
                         gasArr[ x + y * size + z * size * size ] =  Math.log10(d[x][y][z])
                     }
                     else{
@@ -678,8 +690,14 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         let maxval = document.getElementById('gas-maxval-input')
         maxval.value = round(max,2)
         // if(elements.includes(attr)){
-        min = 4.5
-        minval.value = 4.5 
+        if(attr=="Temperature"){
+            min = 3.745
+            minval.value = 3.745
+            max = 7
+            maxval.value = 7
+        }
+        // min = 4.5
+        // minval.value = 4.5
         // }
         let gasUnits = document.getElementsByClassName('gas-attr-units')
         for(i=0;i< gasUnits.length;i++){
@@ -709,8 +727,6 @@ function loadGasDMAttributes(size,attr,resolution_bool){
         gasTexture.minFilter = gasTexture.magFilter = THREE.LinearFilter
         gasTexture.unpackAlignment = 1
 
-
-        
         type='PartType1'
         attr = 'density'
         d3.json('static/data/'+simID+'/PartType1/' + size + '_' + type + '_' + attr +'.json').then(function(d){
@@ -789,10 +805,12 @@ function loadGasDMAttributes(size,attr,resolution_bool){
             var shader = THREE.VolumeRenderShader1;
             var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
 
-            gasArr = []
+           
             dmArr = []
 
+            
             d3.json( 'static/data/' + simID + '/PartType4/star_particles.json' ).then( function( d ){
+                console.log("loading stars")
                 // console.log( Object.keys(d).length )
                 n = Object.keys(d).length
                 m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
@@ -824,10 +842,10 @@ function loadGasDMAttributes(size,attr,resolution_bool){
 
                 // uniforms[ "u_data" ].value = texture;
                 uniforms[ "u_gasData" ].value = gasTexture;
-                uniforms[ "u_dmData" ].value = dmTexture;
+                uniforms[ "u_dmData" ].value = dmTexture;;
                 uniforms[ "u_size" ].value.set( size, size, size );
                 uniforms[ "u_gasClim" ].value.set( climGasLimits[0], climGasLimits[1] );
-                uniforms[ "u_dmClim" ].value.set( climDMLimits[0], climDMLimits[1] );
+                uniforms[ "u_dmClim" ].value.set( null,null);//climDMLimits[0], climDMLimits[1] );
                 uniforms[ "u_renderstyle" ].value = 'mip' == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
                 uniforms[ "u_renderthreshold" ].value = 1.0; // For ISO renderstyle
                 uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
@@ -900,6 +918,7 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 // loadHaloCenters()
 
                 render()
+                gasArr = []
 
             })
 
@@ -1512,110 +1531,6 @@ function createSkewerCube(size){
     }
 }
 
-function loadData(){
-    
-    // Load Volume Rendering Data
-    d3.json('static/data/temp.json').then(function(d){
-        
-        size = 128
-        arr = new Float32Array(size * size * size)
-        
-        for(x=0;x<size;x++){
-            for(y=0;y<size;y++){
-                for(z=0;z<size;z++){
-                    arr[ x + y * size + z * size * size ] = d[x][y][z]
-                }
-            }
-        }
-
-        var max = arr.reduce(function(a, b) {
-            return Math.max(a, b);
-        });
-
-        // console.log(max)
-        
-        // console.log(arr)
-        function updateUniforms() {
-
-			material.uniforms[ "u_clim" ].value.set( volconfig.clim1, volconfig.clim2 );
-			material.uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-			material.uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
-            material.uniforms[ "u_cmdata" ].value = cmtexture;
-
-			// render();
-
-		}
-        gui = new dat.GUI()
-
-        // The gui for interaction
-        volconfig = { clim1: 0, clim2: 300000, renderstyle: 'mip', isothreshold: 700, colormap: 'viridis' };
-        gui.add( volconfig, 'clim1', 0, 300000, 0.00001 ).onChange( updateUniforms );
-        gui.add( volconfig, 'clim2', 0, 300000, 0.00001 ).onChange( updateUniforms );
-        gui.add( volconfig, 'colormap', { gray: 'gray', viridis: 'viridis' } ).onChange( updateUniforms );
-        gui.add( volconfig, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( updateUniforms );
-        gui.add( volconfig, 'isothreshold', 0, 30000, 0.01 ).onChange( updateUniforms );
-        
-        var texture = new THREE.DataTexture3D( arr, size, size, size)
-        texture.format = THREE.RedFormat
-        texture.type = THREE.FloatType
-        texture.minFilter = texture.magFilter = THREE.LinearFilter
-        texture.unpackAlignment = 1
-        var shader = THREE.VolumeRenderShader1;
-        var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-
-        arr = []
-
-
-        cmtextures = {
-            gray: new THREE.TextureLoader().load( 'static/textures/cm_gray.png', render ),
-            viridis: new THREE.TextureLoader().load( 'static/textures/cm_viridis.png', render )
-
-        };
-
-    
-        // Material
-
-        uniforms[ "u_data" ].value = texture;
-        uniforms[ "u_size" ].value.set( size, size, size );
-        uniforms[ "u_clim" ].value.set( volconfig.clim1, volconfig.clim2 );
-        uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-        uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
-        uniforms[ "u_cmdata" ].value = cmtextures[ volconfig.colormap ];
-        
-        // uniforms[ "u_clim" ].value.set( 0 , 1000 );
-        // uniforms[ "u_renderstyle" ].value = 0; // 0: MIP, 1: ISO
-        // uniforms[ "u_renderthreshold" ].value = 900; // For ISO renderstyle
-        // uniforms[ "u_cmdata" ].value = cmtextures.viridis;
-
-        material = new THREE.ShaderMaterial( {
-            uniforms: uniforms,
-            vertexShader: shader.vertexShader,
-            fragmentShader: shader.fragmentShader,
-            clipping: false,
-            side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
-            transparent: true,
-        } );
-
-        // THREE.Mesh
-        var geometry = new THREE.BoxGeometry( size, size, size );
-        camera.position.set(size*2, size*2, size*2)
-        camera.lookAt(size/2,  size/2,  size/2)
-        camera.updateProjectionMatrix()
-        controls.target.set( size/2,  size/2,  size/2 );
-        geometry.translate( size / 2, size / 2, size / 2 );
-        
-
-        var mesh = new THREE.Mesh( geometry, material );
-        scene.add( mesh );
-
-        updateUniforms()
-
-        // render();
-
-    })
-    
-}
-
 function animate() {
     /**
      * * animate()
@@ -1630,7 +1545,7 @@ function render() {
      */
 
     // requestAnimationFrame( render );
-    // controls.update()
+    controls.update()
 
     renderRequested = false;
     //render stars into target
@@ -2460,6 +2375,7 @@ function checkSelectedSimID(){
             $("#star_select").empty();
             $("#bh_select").empty();
         }
+
     }
 
     // console.log(field_list);
@@ -2889,13 +2805,12 @@ $(document).ready(function(){
             div = document.getElementById(id)
             id = 'skewer-coords-number-' + idx
             div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-number" id='+ id +'>' + idx + ' <img id="delete-icon-"' + idx + '" class="delete-icon" src="static/assets/delete.svg" alt="delete line" role="button" onclick="deleteLine('+idx+')"  /> <img id="retry-icon-"' + idx + '" class="retry-icon" src="static/assets/refresh.svg" alt="retry line" role="button" onclick="retryLine('+idx+')"  /> </div>')
-
-            //create div to show pt1 details and range slider
+//create div to show pt1 details and range slider
             id = 'skewer-coords-' + idx
             div = document.getElementById(id)
             id = 'skewer-coords-pt1-range-' + idx + ''
             id_range = "p1-range-" + idx + ''
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
             div = document.getElementById(id)
             id = "skewer-coords-point1-" + idx + ''
             div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x,3) + ', ' + round(point1.y,3) + ', ' + round(point1.z,3) + ' )</div>')
@@ -2905,7 +2820,7 @@ $(document).ready(function(){
             div = document.getElementById(id)
             id = 'skewer-coords-pt2-range-' + idx + ''
             id_range = "p2-range-" + idx + ''
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0"></div></div>')
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
             div = document.getElementById(id)
             id = "skewer-coords-point2-" + idx + ''
             div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x,3) + ', ' + round(point2.y,3) + ', ' + round(point2.z,3) + ' ) </div>')
@@ -2990,7 +2905,7 @@ $(document).ready(function(){
             document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
         }
         else{
-            let col = new THREE.Color('rgb(42,27,243)')
+            let col = new THREE.Color('rgb(0,0,255)')
             document.querySelector("#gasMinCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
@@ -3000,7 +2915,7 @@ $(document).ready(function(){
             document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
         }
         else{
-            let col = new THREE.Color('rgb(255,221,0)')
+            let col = new THREE.Color('rgb(0,255,0)')
             document.querySelector("#gasMidCol").value = '#'+col.getHexString();
         }
         document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
