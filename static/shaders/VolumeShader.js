@@ -415,28 +415,29 @@ THREE.VolumeRenderShader1 = {
 		"					}",
 		"					if( u_dmVisibility == true ){",
 		"						tau = length(step)*c_dm.a*rho;", // number of occluded particles (do this twice, DM + Gas)
-		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_dm.a * c_dm.rgb;",
 		// "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		"					}",
 		"					if(u_starVisibility == true){",
 		"						tau = (1.0/(exp(starDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
-		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_stars;",
 								// break if it hits a star
+
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
 		"					bool u_skewerVisibility = true;",
 		"					if(u_skewerVisibility == true){",
 		"						tau = (1.0/(exp(skewerDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
-		"						transmittance = exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_skewers;",
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
 		"					if(transmittance < 0.0001){",
 		"						break;",
 		"					}",
-		"					path_L.rgb += transmittance * rho * sigma_e * emission;", //multiply by step size
+		"					path_L.rgb += length(step)*transmittance * rho * sigma_e * emission;", //multiply by step size
 		"				}",
 						// Resolve final color
 		"				path_L.a = 1.0;",
