@@ -423,6 +423,8 @@ THREE.VolumeRenderShader1 = {
 		"						tau = (1.0/(exp(starDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_stars;",
+								// break if it hits a star
+
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
 		"					bool u_skewerVisibility = true;",
