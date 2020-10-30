@@ -246,7 +246,7 @@
 
                 //gl_FragColor = vec4(0.8*vStarAttribute,0.8*vStarAttribute,0.2*vStarAttribute,0.2);//* texture2D( texture, gl_PointCoord );
                 //gl_FragColor = mix( vMinCol,vMaxCol,vStarAttribute );
-                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,0.75);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
                 //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
                 //gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
     
@@ -385,31 +385,7 @@
 
         
         $(document).ready(function(){
-            
-            
 
-            // $('form#selectRay').submit(function(event) {
-            //     var ray1 = [document.getElementById("ray_x1").value,document.getElementById("ray_y1").value,document.getElementById("ray_z1").value]
-            //     var ray2 = [document.getElementById("ray_x2").value,document.getElementById("ray_y2").value,document.getElementById("ray_z2").value]
-                
-            //     socket.emit('selectRay', ray1,ray2);
-                
-            //     var geometry = new THREE.Geometry();
-            //     geometry.vertices.push(new THREE.Vector3(ray1[0],ray1[1],ray1[2]) );
-            //     geometry.vertices.push(new THREE.Vector3(ray2[0],ray2[1],ray2[2]) );
-
-            //     var material = new THREE.LineBasicMaterial( { 
-            //         color: 0xffff00,
-            //         linewidth: 20
-
-            //      } );
-
-            //     var line = new THREE.Line( geometry, material );
-            //     line.position.set(-(8.47)/2, -(8.47)/2,0)
-            //     line.layers.set(4)
-            //     scene.add( line );
-            //     return false
-            // });
 
             socket.on('connect', function() {
                 socket.emit('my_event', {data: 'I\'m connected!'});
@@ -631,45 +607,7 @@
                 div = document.getElementById(buttonId)
                 div.innerText = 'Network timeout, retrying . . . '
                 requestSpectrum(idx)
-            });
-            
-            // socket.on('dataC', function(msg) {
-            //     // c.push(msg.data)
-            //     plotPoint(msg.data)
-            //     // $('#log').append('<br>' + $('<div/>').text('Received ' + msg.data).html());
-            // });
-
-            // var ping_pong_times = [];
-            // var start_time;
-            
-            window.setInterval(function() {
-                start_time = (new Date).getTime();
-                socket.emit('my_ping');
-            }, 1000);
-            
-            // socket.on('my_pong', function() {
-            //     var latency = (new Date).getTime() - start_time;
-            //     ping_pong_times.push(latency);
-            //     ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
-            //     var sum = 0;
-            //     for (var i = 0; i < ping_pong_times.length; i++)
-            //         sum += ping_pong_times[i];
-            //     $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
-            // });
-
-            // $('form#disconnect').submit(function(event) {
-            //     socket.emit('disconnect_request');
-            //     return false;
-            // });
-            // $('form#loadData').submit(function(event) {
-            //     socket.emit('loadData');
-            //     return false;
-            // });
-            // $('form#sendCoords').submit(function(event) {
-            //     socket.emit('sendCoords');
-            //     return false;
-            // });
-
+            });        
         });
 
         </script>
@@ -1027,6 +965,10 @@
             else x.style.display = "inline-flex"
         }
 
+        function hideGlobalOptions(){
+
+        }
+
         $
     </script>
     <!-- <script type="text/javascript" src="libs/Tween.js"></script>
@@ -1127,7 +1069,7 @@
             <br> -->
             <hr>
             
-            <label for="gas_select"><h3><img 
+            <label for="gas_select" class="layers-details"><h3><img 
                 id="gas-eye-open"
                 class="eye-icon"
                 src="static/assets/eye_open.svg" 
@@ -1142,13 +1084,7 @@
                 alt="gas hidden"
                 role="button"
                 onclick="toggleLayer( 0 )"/>
-            <img 
-                id="gas-blend"
-                class="blend-icon"
-                src="static/assets/blend.svg" 
-                alt="blend mode"
-                role="button"
-                onclick="toggleBlendMode( 0 )"/><div style="display: inline;" onclick="hideDetails('gas')" class="layers-details">gas</div></h3></label>
+            <div style="display: inline;" onclick="hideDetails('gas')" class="layers-details">gas</div></h3></label>
             
             <!-- <br> -->
             <div id="gas-data-details" class="data-details">
@@ -1214,13 +1150,8 @@
                 src="static/assets/eye_closed.svg" 
                 alt="dark matter hidden"
                 role="button"
-                onclick="toggleLayer( 1 )"/><img 
-                id="gas-blend"
-                class="blend-icon"
-                src="static/assets/blend.svg" 
-                alt="blend mode"
-                role="button"
-                onclick="toggleBlendMode( 1 )"/><div style="display: inline;" onclick="hideDetails('dm')" class="layers-details">dark matter</div></h3></label>
+                onclick="toggleLayer( 1 )"/>
+                <div style="display: inline;" onclick="hideDetails('dm')" class="layers-details">dark matter</div></h3></label>
             
             <!-- <br> -->
             <div id="dm-data-details" class="data-details">
@@ -1269,13 +1200,8 @@
                 src="static/assets/eye_closed.svg" 
                 alt="stars hidden"
                 role="button"
-                onclick="toggleLayer( 2 )"/><img 
-                id="gas-blend"
-                class="blend-icon"
-                src="static/assets/blend.svg" 
-                alt="blend mode"
-                role="button"
-                onclick="toggleBlendMode( 4 )"/><div style="display: inline;" onclick="hideDetails('star')" class="layers-details">stars</div></h3></label>
+                onclick="toggleLayer( 2 )"/>
+                <div style="display: inline;" onclick="hideDetails('star')" class="layers-details">stars</div></h3></label>
                 <!-- <br> -->
                 <!-- <input type="color" class="color-picker" value="#ffffff" id="starCol"> -->
                 
@@ -1328,13 +1254,8 @@
                 src="static/assets/eye_closed.svg" 
                 alt="black holes hidden"
                 role="button"
-                onclick="toggleLayer( 3 );"/><img 
-                id="gas-blend"
-                class="blend-icon"
-                src="static/assets/blend.svg" 
-                alt="blend mode"
-                role="button"
-                onclick="toggleBlendMode( 5 )"/><div style="display: inline;" onclick="hideDetails('bh')" class="layers-details">black holes</div></h3></label>
+                onclick="toggleLayer( 3 );"/>
+                <div style="display: inline;" onclick="hideDetails('bh')" class="layers-details">black holes</div></h3></label>
             
             <!-- <br> -->
             <!-- min: <input type="color" value="#0000ff" id="bhMinCol"> max: <input type="color" value="#ff0000" id="bhMaxCol">
@@ -1366,6 +1287,55 @@
             </div>
             <hr>
 
+            <label for="global-options"><h3>
+                <img
+                    id="wrench"
+                    class="eye-icon"
+                    src="static/assets/wrench.svg" 
+                    alt=""
+                    role="button"
+                    onclick="hideDetails('global')"/><div style="display: inline;" onclick="hideDetails('global')" class="layers-details">global options</h3></label>
+                <div id="global-data-details">                
+                <hr>
+
+                <div id="density-mod" class="density-mod">
+                    
+                    <p>density opacity modulation</p>
+                    <p><input type="range" id="density-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.8" oninput="updateUniforms()"> intensity</p>
+                    <div id="density-min">
+                        min
+                        <input type="number" step="0.1" id="density-minval-input" class="number-input minvalinput" name="density-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
+                    </div>
+                    <div id="density-max">
+                        max
+                        <input type="number" step="0.1" id="density-maxval-input" class="number-input maxvalinput" name="density-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
+                    </div>
+                </div>
+    
+                <hr>
+                
+                <div id="options">          
+                    <p><input type="checkbox" id="dist-mod-check" onclick="updateUniforms()"> distance opacity modulation</p>
+                    <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="1.00" oninput="updateUniforms()"> intensity</p>
+    
+                    <p><input type="checkbox" id="val-mod-check" onclick="updateUniforms()" checked> value opacity modulation</p>
+                    <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.75" oninput="updateUniforms()"> intensity</p>
+    
+                    <p><input type="checkbox" id="grayscale-mod-check" onclick="updateUniforms()"> saturation filter</p>
+    
+                    <hr>
+                    
+                    
+                    <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
+                    <!-- <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p> -->
+    
+                    <p><input type="range" id="exposure" min="0.05" max="10.0" step="0.001" value="5.0" oninput="updateUniforms()"> exposure</p>
+    
+                    <hr>
+                </div>
+            </div>
+            <hr>
+
         </div>
         
         <div id="raySelection" class="container">
@@ -1393,23 +1363,9 @@
                 onclick="toggleDrawSkewerMode()"/></h3>
             <br>
             <hr>
-            <!-- <br> -->
-
             <div id="skewer-coords">
             </div>
 
-
-            <!-- <h3>coordinate selection</h3>
-            <br>
-            <h4>ray origin</h4>
-            <p><em>x<sub>1 </sub></em>: <input type="number" class="rayCoordField" id="ray_x1" value="1"> <i>y</i><em><sub>1&nbsp;</sub></em>:<input type="number" class="rayCoordField" id="ray_y1" value="1">  <i>z</i><em><sub>1&nbsp;</sub></em>: <input type="number" class="rayCoordField" id="ray_z1" value="1">&nbsp;</p>
-            <h4>ray end</h4>
-            <p><em>x<sub>2 </sub></em>: <input type="number" class="rayCoordField" id="ray_x2" value="2"> <i>y</i><em><sub>2&nbsp;</sub></em>:<input type="number" class="rayCoordField" id="ray_y2" value="2">  <i>z</i><em><sub>2&nbsp;</sub></em>: <input type="number" class="rayCoordField" id="ray_z2" value="2">&nbsp;</p>
-            <form id="selectRay" method="POST" action="/">
-                <input type="submit" value="select ray">
-            </form> -->
-            <!-- <br> -->
-            <!-- <hr> -->
         </div>
         
         <div id="spectrum" class="container">
@@ -1433,18 +1389,8 @@
 
             <button type="submit" class="request-button" onclick="window.open('{{ url_for('static', filename='data/spectra.fits')}}')"  >download spectra</button>
         </div>
-        <!-- <img 
-            class="icon"
-            src="static/assets/wrench.svg" 
-            alt="control panel"
-            role="button"
-            onclick="gui()"/>
-        <div id="my-gui-container" class="container">
 
-        </div> -->
-        
         <div id="terminal" class="container">
-            <hr>
             select simulation
             <p><select class="data_select" id="sim_size_select" onchange="checkSelectedSimID()">
                 <option disabled="disabled">select simulation (n&sup3;)</option>
@@ -1453,57 +1399,24 @@
                 <option disabled value="TNG100">100 Mpc box (TNG)</option>
             </select></p>
 
-            select grid resolution
-            <p><select class="data_select" id="size_select" onchange="updateSize()">
-                <option disabled="disabled">Select voxel grid size (n&sup3;)</option>
-                <option selected="selected" value="64">64&sup3;</option>
-                <option value="128">128&sup3;</option>
-                <option value="256">256&sup3;</option>
-                <option disabled value="384">384&sup3;</option>
-                <option disabled value="512">512&sup3;</option>
-            </select></p>
-            <hr>
-            <div id="density-mod" class="density-mod">
-                
-                <p><input type="checkbox" id="density-mod-check" onclick="updateUniforms()" checked> density opacity modulation</p>
-                <p><input type="range" id="density-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.8" oninput="updateUniforms()"> intensity</p>
-                <div id="density-min">
-                    min
-                    <input type="number" step="0.1" id="density-minval-input" class="number-input minvalinput" name="density-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
-                </div>
-                <div id="density-max">
-                    max
-                    <input type="number" step="0.1" id="density-maxval-input" class="number-input maxvalinput" name="density-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
-                </div>
-            </div>
-
-            <hr>
-            
-            <div id="options">
-
-                
-
-                <p><input type="checkbox" id="dist-mod-check" onclick="updateUniforms()"> distance opacity modulation</p>
-                <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="1.00" oninput="updateUniforms()"> intensity</p>
-
-                <p><input type="checkbox" id="val-mod-check" onclick="updateUniforms()" checked> value opacity modulation</p>
-                <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.75" oninput="updateUniforms()"> intensity</p>
-
-                <p><input type="checkbox" id="grayscale-mod-check" onclick="updateUniforms()"> grayscale depth filter</p>
-
-                <hr>
+            <div id="grid-options">
+                select grid resolution
+                <p><select class="data_select" id="size_select" onchange="updateSize()">
+                    <option disabled="disabled">Select voxel grid size (n&sup3;)</option>
+                    <option selected="selected" value="64">64&sup3;</option>
+                    <option value="128">128&sup3;</option>
+                    <option value="256">256&sup3;</option>
+                    <option disabled value="384">384&sup3;</option>
+                    <option disabled value="512">512&sup3;</option>
+                </select></p>
                 <p><input type="checkbox" id="grid-check" onclick="toggleGrid()" > grid </p>
-                <p><input type="radio" id="grid-radio-1" name="grid" onclick="toggleGrid()" checked> static grid </p>
-                <p><input type="radio" id="grid-radio-2" name="grid" onclick="toggleGrid()" > boundaries grid </p>
-                <hr>
-                <p><input type="checkbox" id="xyzguide-check" onclick="toggleXYZGuide()" > axes helper </p>
-                <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
-                <!-- <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p> -->
-
-                <p><input type="range" id="exposure" min="0.05" max="10.0" step="0.001" value="5.0" oninput="updateUniforms()"> exposure</p>
-
-                <hr>
+                <div id="grid-radio-btns">
+                    <p><input type="radio" id="grid-radio-1" name="grid" onclick="toggleGrid()" checked>    static grid </p>
+                    <p><input type="radio" id="grid-radio-2" name="grid" onclick="toggleGrid()" >   boundaries grid </p>
+                </div>
             </div>
+            <hr>
+            <p><input type="checkbox" id="xyzguide-check" onclick="toggleXYZGuide()" > axes helper </p>
 
         </div>
 
@@ -1520,31 +1433,6 @@
     <div id="loading-animation" class="lds-ripple"><div></div><div></div></div>
 
 </div>
-
-
-    
-    <div hidden class="sidebar">
-        <!-- <h1>cosmovis</h1> -->
-        <nav>
-            
-
-
-            
-            <!--         
-            <h2>particles</h2>
-            <ul>
-                <li>gas</li>
-                <li>dark matter</li>
-                <li>stars</li>
-                <li>black holes</li>
-            </ul> -->
-        </nav>
-    </div>
-
-    
-    
-    <!-- <h2>Receive:</h2>
-    <div id="log"></div> -->
     <script>
     namespace = '/test';
     var socket = io(namespace, {reconnect: true, transports: ['websocket'], timeout: 120000});

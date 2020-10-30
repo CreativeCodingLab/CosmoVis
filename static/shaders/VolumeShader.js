@@ -67,6 +67,7 @@ THREE.VolumeRenderShader1 = {
 		"		varying vec4 v_farpos;",
 		"		varying vec3 v_position;",
 		"		varying vec3 v_cameraPosition;",
+		// "		uniform vec3 cameraPosition;",
 
 		"		mat4 inversemat(mat4 m) {",
 		// Taken from https://github.com/stackgl/glsl-inverse/blob/master/index.glsl
@@ -200,6 +201,7 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_cameraFar;",
 		"		uniform float u_screenWidth;",
 		"		uniform float u_screenHeight;",
+		// "		uniform vec3 cameraPosition;",
 		
 
 		// The maximum distance through our rendering volume is sqrt(3)*size.
@@ -295,7 +297,7 @@ THREE.VolumeRenderShader1 = {
 		"			return vec3(gray, gray, gray);",
 		"		}",
 		"		vec3 grayscaleAmount(vec4 inputColor, float amount){",
-		"			vec3 outputColor = mix(inputColor.rgb, grayscale(inputColor.rgb), amount/1.6);",
+		"			vec3 outputColor = mix(inputColor.rgb, grayscale(inputColor.rgb), 1.0-1.0/amount);",
 		"			return outputColor;",
 		"		}",
 		
@@ -326,10 +328,10 @@ THREE.VolumeRenderShader1 = {
 		// "			return worldSpacePosition.xyz;",
 		// "		}",
 
-		"		vec4 apply_dvr_colormap(float val, bvec2 clip, vec2 clim, sampler2D cm_texture, float density, float dist, vec3 texcoords, int iter) {",
+		"		vec4 apply_dvr_colormap(float val, bvec2 clip, vec2 clim, sampler2D cm_texture, float density, vec3 texcoords, int iter) {",
 		"				float a;",
 		"				vec4 tex;",
-		"				float delta = distance(v_cameraPosition,texcoords);",
+		"				float delta = distance(cameraPosition,texcoords);",
 		"				if(u_densityDepthMod == 1.0){",
 		"					density = ((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]));",
 		"				}",
@@ -348,7 +350,7 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - clim[0]) / (clim[1] - clim[0]);",
 		"				tex = texture2D(cm_texture, vec2(val, 0.5));",
-		"				if(a > 0.0001){",  //} && val<=0.5){",
+		"				if(a > 0.0000001){",  //} && val<=0.5){",
 		"					a = u_densityModI*density*u_densityMod + u_valModI*u_valMod*val + u_distModI*delta*u_distMod;",
 		// "						a = exp(-u_valModI*u_valMod*val);",
 		// "					tex = texture2D(cm_texture, vec2(val, 0.5));",
@@ -360,7 +362,7 @@ THREE.VolumeRenderShader1 = {
 
 		// "				tex.a = (a_gas+a_dm)/1.0;",
 		"				if(u_grayscaleDepthMod == 1.0){",
-		"					tex.rgb = grayscaleAmount(tex, (1.0-(dist*dist)));",
+		"					tex.rgb = grayscaleAmount(tex, float(u_size)/(delta));",
 		"				}",
 		// "				tex.a = tex.a*u_stepSize;",//(float(iter)/u_stepSize);",
 		"				return tex;",
@@ -396,11 +398,10 @@ THREE.VolumeRenderShader1 = {
 		"				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
 		"				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 		"				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
-		"				float dist;",
 
 		"				if((loc.x>u_xyzMin[0] && loc.x<=u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<=u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<=u_xyzMax[2])){",
-		"					vec4 c_gas = apply_dvr_colormap(gasVal,u_gasClip,u_gasClim,u_cmGasData,density,0.0,loc,iter);",
-		"					vec4 c_dm = apply_dvr_colormap(dmVal,u_dmClip,u_dmClim,u_cmDMData,density,0.0,loc,iter);",
+		"					vec4 c_gas = apply_dvr_colormap(gasVal,u_gasClip,u_gasClim,u_cmGasData,density,loc,iter);",
+		"					vec4 c_dm = apply_dvr_colormap(dmVal,u_dmClip,u_dmClim,u_cmDMData,density,loc,iter);",
 		"					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 		"					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 
@@ -420,7 +421,7 @@ THREE.VolumeRenderShader1 = {
 		// "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		"					}",
 		"					if(u_starVisibility == true){",
-		"						tau = (1.0/(exp(starDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
+		"						tau = (1.0/(exp(starDepth)))*length(step)*0.75;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_stars;",
 								// break if it hits a star

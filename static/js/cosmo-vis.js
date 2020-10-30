@@ -211,6 +211,7 @@ function toggleGrid(){
     }
     else{
         clearLayer(9)
+        updateUniforms()
     }
     
 }
@@ -355,6 +356,7 @@ function toggleXYZGuide(){
     else{
         clearLayer(10)
     }
+    updateUniforms()
 }
 
 // function updateSkewerEndpoints(size){
@@ -396,7 +398,7 @@ function updateUniforms(){
         volMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
 
 
-        d_mod = (document.getElementById("density-mod-check").checked ? 1.0 : 0.0);
+        d_mod = 1.0// (document.getElementById("density-mod-check").checked ? 1.0 : 0.0);
         
         //do stuff with h_number_density
         densityMin = document.getElementById('density-minval-input').value
@@ -414,12 +416,13 @@ function updateUniforms(){
         }
         volMaterial.uniforms[  "u_densityDepthMod"  ].value = d_mod;
         volMaterial.uniforms[ "u_densityModI" ].value = (document.getElementById("density-mod-intensity")).value
-        if((document.getElementById("density-mod-check")).checked){
-            volMaterial.uniforms[ "u_densityMod" ].value = 1.0;
-        }
-        else{
-            volMaterial.uniforms[ "u_densityMod" ].value = 0.0;
-        }
+        volMaterial.uniforms[ "u_densityMod" ].value = 1.0;
+        // if((document.getElementById("density-mod-check")).checked){
+        //     
+        // }
+        // else{
+        //     volMaterial.uniforms[ "u_densityMod" ].value = 0.0;
+        // }
 
 
         if((document.getElementById("dist-mod-check")).checked){
