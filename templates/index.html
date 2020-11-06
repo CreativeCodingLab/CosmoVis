@@ -617,6 +617,7 @@
         <!-- load scripts -->
     <script type="text/javascript" src="{{ url_for('static', filename='libs/Tween.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='libs/OrbitControls.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/TrackballControls.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/cosmo-vis.js') }}"></script>
     <script>
 
@@ -739,9 +740,12 @@
             }
             updateUniforms()
         }
-        function requestPoints(size,type,attr){
+        async function requestPoints(size,type,attr){
             if(attr != 'Select an attribute'){
-                loadGasDMAttributes(gridsize,attr,false)
+                if(type == 'PartType0'){
+                    var gas = await loadGas(size,attr,false)
+                    var update = await update3dDataTexture()
+                }
             }
         }
         // function requestPoints(type,attr,renderCount){

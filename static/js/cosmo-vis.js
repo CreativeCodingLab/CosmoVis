@@ -13,6 +13,8 @@ var camera, scene, renderer, material, skewerScene //THREE.js environment variab
 var tex1 = new THREE.TextureLoader().load( "static/textures/blur.png" );
 const windowHalf = new THREE.Vector2( window.innerWidth / 2, window.innerHeight / 2 );
 var field_list //contains list of particle fields
+var dataArray3D, dataTexture3D, volumeShader, volumeUniforms, volMaterial, volGeometry
+
 var gasMinCol, gasMidCol, gasMaxCol, dmMinCol, dmMaxCol, starMinCol, starMaxCol, bhMinCol, bhMaxCol //stores colors for different particle types
 var gm, gmx, bhm, bhmx //used for changeValue()
 var brusher //used for spectra brush
@@ -23,7 +25,8 @@ var gasTexture, dmTexture
 var uniforms
 var densityTexture, densityMin, densityMax
 var gasMesh, dmMesh, starMesh, bhMesh
-var gasMaterial, dmMaterial, starMaterial, bhMaterial, volMaterial
+var dataArray3D, dataTexture3D, volumeShader, volumeUniforms, volMaterial, volGeometry
+var gasMaterial, dmMaterial, starMaterial, bhMaterial
 var climGasLimits = []
 var climDMLimits = []
 var climStarLimits = []
@@ -48,7 +51,6 @@ blankTexture.type = THREE.FloatType
 blankTexture.minFilter = blankTexture.magFilter = THREE.LinearFilter
 blankTexture.unpackAlignment = 1
 blank_d = []
-
 var elements = ['Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium','Silicon','Iron']
 // var volconfig
 
@@ -147,7 +149,7 @@ function clearLayer(l){
 }
 
 
-function updateSize(){
+async function updateSize(){
     s = document.getElementById("size_select").value
     //check to see if selected size is different than the current configuration
 
@@ -157,11 +159,12 @@ function updateSize(){
 
     if(gridsize != s){
         gridsize = s
-    
+        var init = init3dDataTexture(gridsize)
         asyncCall()
         //check to see which variables are visible and update those immediately
         checkSelectedSimID()
-        loadGasDMAttributes(gridsize,'Temperature',true)
+        // loadGasDMAttributes(gridsize,'Temperature',true)
+        // asyncCall()
         // loadHaloCenters()
         
         createSkewerCube(gridsize)
@@ -173,20 +176,6 @@ function updateSize(){
     }
 }
 
-function loadAttributes(){
-    // if(document.getElementById("gas-eye-open").style.display == "inline-block"){
-        loadAttribute(gridsize,'PartType0','Temperature',true)
-    // }
-    // if(document.getElementById("dm-eye-open").style.display == "inline-block"){
-        loadAttribute(gridsize,'PartType1','density',true)
-    // }
-    // if(document.getElementById("star-eye-open").style.display = "inline-block"){
-        loadAttribute(gridsize,'PartType4','density',true)
-    // }
-    // if(document.getElementById("bh-eye-open").style.display = "inline-block"){
-        
-    // }
-}
 
 function toggleGrid(){
     let div = (document.getElementById("grid-check")).checked
@@ -215,18 +204,6 @@ function toggleGrid(){
     }
     
 }
-
-// function toggleGrid(){
-//     let div = (document.getElementById("grid-check")).checked
-    
-    
-//     if(div){
-//         camera.layers.toggle( 9 )
-//     }
-//     else{
-//         camera.layers.toggle( 9 )
-//     }
-// }
 
 function toggleXYZGuide(){
     
@@ -369,10 +346,14 @@ function toggleXYZGuide(){
 
 function updateUniforms(){
     if(volMaterial){
+        console.log("update uniforms")
         w = 256
         h = 1
         size = w * h
         
+
+        // controls.target.set( ((domainXYZ[1]-domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]-domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]-domainXYZ[4])*gridsize)/2 );
+        // camera.lookAt(controls.target.set( ((domainXYZ[1]-domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]-domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]-domainXYZ[4])*gridsize)/2 ))
         starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
         starMaterial.uniforms[ "u_gridsize" ].value = gridsize
@@ -549,45 +530,297 @@ function updateUniforms(){
     
 }
 
-async function asyncCall() {
-    var dens = await loadDensity(gridsize,'PartType0','H_number_density')
-    // console.log(dens)
-    // densityTexture = dens[0]
-    densityMin = dens[1]
-    densityMax = dens[2]
-    dens = []
-    // animate()
-    // render()
-    
-    // loadAttribute(128,'PartType0','Temperature',true)
-    // loadAttribute(gridsize,'PartType0','Temperature',true)
-    // loadAttribute(gridsize,'PartType1','density',true)
-    // loadAttribute(gridsize,'PartType4','density',true)
+function init3dDataTexture(size){
+    // startLoadingAnimation()
+    console.log('initialize 3d data texture')
+    return new Promise(resolve => {
+        clearLayer(0)
+        dataArray3D = new Float32Array(size * size * size * 4)
+
+        dataTexture3D = new THREE.DataTexture3D(dataArray3D,size,size,size)
+        dataTexture3D.format = THREE.RGBAFormat
+        dataTexture3D.type = THREE.FloatType
+        dataTexture3D.minFilter = dataTexture3D.magFilter = THREE.LinearFilter
+        dataTexture3D.unpackAlignment = 4
+        
+        volumeShader = THREE.VolumeRenderShader1;
+        volumeUniforms = THREE.UniformsUtils.clone( volumeShader.uniforms );
+        volumeUniforms[ "u_dataTexture3D" ].value = dataTexture3D;
+        volumeUniforms[ "u_gasClip" ].value = [true, true]
+        volumeUniforms[ "u_dmClip" ].value = [true, true]
+        volMaterial = new THREE.ShaderMaterial( {
+            uniforms: volumeUniforms,
+            vertexShader: volumeShader.vertexShader,
+            fragmentShader: volumeShader.fragmentShader,
+            clipping: false,
+            side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
+            transparent: false,
+            // opacity: 0.05,
+            // blending: THREE.CustomBlending,
+            blendEquation: THREE.AddEquation,
+            blendSrc: THREE.OneFactor,
+            blendDst: THREE.OneMinusSrcAlphaFactor,
+            depthWrite: false,
+        } );
+
+        // stopLoadingAnimation()
+        resolve()
+    })
 }
 
-function loadDensity(size,type,attr){
-    
+function update3dDataTexture(){
     return new Promise(resolve => {
-        d3.json('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
-            arr = new Float32Array(size * size * size)
+        // startLoadingAnimation()
+        console.log("update 3d texture uniforms")
+        dataTexture3D = new THREE.DataTexture3D(dataArray3D,gridsize,gridsize,gridsize)
+        dataTexture3D.format = THREE.RGBAFormat
+        dataTexture3D.type = THREE.FloatType
+        dataTexture3D.minFilter = dataTexture3D.magFilter = THREE.LinearFilter
+        dataTexture3D.unpackAlignment = 4
+
+        // uniforms[ "u_gasData" ].value = gasTexture;
+        // uniforms[ "u_dmData" ].value = dmTexture;
+        volMaterial.uniforms[ "u_dataTexture3D" ].value = dataTexture3D;
+        volMaterial.uniforms[ "u_size" ].value.set( gridsize, gridsize, gridsize );
+        volMaterial.uniforms[ "u_gasClim" ].value.set( climGasLimits[0], climGasLimits[1] );
+        volMaterial.uniforms[ "u_dmClim" ].value.set( null,null);//climDMLimits[0], climDMLimits[1] );
+        volMaterial.uniforms[ "u_renderstyle" ].value = 'mip' == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
+        volMaterial.uniforms[ "u_renderthreshold" ].value = 1.0; // For ISO renderstyle
+        volMaterial.uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
+        volMaterial.uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
+
+        volGeometry = new THREE.BoxBufferGeometry( gridsize, gridsize, gridsize );
+        volGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
+        
+        if(oldPos && oldSize){
+            camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+            // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
+            // camera.zoom = 6
+            camera.updateProjectionMatrix()
+            controls.target.set( gridsize/2,  gridsize/2,  gridsize/2 );
+        }
+        var mesh = new THREE.Mesh( volGeometry, volMaterial );
+        mesh.layers.set(0)
+        mesh.renderOrder = 1
+        volMesh = mesh
+        updateUniforms()
+        scene.add( mesh );
+        // stopLoadingAnimation()
+        render()
+        resolve()
+    })
+}
+
+function loadGas(size,attr,resolution_bool){
+    // startLoadingAnimation()
+    console.log('loading gas')
+    return new Promise(resolve => {
+        d3.json('static/data/'+simID+'/PartType0/' + size + '_PartType0_' + attr +'.json').then(function(d){
+            let log
+            if(elements.includes(attr)){
+                log = false
+                if(attr=="Temperature"){
+                    min = 3.745
+                    max = 7
+                }
+            }
+            else{
+                log = true
+            }
+            if(attr=="GFM_Metallicity") log = false
+            //GAS IS THE RED CHANNEL IN THE 3D DATA TEXTURE
+            var min = Infinity
+            var max = -Infinity
             for(x=0;x<size;x++){
                 for(y=0;y<size;y++){
                     for(z=0;z<size;z++){
-                        if(size==384 || size==512) arr[ x + y * size + z * size * size ] =d[x][y][z]
-                        else arr[ x + y * size + z * size * size ] = Math.log10(d[x][y][z])
+                        if(simID=="TNG100" && attr =="GFM_Metallicity"){
+                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
+                        }
+                        else if(log){
+                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z])
+                        }
+                        else{
+                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
+                        }
+
+                        if( dataArray3D[ 4 * ( x + y * size + z * size * size ) ] < min ){
+                            min = dataArray3D[ 4 * ( x + y * size + z * size * size ) ]
+                        }
+                        if( dataArray3D[ 4 * ( x + y * size + z * size * size ) ] > max ){
+                            max = dataArray3D[ 4 * ( x + y * size + z * size * size ) ]
+                        }
+                        
                     }
                 }
             }
-            d = []
+            if(min==-Infinity){min = -999999999999}
+            var x = document.getElementById("gas-eye-open");
+            x.style.display = "inline-block";
+            var y = document.getElementById("gas-eye-closed");
+            y.style.display = "none";
+            if(resolution_bool && localStorage.getItem('gasMinVal') != ""){
+                min = localStorage.getItem('gasMinVal')
+            }
+            if(resolution_bool && localStorage.getItem('gasMaxVal') != ""){
+                max = localStorage.getItem('gasMaxVal')
+            }
+            
+            climGasLimits = [min, max]
+            let minval = document.getElementById('gas-minval-input')
+            minval.value = round(min,2)
+            let maxval = document.getElementById('gas-maxval-input')
+            maxval.value = round(max,2)
+            // if(elements.includes(attr)){
+            if(attr=="Temperature"){
+                min = 3.745
+                minval.value = 3.745
+                max = 7
+                maxval.value = 7
+            }
+            // min = 4.5
+            // minval.value = 4.5
+            // }
+            let gasUnits = document.getElementsByClassName('gas-attr-units')
+            for(i=0;i< gasUnits.length;i++){
+                if((attr == 'Temperature') || (attr == 'MaximumTemperature')){
+                    gasUnits[i].innerHTML = 'log(K)'
+                }
+                else if(elements.includes(attr)){
+                    gasUnits[i].innerHTML = 'unitless'
+                }
+                else if(attr == "Mass"){
+                    gasUnits[i].innerHTML = 'log(Msun)'
+                }
+                else if(attr == "Density"){
+                    gasUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+                }
+                else if(attr == "InternalEnergy"){
+                    gasUnits[i].innerHTML = "log(erg/g)"
+                }
+                else{
+                    gasUnits[i].innerHTML = 'dimensionless'
+                }
+            }
+            initColor('PartType0')
+            // updateUniforms()
+            // update3dDataTexture()
+            // stopLoadingAnimation()
+            resolve()
+        })
+    })
+}
 
-            densityMax = arr.reduce(function(a, b) {
-                return Math.max(a, b);
-            });
-            densityMin = arr.reduce(function(a, b) {
-                return Math.min(a, b);
-            });
+function loadDarkMatter(size){
+    console.log('loading dark matter')
+    // startLoadingAnimation()
+    attr = 'density'
+    return new Promise(resolve => {
+        d3.json('static/data/'+simID+'/PartType1/' + size + '_PartType1_' + attr +'.json').then(function(d){
+            log = true
 
-            setDensityMinMaxInputValues('density',densityMin,densityMax)
+            // DARK MATTER IS THE GREEN CHANNEL IN THE 3D DATA TEXTURE
+            
+            min = Infinity
+            max = -Infinity
+            for(x=0;x<size;x++){
+                for(y=0;y<size;y++){
+                    for(z=0;z<size;z++){
+                        if(log){
+                            dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] =  Math.log10(d[x][y][z])
+                        }
+                        else{
+                            dataArray3D[ 4 * ( x + y * size + z * size * size)  + 1 ] =  d[x][y][z]
+                        }
+
+                        if( dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] < min ){
+                            min = dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ]
+                        }
+
+                        if( dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ] > max ){
+                            max = dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ]
+                        }
+                    }
+                }
+            }
+
+            if(min==-Infinity){min = -999999999999}
+            var x = document.getElementById("dm-eye-open");
+            x.style.display = "inline-block";
+            var y = document.getElementById("dm-eye-closed");
+            y.style.display = "none";
+            if(localStorage.getItem('dmMinVal') != ""){
+                min = localStorage.getItem('dmMinVal')
+            }
+            if(localStorage.getItem('dmMaxVal') != ""){
+                max = localStorage.getItem('dmMaxVal')
+            }
+            climDMLimits = [min, max]
+            let minval = document.getElementById('dm-minval-input')
+            minval.value = round(min,2)
+            let maxval = document.getElementById('dm-maxval-input')
+            maxval.value = round(max,2)
+            min = -30
+            minval.value = -30 
+            max = -25
+            maxval.value = -25 
+            let dmUnits = document.getElementsByClassName('dm-attr-units')
+            for(i=0;i< dmUnits.length;i++){
+                dmUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+            }
+            initColor('PartType1')
+            // updateUniforms()
+            // update3dDataTexture()
+            // stopLoadingAnimation()
+            resolve()
+        })
+    })
+}
+function setTwoNumberDecimal(el) {
+    updateUniforms()
+    // el.value = el.value.toFixed(2);
+};
+async function asyncCall() {
+    startLoadingAnimation()
+    let init = await init3dDataTexture(gridsize)
+    var dens = await loadDensity(gridsize,'PartType0','H_number_density')
+    densityMin = dens[0]
+    densityMax = dens[1]
+    var gas = await loadGas(gridsize,'Temperature',false)
+    var darkmatter = await loadDarkMatter(gridsize)
+    var stars = await loadStars()
+    var update3dTexture = update3dDataTexture()
+    updateUniforms()
+    stopLoadingAnimation()
+}
+
+function loadDensity(size,type,attr){
+    // startLoadingAnimation()
+    console.log('loading density')
+    return new Promise(resolve => {
+        d3.json('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
+          
+            // DENSITY USES BLUE CHANNEL OF 3D DATA TEXTURE
+
+            min = Infinity
+            max = -Infinity
+            for(x=0;x<size;x++){
+                for(y=0;y<size;y++){
+                    for(z=0;z<size;z++){
+                        if(size==384 || size==512) dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = d[x][y][z]
+                        else dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = Math.log10(d[x][y][z])
+
+                        if(dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] < min ){
+                            min = dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ]
+                        }
+                        if(dataArray3D[ 3 * ( x + y * size + z * size * size ) + 2 ] > max){
+                            max = dataArray3D[ 4 * ( x + y * size + z * size * size  ) + 2 ]
+                        }
+                    }
+                }
+            }
+
+            setDensityMinMaxInputValues('density',min,max)
 
             function setDensityMinMaxInputValues(type,min,max){
                 let minval = document.getElementById(type+'-minval-input')
@@ -601,22 +834,60 @@ function loadDensity(size,type,attr){
             dmx = document.querySelector('#density-maxval-input')
             dmx.addEventListener('input', updateUniforms);
 
-            densityTexture = new THREE.DataTexture3D( arr, size, size, size)
-            densityTexture.format = THREE.RedFormat
-            densityTexture.type = THREE.FloatType
-            densityTexture.minFilter = densityTexture.magFilter = THREE.LinearFilter
-            densityTexture.unpackAlignment = 1
+            // densityTexture = new THREE.DataTexture3D( arr, size, size, size)
+            // densityTexture.format = THREE.RedFormat
+            // densityTexture.type = THREE.FloatType
+            // densityTexture.minFilter = densityTexture.magFilter = THREE.LinearFilter
+            // densityTexture.unpackAlignment = 1
             
-            // if(densityMin == -Infinity){
-            //     densityMin = 0.0000000000001
-            // }
-            arr = []
-            updateUniforms()
-            resolve([densityTexture, densityMin, densityMax])
+            // updateUniforms()
+            // stopLoadingAnimation()
+            resolve([min, max])
         })
     })
-
 }
+
+function loadStars(){
+    // startLoadingAnimation()
+    console.log('loading stars')
+    return new Promise(resolve => {
+        while(starScene.children.length > 0){ 
+            starScene.remove(starScene.children[0]); 
+        }
+        d3.json( 'static/data/' + simID + '/PartType4/star_particles.json' ).then( function( d ){
+            // console.log( Object.keys(d).length )
+            n = Object.keys(d).length
+            m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
+            var starGeometry = new THREE.BufferGeometry();
+            var starPositions = new Float32Array(n * 3)
+            if( Object.keys(d).length > 0 ){
+                for ( i = 0; i < n; i++ ){
+                    let vertex = new THREE.Vector3( d[i].x*m, d[i].y*m, d[i].z*m )
+                    vertex.toArray( starPositions, i * 3 )
+                    // console.log(vertex)
+                }
+                // console.log(starPositions)
+                
+                starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
+                // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
+                boxOfStarPoints = new THREE.Points( starGeometry, starMaterial );
+                starScene.add ( boxOfStarPoints );
+                var x = document.getElementById("star-eye-open"); 
+                x.style.display = "inline-block";
+                var y = document.getElementById("star-eye-closed");
+                y.style.display = "none";
+                // renderer.setRenderTarget( target )
+                // renderer.render( starScene, camera );
+                // renderer.setRenderTarget( null )
+                updateUniforms()
+                // stopLoadingAnimation()
+                resolve()
+            }
+        })
+    })
+}
+
+
 
 function loadGasDMAttributes(size,attr,resolution_bool){
     loading = document.getElementById("loading-animation")
@@ -855,8 +1126,6 @@ function loadGasDMAttributes(size,attr,resolution_bool){
                 uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
                 uniforms[ "u_gasClip" ].value = [true, true]
                 uniforms[ "u_dmClip" ].value = [true, true]
-                
-
 
                 var material = new THREE.ShaderMaterial( {
                     uniforms: uniforms,
@@ -932,6 +1201,16 @@ function loadGasDMAttributes(size,attr,resolution_bool){
 
 function disposeArray() {
     this.array = null;
+}
+
+function startLoadingAnimation(){
+    loading = document.getElementById("loading-animation")
+    loading.style.display = "inline-block"
+}
+
+function stopLoadingAnimation(){
+    loading = document.getElementById("loading-animation")
+    loading.style.display = "none"
 }
 
 function setupStarScene(){
@@ -1010,8 +1289,6 @@ function setupRenderTarget(){
     var type = THREE.FloatType
 
     var devicePixelRatio = window.devicePixelRatio || 1;
-    // canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
-    // canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
     const size = new THREE.Vector2()
     renderer.getSize( size );
 
@@ -1062,9 +1339,7 @@ function loadHaloCenters(){
             str += "</p>" 
         }
         str += "</div>"
-        // console.log(str)
         div.innerHTML = str
-        // console.log(galaxy_centers)
     }) 
 }
 function goToPoint(x,y,z){
@@ -1104,309 +1379,17 @@ function goToPoint(x,y,z){
     var y = d3.scaleLinear()
         .domain([0.0,1.0])
         .range([margin.left+width*domainXYZ[2], margin.left+width*domainXYZ[3]]);
-        // .range([domainXYZ[2], domainXYZ[3]]);
     yBrush.call(yBrusher).call(yBrusher.move,y.range())
 
     var z = d3.scaleLinear()
         .domain([0.0,1.0])
         .range([margin.left+width*domainXYZ[4], margin.left+width*domainXYZ[5]]);
-        // .range([domainXYZ[4], domainXYZ[5]]);
     zBrush.call(zBrusher).call(zBrusher.move,z.range())
-    
-
-
-    
-
     updateUniforms()
-    // d3.select('.x-brush').call(d3.brush().move, [domainXYZ[0], domainXYZ[1]])
-
-    // xBrusher.move(xBrush,[domainXYZ[0], domainXYZ[1]])
-    // yBrusher.move(yBrush,[domainXYZ[2], domainXYZ[3]])
-    // zBrusher.move(zBrush,[domainXYZ[4], domainXYZ[5]])
-
-    
-    // camera.position.x = x * gridsize
-    // camera.position.y = y* gridsize
-    // camera.position.z = z* gridsize
-    // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-    // camera.zoom = 6
     camera.updateProjectionMatrix()
-
     camera.zoom = 15;
 }
 
-function loadAttribute(size,type,attr,resolution_bool){
-    /**
-     * * loadAttribute() is called when selecting an attribute from one of the dropdown menus
-     * 
-     * size: number of voxels along each edge
-     * type: particle type
-     * attr: particle attribute
-     * density: bool, whether density is loaded as a simultaneous texture
-     * 
-     * TODO: add error message if an invalid type is selected (velocity, group number, etc)
-     * TODO: remove dat.GUI reliance, use custom container UI instead
-     * TODO: scale volume rendering to match domain_left_edge and domain_right_edge
-     */
-    
-     //load the desired dataset
-    d3.json('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
-        if(type == 'PartType0') clearLayer(0);
-        if(type == 'PartType1') clearLayer(1)
-        if(type == 'PartType4') clearLayer(3)
-        if(type == 'PartType5') clearLayer(4)
-        // cleardThree(scene) //clears the THREE.js scene to prevent memory overload
-        // if(gui){ //reset the dat.GUI
-        //     gui.destroy()
-        // }
-        //set camera position so the entire dataset is in view
-        // camera.position.set(size*1.5, size*1.5, size*1.5)
-        // camera.lookAt(size/2,  size/2,  size/2)
-        // camera.zoom = 6
-        // camera.updateProjectionMatrix()
-        // controls.target.set( size/2,  size/2,  size/2 );
-
-        //arr holds the flattened data in Float32Array to be used as a 3D texture
-        arr = new Float32Array(size * size * size)
-
-        let log
-        if(elements.includes(attr)){
-            log = false
-        }
-        else{
-            log = true
-        }    
-        
-        // log = true
-        //fill arr array with loaded data
-        for(x=0;x<size;x++){
-            for(y=0;y<size;y++){
-                for(z=0;z<size;z++){
-                    if(log){
-                        arr[ x + y * size + z * size * size ] =  Math.log10(d[x][y][z])
-                    }
-                    else{
-                        arr[ x + y * size + z * size * size ] =  d[x][y][z]
-                    }
-                }
-            }
-        }
-        // console.log(arr)
-        d = [] //clear loaded data since it is no longer needed
-        
-        
-        //find the min and max values in the dataset and set the values in the container GUI input boxes
-        var max = arr.reduce(function(a, b) {
-            return Math.max(a, b);
-        });
-        var min = arr.reduce(function(a, b) {
-            return Math.min(a, b);
-        });
-        console.log(min)
-        if(min==-Infinity){min = -999999999999}
-        setMinMaxInputValues(type,min,max)
-
-        function setMinMaxInputValues(type,min,max){
-            if(type=="PartType0"){
-                var x = document.getElementById("gas-eye-open");
-                x.style.display = "inline-block";
-                var y = document.getElementById("gas-eye-closed");
-                y.style.display = "none";
-                if(resolution_bool && localStorage.getItem('gasMinVal') != ""){
-                    min = localStorage.getItem('gasMinVal')
-                }
-                if(resolution_bool && localStorage.getItem('gasMaxVal') != ""){
-                    max = localStorage.getItem('gasMaxVal')
-                }
-                climGasLimits = [min, max]
-                type = 'gas'
-            }
-            else if(type =="PartType1"){
-                var x = document.getElementById("dm-eye-open");
-                x.style.display = "inline-block";
-                var y = document.getElementById("dm-eye-closed");
-                y.style.display = "none";
-                if(localStorage.getItem('dmMinVal') != ""){
-                    min = localStorage.getItem('dmMinVal')
-                }
-                if(localStorage.getItem('dmMaxVal') != ""){
-                    max = localStorage.getItem('dmMaxVal')
-                }
-                climDMLimits = [min, max]
-                type = 'dm'
-            }
-            else if(type =="PartType4"){
-                var x = document.getElementById("star-eye-open");
-                x.style.display = "inline-block";
-                var y = document.getElementById("star-eye-closed");
-                y.style.display = "none";
-                if(localStorage.getItem('starMinVal') != ""){
-                    min = localStorage.getItem('starMinVal')
-                }
-                if(localStorage.getItem('starMaxVal') != ""){
-                    max = localStorage.getItem('starMaxVal')
-                }
-                climStarLimits = [min, max]
-                type = 'star'
-            }
-            else if(type =="PartType5"){
-                climDMLimits = [min, max]
-                type = 'bh'
-            }
-            // type = 'gas'
-            let minval = document.getElementById(type+'-minval-input')
-            minval.value = round(min,2)
-            let maxval = document.getElementById(type+'-maxval-input')
-            maxval.value = round(max,2)
-        }
-    
-        
-
-        // The gui for interaction
-        // gui = new dat.GUI()
-        volconfig = { clim1: min, clim2: max, renderstyle: 'mip', isothreshold: max, colormap: 'viridis' };
-        // gui.add( volconfig, 'clim1', min, max, 0.00001 ).onChange( updateUniforms );
-        // gui.add( volconfig, 'clim2', min, max, 0.00001 ).onChange( updateUniforms );
-
-
-        gm = document.querySelector('#gas-minval-input')
-        gm.addEventListener('input', updateUniforms);
-        gmx = document.querySelector('#gas-maxval-input')
-        gmx.addEventListener('input', updateUniforms);
-
-        dmm = document.querySelector('#dm-minval-input')
-        dmm.addEventListener('input', updateUniforms);
-        dmmx = document.querySelector('#dm-maxval-input')
-        dmmx.addEventListener('input', updateUniforms);
-
-        sm = document.querySelector('#star-minval-input')
-        sm.addEventListener('input', updateUniforms);
-        smx = document.querySelector('#star-maxval-input')
-        smx.addEventListener('input', updateUniforms);
-
-        bm = document.querySelector('#bh-minval-input')
-        bm.addEventListener('input', updateUniforms);
-        bmx = document.querySelector('#bh-maxval-input')
-        bmx.addEventListener('input', updateUniforms);
-
-        // gui.add( volconfig, 'colormap', { gray: 'gray', viridis: 'viridis' } ).onChange( updateUniforms );
-        // gui.add( volconfig, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( updateUniforms );
-        // gui.add( volconfig, 'isothreshold', min, max, 0.01 ).onChange( updateUniforms );
-        
-        //create texure from the data arr and select volume shader
-        // var dens = loadDensity(128,'PartType0','DensityCGS')
-        // console.log(dens)
-
-        // densityTexture = dens[0]
-        // densityMin = dens[1]
-        // densityMax = dens[2]
-        // dens = []
-        var texture = new THREE.DataTexture3D( arr, size, size, size)
-        texture.format = THREE.RedFormat
-        texture.type = THREE.FloatType
-        texture.minFilter = THREE.LinearFilter
-        texture.magFilter = THREE.LinearFilter
-        texture.unpackAlignment = 1
-        var shader = THREE.VolumeRenderShader1;
-        var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-
-        arr = []
-
-        // cmtextures = {
-        //     gray: new THREE.TextureLoader().load( 'static/textures/cm_gray.png', render ),
-        //     viridis: new THREE.TextureLoader().load( 'static/textures/cm_viridis.png', render )
-        // };
-        initColor(type)
-    
-        // Material
-        // if(density_bool){
-        //     uniforms[ "u_densityDepthMod" ].value = 1.0;
-        //     uniforms[ "u_density" ].value = densityTexture;
-        //     uniforms[ "u_climDensity" ].value.set( densityMin, densityMax );
-        // }
-        // else{
-        //     d = new Float32Array(size * size * size)
-        //     for(x=0;x<size;x++){
-        //         for(y=0;y<size;y++){
-        //             for(z=0;z<size;z++){
-        //                 arr[ x + y * size + z * size * size ] = 1.0
-        //             }
-        //         }
-        //     }
-        //     // console.log(d)
-        //     densityTexture = new THREE.DataTexture3D( d, size, size, size)
-        //     densityTexture.format = THREE.RedFormat
-        //     densityTexture.type = THREE.FloatType
-        //     densityTexture.minFilter = densityTexture.magFilter = THREE.LinearFilter
-        //     densityTexture.unpackAlignment = 1
-        //     uniforms[ "u_densityDepthMod" ].value = 0.0;
-        //     uniforms[ "u_density" ].value = densityTexture;
-        //     uniforms[ "u_climDensity" ].value.set( 1.0, 1.0 );
-        //     d = []
-
-        // }
-
-        uniforms[ "u_data" ].value = texture;
-        uniforms[ "u_size" ].value.set( size, size, size );
-        uniforms[ "u_clim" ].value.set( volconfig.clim1, volconfig.clim2 );
-        uniforms[ "u_renderstyle" ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-        uniforms[ "u_renderthreshold" ].value = volconfig.isothreshold; // For ISO renderstyle
-        uniforms[ "u_cmdata" ].value = cmtexture;
-        uniforms[ "u_clip" ].value = [false, false]
-        
-        var material = new THREE.ShaderMaterial( {
-            uniforms: uniforms,
-            vertexShader: shader.vertexShader,
-            fragmentShader: shader.fragmentShader,
-            clipping: true,
-            side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
-            transparent: true,
-            opacity: 0.05,
-            // blending: THREE.CustomBlending,
-            blendSrc: THREE.OneMinusDstAlphaFactor,
-            blendDst: THREE.OneFactor,
-            depthWrite: false,
-        } );
-
-        // THREE.Mesh
-        var geometry = new THREE.BoxGeometry( size, size, size );
-        geometry.translate( size / 2, size / 2, size / 2 );
-
-        createSkewerCube(size)
-
-        var mesh = new THREE.Mesh( geometry, material );
-        if(type == 'PartType0'){
-            mesh.layers.set(0)
-            mesh.renderOrder = 1
-            gasMaterial = material
-            gasMesh = mesh
-            // console.log(gasMesh)
-        }
-        else if(type == 'PartType1'){
-            mesh.layers.set(1)
-            mesh.renderOrder = 0
-            dmMaterial = material
-            dmMesh = mesh
-        }
-        else if(type == 'PartType4'){
-            mesh.layers.set(2)
-            mesh.renderOrder = 2
-            starMaterial = material
-            starMesh = mesh
-        }
-        else if(type == 'PartType5'){
-            mesh.layers.set(3)
-            bhMaterial = material
-            bhMesh = mesh
-        }
-        updateUniforms()
-        scene.add( mesh );
-
-        // changeValue()
-
-        // render();
-    });
-}
 function initColor(type){
 
     w = 256
@@ -1420,8 +1403,6 @@ function initColor(type){
         if(type == 'PartType1') c = dmMinCol.clone().lerp(dmMaxCol,a)
         if(type == 'PartType4') c = starMinCol.clone().lerp(starMaxCol,a)
         if(type == 'PartType5') c = bhMinCol.clone().lerp(bhMaxCol,a)
-        // console.log(c)
-        // console.log(c.r,c.g,c.b)
         data[stride] = Math.floor(c.r*255)
         data[stride+1] = Math.floor(c.g*255)
         data[stride+2] = Math.floor(c.b*255)
@@ -1446,8 +1427,6 @@ function changeColor(){
     dmMaxA = document.querySelector("#dmMaxA").value;
     bhMinCol = new THREE.Color(document.querySelector("#bhMinCol").value);
     bhMaxCol = new THREE.Color(document.querySelector("#bhMaxCol").value);
-
-    // dmCol = new THREE.Color(document.querySelector("#dmCol").value);
     dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
     dmMaxCol = new THREE.Color(document.querySelector("#dmMaxCol").value);
     // starCol = new THREE.Color(document.querySelector("#starCol").value);
@@ -1495,7 +1474,6 @@ function changeColor(){
     localStorage.setItem('gasMidA', "#" + gasMidA);
     localStorage.setItem('gasMaxA', "#" + gasMaxA);
 
-    // localStorage.setItem('dmCol', "#" + dmCol.getHexString());
     localStorage.setItem('dmMinCol', "#" + dmMinCol.getHexString());
     localStorage.setItem('dmMaxCol', "#" + dmMaxCol.getHexString());
     
@@ -1538,8 +1516,13 @@ function animate() {
     /**
      * * animate()
      */
-        
-    // requestAnimationFrame( animate )      
+    requestAnimationFrame( animate );
+
+	// required if controls.enableDamping or controls.autoRotate are set to true
+	controls.update();
+
+    render()
+	// renderer.render( scene, camera );
 }
 
 function render() {
@@ -1547,8 +1530,7 @@ function render() {
      * * render()
      */
 
-    // requestAnimationFrame( render );
-    controls.update()
+    // controls.update()
 
     renderRequested = false;
     //render stars into target
@@ -1579,13 +1561,10 @@ function render() {
     if(divGrid && divGridRadio1){
         let vector = new THREE.Vector3()
         dir = camera.getWorldDirection(vector)
-        // console.log(vector)
-        // theta = Math.atan2(vector.x,vector.z)
         staticGrid.lookAt(camera.position.x,camera.position.y,camera.position.z)
         staticGrid.rotateX(Math.PI/2)
     }
     renderer.render( scene, camera );
-    // requestAnimationFrame( render );
    
 };
 
@@ -1602,24 +1581,6 @@ function round(value, decimals) {
      */
     return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
-function setTwoNumberDecimal(el) {
-    // el.value = el.value.toFixed(2);
-};
-
-// function refreshLoop() {
-//     /*
-//      * * refreshLoop() finds the frame rate 
-//      */
-//     window.requestAnimationFrame(() => {
-//         const now = performance.now();
-//         while (times.length > 0 && times[0] <= now - 1000) {
-//         times.shift();
-//         }
-//         times.push(now);
-//         fps = times.length;
-//         refreshLoop();
-//     });
-// }
 
 function toggleDrawSkewerMode(){
     /*
@@ -1647,23 +1608,17 @@ function toggleValueThreshold(type,e){
     if(type == 'gas' && e == 'min'){
         document.getElementById("gas-minval-input").disabled = (document.getElementById("gas-min-check").checked);
         if(document.getElementById("gas-min-check").checked){
-            //materialGas.uniforms.min.value = min
             type = 'PartType0'
             attr = document.getElementById('gas_select').value
             findMinMax(type,attr,e)
         }
         else{
-            // materialGas.uniforms.min.value = document.getElementById('gas-minval-input').value
             gasMaterial.uniforms[ "u_clim" ].value.set( document.querySelector('#gas-minval-input').value, document.querySelector('#gas-maxval-input').value );
-            // gasMaterial.uniforms.min.value = document.getElementById('gas-minval-input').value
-
         }
     }
     if(type == 'gas' && e == 'max'){
         document.getElementById("gas-maxval-input").disabled = (document.getElementById("gas-max-check").checked);
-        // materialGas.uniforms.max.value = document.getElementById('gas-maxval-input').value
         if(document.getElementById("gas-max-check").checked){
-            //materialGas.uniforms.min.value = min
             type = 'PartType0'
             attr = document.getElementById('gas_select').value
             findMinMax(type,attr,e)
@@ -1674,9 +1629,7 @@ function toggleValueThreshold(type,e){
     }
     if(type == 'bh' && e == 'min'){
         document.getElementById("bh-minval-input").disabled = (document.getElementById("bh-min-check").checked);
-        // materialGas.uniforms.min.value = document.getElementById('gas-minval-input').value
         if(document.getElementById("bh-min-check").checked){
-            //materialGas.uniforms.min.value = min
             type = 'PartType5'
             attr = document.getElementById('bh_select').value
             findMinMax(type,attr,e)
@@ -1687,9 +1640,7 @@ function toggleValueThreshold(type,e){
     }
     if(type == 'bh' && e == 'max'){
         document.getElementById("bh-maxval-input").disabled = (document.getElementById("bh-max-check").checked);
-        // materialGas.uniforms.max.value = document.getElementById('gas-maxval-input').value
         if(document.getElementById("bh-max-check").checked){
-            //materialGas.uniforms.min.value = min
             type = 'PartType5'
             attr = document.getElementById('bh_select').value
             findMinMax(type,attr,e)
@@ -1752,43 +1703,6 @@ function clipPoints(type, e){
     }
 }
 
-// function changeValue(){
-//     /**
-//     * * changeValue() is called when a user updates a number input value
-//     * 
-//     * TODO: fix this for volume renderer
-//     */
-
-//     // create event listeners
-//     gm = document.querySelector('#gas-minval-input')
-//     gm.addEventListener('input', updateUniforms());
-    
-//     gmx = document.querySelector('#gas-maxval-input')
-//     gmx.addEventListener('input', updateUniforms());
-
-//     bhm = document.querySelector('#bh-minval-input')
-//     bhm.addEventListener('input', changeVal('bh','min',document.getElementById('bh-minval-input').value),true);
-    
-//     bhmx = document.querySelector('#bh-maxval-input')
-//     bhmx.addEventListener('input',changeVal('bh','max', document.getElementById('bh-maxval-input').value),true);
-    
-//     function changeVal(type,e,val){
-//         console.log('change val')
-//         if(type == 'gas' && e == 'min'){
-//             materialGas.uniforms.min.value = val
-//         }
-//         if(type == 'gas' && e == 'max'){
-//             materialGas.uniforms.max.value = val
-//         } 
-//         if(type == 'bh' && e == 'min'){
-//             materialBlackHole.uniforms.min.value = val
-//         }
-//         if(type == 'bh' && e == 'max'){
-//             materialBlackHole.uniforms.max.value = val
-//         }            
-//     }
-// }
-
 function updateUnits(type,units){
     /**
      * * updateUnits() Updates the units displayed underneath the number input box
@@ -1823,8 +1737,6 @@ function deleteLine(idx){
      */
     let del = document.getElementById('skewer-coords-' + idx + '')
     del.remove()
-    // let stat = document.getElementById('spectra-status-skewer-coords-' + idx + '')
-    // stat.remove()
     skewerScene.remove(lines[idx])
 }
 
@@ -1862,7 +1774,6 @@ function requestSpectrum(idx){
     }
 
     function sendLine(idx,point1,point2){
-        // socket.emit('selectRay',skewers.length-1, [point1.x,point1.y,point1.z],[point2.x,point2.y,point2.z])
         socket.emit('selectRay',simID,idx, [point1.x,point1.y,point1.z],[point2.x,point2.y,point2.z])
     }
 }
@@ -1873,7 +1784,6 @@ function plotSyntheticSpectrum(points) {
      * * plotSyntheticSpectrum() generates a new plot for the data it has received
      */
 
-    // skewerData.push(points)
     data = []
     var margin = {top: 10, right: 30, bottom: 30, left: 30},
         width = 300 - margin.left - margin.right,
@@ -1885,12 +1795,7 @@ function plotSyntheticSpectrum(points) {
 
     skewers[points.index] = ({'point1': {'x': points.start[0],'y': points.start[1],'z': points.start[2]}, 'point2':{'x': points.end[0],'y': points.end[1],'z': points.end[2]}, 'lambda': points.lambda, 'flux': points.flux })
     skewerData[points.index]=([points,data])
-    
-    
-    // console.log(data)
     domainLambda = d3.extent(points.lambda)
-    
-    // console.log(domainLambda)
     xScale = d3.scaleLinear()
                 .range([0, width + margin.left + margin.right])
                 .domain(domainLambda);
@@ -1920,20 +1825,14 @@ function updateGraph(){
     d3.select("#spectrum").selectAll(".graph").remove()
 
     if(skewerData.length){
-        // console.log(skewerData.length)
         for(i=0;i<skewerData.length;i++){   
-            // console.log(i)
             if(skewerData[i]){
-
                 let data = []
                 let idx = skewerData[i][0].index
-                // console.log(idx)
                 x = Array.from(skewers[idx].lambda)
                 y = Array.from(skewers[idx].flux)
 
                 if(ele == "Angstroms" && document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)"){
-                    // domainLambda = d3.extent(x)
-
                     for(j=0;j<x.length;j++){
                         data[j] = { 'lambda': x[j], 'flux': y[j] }
                     }
@@ -1945,7 +1844,6 @@ function updateGraph(){
                         delta_lambda = x[j] - rest_lambda;
                         x[j] = ( c * delta_lambda ) / rest_lambda;
                     }
-                    // domainLambda = d3.extent(x)
                     for(j=0;j<x.length;j++){
                         data[j] = { 'lambda': x[j], 'flux': skewers[idx].flux[j] }
                     }
@@ -1955,8 +1853,6 @@ function updateGraph(){
                         data[j] = { 'lambda': x[j], 'flux': skewers[idx].flux[j] }
                     }
                 }
-
-                // console.log("plotted " + idx)
 
                 var svg = d3.select("#spectrum")
                     .append("svg")
@@ -1972,9 +1868,6 @@ function updateGraph(){
                     .append("rect")
                     .attr("width", width)
                     .attr("height", height);
-                // xScale = d3.scaleLinear()
-                //     .range([0, width])
-                //     .domain(d3.extent(skewerData[i].lambda));
                 svg.append("g")
                     .attr("transform", "translate(0," + height + ")")
                     .call(d3.axisBottom(xScale).ticks(6));
@@ -2065,10 +1958,8 @@ function createGalaxyFilteringBrushes(attr){
         height = vh - margin.bottom;
 
         svg
-            //.style("font-size", "2px")
             .attr('width', w).attr('height', h)
             .attr("viewBox", "0 0 " + vw + " " + vh)
-            //.attr("text", "white")
 
         attrScale.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
@@ -2098,9 +1989,7 @@ function createGalaxyFilteringBrushes(attr){
 }
 
 function createXYZBrush(xyz){
-    // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
-    // d3.select('#terminal').selectAll('.depth-brush').remove();
-    
+    // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js 
     d3.select('#terminal').append('div').attr('id',xyz+'-depth-brush-label').attr('class','depth-brush').append('text').text(xyz)
     let svg = d3.select('#terminal').append('div').attr('id',xyz+'-depth-brush').attr('class','depth-brush').append('svg')
 
@@ -2141,10 +2030,8 @@ function createXYZBrush(xyz){
         height = vh - margin.bottom;
 
         svg
-            //.style("font-size", "2px")
             .attr('width', w).attr('height', h)
             .attr("viewBox", "0 0 " + vw + " " + vh)
-            //.attr("text", "white")
 
         x.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
@@ -2161,7 +2048,6 @@ function createXYZBrush(xyz){
     }
 
     function drawXYZBrush(xyz) {
-        // if (!x) { return; }
         if(xyz == 'x'){
             if (!x) { return; }
             xBrush = brush
@@ -2207,11 +2093,6 @@ function createXYZBrush(xyz){
             var s = d3.event.selection || z.range();
             ret = s.map(z.invert, z);
         }
-        
-        
-        // console.log(s)
-        // console.log(ret)
-
         if (ret[0] !== ret[1]) {
             updateXYZDomain(xyz,ret[0],ret[1])
         }
@@ -2367,6 +2248,7 @@ function checkSelectedSimID(){
             simSize = (edges.right_edge[0]-edges.left_edge[0])/0.6776999078
             toggleGrid()
             updateUniforms()
+            asyncCall()
             
         })
         clearDropDowns()
@@ -2379,10 +2261,9 @@ function checkSelectedSimID(){
             $("#bh_select").empty();
         }
 
-    }
+        
 
-    // console.log(field_list);
-    
+    }
     
     function createAttributeSelectors(field_list){
         var select = document.getElementById("gas_select"); 
@@ -2426,13 +2307,507 @@ function checkSelectedSimID(){
             }
         }
         // sendSimIDtoServer(simID)
-        loadGasDMAttributes(gridsize,'Temperature', false)
+        // loadGasDMAttributes(gridsize,'Temperature', false)
         
     }
 
     function sendSimIDtoServer(simID){
         socket.emit('simIDtoServer',simID)
     }
+}
+
+function init(){
+
+    THREE.Cache.enabled = true
+    canvas = document.createElement('canvas')
+    canvas.id = 'webglcanvas'
+    var devicePixelRatio = window.devicePixelRatio || 1;
+    canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
+    canvas.height = Math.round(canvas.clientHeight * devicePixelRatio); 
+    context = canvas.getContext('webgl2', { antialias: true, alpha: true })
+    
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color("rgb(4,6,23)")
+
+    camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.0001, 10000 );
+    camera.layers.enable(0);
+    camera.layers.enable(1);
+    camera.layers.enable(2);
+    camera.layers.enable(3);
+    camera.layers.enable(4);
+    camera.layers.enable(9);
+    camera.layers.enable(10);
+
+    renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setPixelRatio(1);
+
+    renderer.antialias = true;
+    renderer.precision = 'highp';
+    renderer.powerPreference = 'high-performance'
+    renderer.sortPoints = true;
+    renderer.gammaFactor = 4.2;
+    renderer.gammaOutput = true;
+    renderer.logarithmicDepthBuffer = true
+
+    // renderer.context.canvas.addEventListener("webglcontextlost", function(event) {
+    //     event.preventDefault();
+    //     // animationID would have been set by your call to requestAnimationFrame
+    //     // cancelAnimationFrame(animationID); 
+    // }, false);
+    
+    // renderer.context.canvas.addEventListener("webglcontextrestored", function(event) {
+    //    init()
+    // }, false);
+    document.body.appendChild( renderer.domElement );
+
+    setupRenderTarget()
+    // controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new THREE.TrackballControls(camera, renderer.domElement);
+    camera.position.set(gridsize*2, gridsize*2, gridsize*2)
+    camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
+    camera.zoom = 8
+    camera.updateProjectionMatrix();
+    controls.target.set( gridsize/2, gridsize/2, gridsize/2 );
+    controls.noRotate = false
+    controls.rotateSpeed = 2.0;
+    controls.zoomSpeed = 1.0;
+    controls.panSpeed = 2.0;
+    controls.staticMoving = true
+    controls.dynamicDampingFactor = 0.7
+    controls.keys = [ 65, 83, 68 ];
+    // controls.enableDamping = false
+    // controls.rotateSpeed = 0.75;
+    // controls.dampingFactor = 0.75;
+    controls.addEventListener('change', requestRenderIfNotRequested)
+    // controls.enableKeys = true
+    controls.update()
+    initColor();
+    
+    document.addEventListener('keydown', onKeyDown, false)
+    window.addEventListener( 'resize', onWindowResize, false );
+    document.addEventListener( 'mousemove', onMouseMove, false );
+
+    document.addEventListener( 'click', onMouseClick, false );
+    document.addEventListener( 'wheel', onMouseWheel, false );
+
+    gmc = document.querySelector("#gasMinCol")
+    gmc.addEventListener('change',changeColor,false);
+    gmd = document.querySelector("#gasMidCol")
+    gmd.addEventListener('change',changeColor,false);
+    gmxc = document.querySelector("#gasMaxCol")
+    gmxc.addEventListener('change',changeColor,false);
+    
+    dmc = document.querySelector("#dmMinCol")
+    dmc.addEventListener('change',changeColor,false);
+    dmxc = document.querySelector("#dmMaxCol")
+    dmxc.addEventListener('change',changeColor,false);
+
+    // smc = document.querySelector("#starCol")
+    // smc.addEventListener('change',changeColor,false);
+    smc = document.querySelector("#starMinCol")
+    smc.addEventListener('change',changeColor,false);
+    smxc = document.querySelector("#starMaxCol")
+    smxc.addEventListener('change',changeColor,false);
+
+    bmc = document.querySelector("#bhMinCol")
+    bmc.addEventListener('change',changeColor,false);
+    bmxc = document.querySelector("#bhMaxCol")
+    bmxc.addEventListener('change',changeColor,false);
+
+    createXYZBrush('x')
+    createXYZBrush('y')
+    createXYZBrush('z')
+
+    toggleGrid()
+
+    camPos = camera.position
+    
+    createGalaxyFilteringBrushes('sfr')
+    createGalaxyFilteringBrushes('mass')
+}
+
+function onMouseMove( event ) {
+    /**
+     * * onMouseMove() is an event listener for when the mouse position changes
+     */
+    mouse.x = ( event.clientX - windowHalf.x );
+    mouse.y = ( event.clientY - windowHalf.x );
+    
+}
+function onMouseClick( event ) {
+    /**
+     * * onMouseClick() is an event listener for when the mouse is clicked. Mainly used for drawing skewers
+     */
+    
+    //get mouse coordinates in screen space
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    //find start and end points on mouse click when drawSkewers is true
+    if(drawSkewers && !container_hover){
+
+
+        //this uses the position of the camera and the location of the mouse press
+        //in order to generate a point in the space that passes from the camera through the mouse position
+        planeNormal.copy(camera.position).normalize();
+        plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
+        raycaster.setFromCamera(mouse, camera);
+        raycaster.ray.intersectPlane(plane, point);
+        var geometry = new THREE.BufferGeometry();
+        ray1 = new THREE.Vector3(point.x,point.y,point.z)
+        cd = new THREE.Vector3()
+        camera.getWorldDirection(cd)
+        var intersects = raycaster.intersectObject(object=cube,recursive=true)
+        //check to see if the mouse click intersects with invisible cube around the data
+        if(raycaster.intersectObject(cube).length>0){
+            points = []
+            for(i=0;i<intersects.length;i++){
+                points[i]=intersects[i].point
+            }
+            //runs algorithm that finds two end points on surface of the cube
+            // findLineEnds(ray1,cd)    
+        }
+        
+        if(points[0].x < 0) points[0].x = 0
+        if(points[0].y < 0) points[0].y = 0
+        if(points[0].z < 0) points[0].z = 0
+        if(points[0].x > gridsize) points[0].x = gridsize
+        if(points[0].y > gridsize) points[0].y = gridsize
+        if(points[0].z > gridsize) points[0].z = gridsize
+        if(points[1].x < 0) points[1].x = 0
+        if(points[1].y < 0) points[1].y = 0
+        if(points[1].z < 0) points[1].z = 0
+        if(points[1].x > gridsize) points[1].x = gridsize
+        if(points[1].y > gridsize) points[1].y = gridsize
+        if(points[1].z > gridsize) points[1].z = gridsize
+        // console.log(points[0],points[1])
+
+            // printLine(point1,point2)...
+            // console.log('2/2')
+        handleLine(cd,points[0],points[1])
+            // printLine(dir,point1,point2)
+    }
+    function handleLine(dir,point1,point2){
+        /**
+         * * handleLine() sends the line data to several destinations, to be drawn, saved, etc
+         */
+
+        idx = skewers.length
+        updateSkewerList(dir,idx,point1,point2)
+        saveLine(idx,point1,point2)
+        // sendLine(idx,point1,point2)
+        printLine(idx,point1,point2)
+    }
+    function printLine(idx,point1,point2){
+        /**
+         * * printLine() draws the skewer in the scene
+         */
+
+        positions = []
+        geometry = new THREE.LineGeometry();
+        // console.log(point1,point2)
+        positions.push(point1.x,point1.y,point1.z);
+        positions.push(point2.x,point2.y,point2.z);
+        geometry.setPositions(positions)
+        skewerScene.remove(lines[idx])
+        var material = new THREE.LineMaterial( { 
+            color: 0x0000ff,//0xff5522,
+            linewidth: 0.0025,
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending
+
+        } );
+        lines[idx] = new THREE.Line2( geometry, material );
+        lines[idx].layers.set(4)
+        skewerScene.add( lines[idx] );
+    }
+
+        
+
+    function updateSkewerList(dir,idx,point1,point2){
+
+        /**
+         * * updateSkewerList() updates the skewer container UI for the corresponding line
+         */
+
+        dist = Math.sqrt( Math.pow((point1.x - point2.x),2) + Math.pow((point1.y - point2.y),2) + Math.pow((point1.z - point2.z),2))
+        //create div to hold skewer details
+        div = document.getElementById('skewer-coords')
+        id = 'skewer-coords-' + idx
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords" id="' + id + '"></div>');
+        
+        $("#" + id).hover(function(){
+            lines[idx].material.color = new THREE.Color(1,0,1)
+            }, function(){
+                lines[idx].material.color = new THREE.Color(0x0000ff)
+        });
+        
+        //create div to show the line idx
+        div = document.getElementById(id)
+        id = 'skewer-coords-number-' + idx
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-number" id='+ id +'>' + idx + ' <img id="delete-icon-"' + idx + '" class="delete-icon" src="static/assets/delete.svg" alt="delete line" role="button" onclick="deleteLine('+idx+')"  /> <img id="retry-icon-"' + idx + '" class="retry-icon" src="static/assets/refresh.svg" alt="retry line" role="button" onclick="retryLine('+idx+')"  /> </div>')
+        //create div to show pt1 details and range slider
+        id = 'skewer-coords-' + idx
+        div = document.getElementById(id)
+        id = 'skewer-coords-pt1-range-' + idx + ''
+        id_range = "p1-range-" + idx + ''
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
+        div = document.getElementById(id)
+        id = "skewer-coords-point1-" + idx + ''
+        div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x,3) + ', ' + round(point1.y,3) + ', ' + round(point1.z,3) + ' )</div>')
+
+        //create div to show pt2 details and range slider
+        id = 'skewer-coords-' + idx
+        div = document.getElementById(id)
+        id = 'skewer-coords-pt2-range-' + idx + ''
+        id_range = "p2-range-" + idx + ''
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
+        div = document.getElementById(id)
+        id = "skewer-coords-point2-" + idx + ''
+        div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x,3) + ', ' + round(point2.y,3) + ', ' + round(point2.z,3) + ' ) </div>')
+
+        //create event listeners for the range sliders
+        p1slider = document.getElementById('p1-range-' + idx + '')
+        p1slider.oninput = function() {
+            slider = document.getElementById('p1-range-' + idx + '')
+            pt1 = []
+            pt1.x = point1.x - slider.value*dir.x*(-1)
+            pt1.y = point1.y - slider.value*dir.y*(-1)
+            pt1.z = point1.z - slider.value*dir.z*(-1)
+
+            slider = document.getElementById('p2-range-' + idx + '')
+            pt2 = []
+            pt2.x = point2.x + slider.value*dir.x*(-1)
+            pt2.y = point2.y + slider.value*dir.y*(-1)
+            pt2.z = point2.z + slider.value*dir.z*(-1)
+
+            id = "skewer-coords-point1-" + idx + ''
+            div = document.getElementById(id)
+            div.innerHTML = ''
+            div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt1.x,3) + ', ' + round(pt1.y,3) + ', ' + round(pt1.z,3) + ' )</div>')    
+            printLine(idx,pt1,pt2)
+            saveLine(idx,pt1,pt2)
+        }
+
+        //create event listeners for the range sliders
+        p2slider = document.getElementById('p2-range-' + idx + '')
+        p2slider.oninput = function() {
+            slider = document.getElementById('p1-range-' + idx + '')
+            pt1 = []
+            pt1.x = point1.x - slider.value*dir.x*(-1)
+            pt1.y = point1.y - slider.value*dir.y*(-1)
+            pt1.z = point1.z - slider.value*dir.z*(-1)
+
+            slider = document.getElementById('p2-range-' + idx + '')
+            pt2 = []
+            pt2.x = point2.x + slider.value*dir.x*(-1)
+            pt2.y = point2.y + slider.value*dir.y*(-1)
+            pt2.z = point2.z + slider.value*dir.z*(-1)
+            
+            id = "skewer-coords-point2-" + idx + ''
+            div = document.getElementById(id)
+            div.innerHTML = ''
+            div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt2.x,3) + ', ' + round(pt2.y,3) + ', ' + round(pt2.z,3) + ' )</div>')    
+            printLine(idx,pt1,pt2)
+            saveLine(idx,pt1,pt2)   
+        }
+
+        //create div for REQUEST button and STATUS message below skewer details
+        id = 'skewer-coords-' + idx
+        div = document.getElementById(id)
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum('+idx+')" class="request-button button spectra-status" id="request-button-' + idx + '">request spectrum</button> <hr> </div>');            
+    }
+
+    function saveLine(idx,point1,point2){
+        /**
+         * * saveLine() stores the coordinates in the skewer array for later reference
+         */
+        skewers[idx] = {
+            point1: point1,
+            point2: point2
+        }
+    }
+}
+
+function onMouseWheel( event ) {
+
+
+}
+
+function initColor(){
+
+    if( localStorage.getItem('gasMinCol') ){
+        document.querySelector("#gasMinCol").value = localStorage.getItem('gasMinCol');
+        document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
+    }
+    else{
+        let col = new THREE.Color('rgb(0,0,255)')
+        document.querySelector("#gasMinCol").value = '#'+col.getHexString();
+    }
+    document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
+
+    if( localStorage.getItem('gasMidCol') ){
+        document.querySelector("#gasMidCol").value = localStorage.getItem('gasMidCol');
+        document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
+    }
+    else{
+        let col = new THREE.Color('rgb(0,255,0)')
+        document.querySelector("#gasMidCol").value = '#'+col.getHexString();
+    }
+    document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
+
+
+    if( localStorage.getItem('gasMaxCol') ){
+        document.querySelector("#gasMaxCol").value = localStorage.getItem('gasMaxCol');
+    }
+    else{
+        let col = new THREE.Color('rgb(255,0,0)')
+        document.querySelector("#gasMaxCol").value = '#'+col.getHexString();
+    }
+    document.querySelector("#gasMaxCol").style.backgroundColor = document.querySelector("#gasMaxCol").value
+
+    
+    if( localStorage.getItem('dmMinCol') ){
+        document.querySelector("#dmMinCol").value = localStorage.getItem('dmMinCol');
+    }
+    else{
+        let col = new THREE.Color('rgb(11,158,0)')
+        document.querySelector("#dmMinCol").value = '#'+col.getHexString();
+    }
+    document.querySelector("#dmMinCol").style.backgroundColor = document.querySelector("#dmMinCol").value
+
+    if( localStorage.getItem('dmMaxCol') ){
+        document.querySelector("#dmMaxCol").value = localStorage.getItem('dmMaxCol');
+    }
+    else{
+        let col = new THREE.Color('rgb(24,106,1)')
+        document.querySelector("#dmMaxCol").value = '#'+col.getHexString();
+    }
+    document.querySelector("#dmMaxCol").style.backgroundColor = document.querySelector("#dmMaxCol").value
+
+
+    if( localStorage.getItem('starMinCol') ){
+        document.querySelector("#starMinCol").value = localStorage.getItem('starMinCol');
+    }
+    else{
+        let col = new THREE.Color('rgb(255,247,0)')
+        document.querySelector("#starMinCol").value = '#'+col.getHexString();
+    }
+    document.querySelector("#starMinCol").style.backgroundColor = document.querySelector("#starMinCol").value
+
+    if( localStorage.getItem('starMaxCol') ){
+        document.querySelector("#starMaxCol").value = localStorage.getItem('starMaxCol');
+    }
+    else{
+        let col = new THREE.Color('rgb(255,221,0)')
+        document.querySelector("#starMaxCol").value = '#'+col.getHexString();
+    }
+    document.querySelector("#starMaxCol").style.backgroundColor = document.querySelector("#starMaxCol").value
+
+
+    // if( localStorage.getItem('starCol') ){
+    //     document.querySelector("#starCol").value = localStorage.getItem('starCol');
+    // }
+    // else{
+    //     document.querySelector("#starCol").value = '#ffffff';
+    // }
+    // document.querySelector("#starCol").style.backgroundColor = document.querySelector("#starCol").value
+
+
+    if( localStorage.getItem('bhMinCol') ){
+        document.querySelector("#bhMinCol").value = localStorage.getItem('bhMinCol');
+    }
+    else{
+        document.querySelector("#bhMinCol").value = '#ffffff';
+    }
+    document.querySelector("#bhMinCol").style.backgroundColor = document.querySelector("#bhMinCol").value
+
+
+    if( localStorage.getItem('bhMaxCol') ){
+        document.querySelector("#bhMaxCol").value = localStorage.getItem('bhMaxCol');
+    }
+    else{
+        document.querySelector("#bhMaxCol").value = '#ffffff';
+    }
+    document.querySelector("#bhMaxCol").style.backgroundColor = document.querySelector("#bhMaxCol").value
+
+
+    changeColor()
+}   
+
+
+function onWindowResize(){
+    camera.left = window.innerWidth/-2
+    camera.right = window.innerWidth/2
+    camera.top = window.innerHeight/2
+    camera.bottom = window.innerHeight/-2
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix(); 
+
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setPixelRatio( 1 );
+    const size = new THREE.Vector2()
+    renderer.getSize( size );
+    var pixelRatio = window.devicePixelRatio;
+    target.setSize( size.x, size.y )
+    updateUniforms()
+
+
+}
+
+function onKeyDown(event){
+    // console.log(event)
+    var k = String.fromCharCode(event.keyCode);
+    // console.log(k)
+
+     
+    if(k == "S"){
+        /*
+         * * Turn gas visibility on an off
+         TODO: make it work 
+         */
+    }
+    if(k == "B"){
+        /*
+         * * Turn gas visibility on an off
+         TODO: make it work 
+         */
+    }
+    if(k == "L"){
+        /*
+         * * Turn gas visibility on an off
+         TODO: make it work 
+         */
+        data_layers()
+    }
+    if(k == "O"){
+        /*
+         * * Turn gas visibility on an off
+         TODO: make it work 
+         */
+        ray()
+    }
+    if(k == "P"){
+        /*
+         * * Turn gas visibility on an off
+         TODO: make it work 
+         */
+        graph()
+    }
+
+    const coords = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+}
+
+function exportData(name, text) {
+
+    const a = document.createElement('a');
+    const type = name.split(".").pop();
+    a.href = URL.createObjectURL( new Blob([text], { type:`text/${type === "txt" ? "plain" : type}` }) );
+    a.download = name;
+    a.click();
 }
 
 /**
@@ -2450,682 +2825,11 @@ $(document).ready(function(){
     
     
     
-
     init()
     animate()
     render()
     asyncCall()
     
     
-    function init(){
-
-        
-        THREE.Cache.enabled = true
-        canvas = document.createElement('canvas')
-        var devicePixelRatio = window.devicePixelRatio || 1;
-        canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
-        canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
-
-        // canvas.addEventListener("webglcontextlost", function(event) {
-        //     event.preventDefault();
-        // }, false);
-        // canvas.addEventListener(
-        //     "webglcontextrestored", setupWebGLStateAndResources, false);        
-        context = canvas.getContext('webgl2', { antialias: true, alpha: true })
-        
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color("rgb(4,6,23)")
-
-        camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.00001, 4000 );
-        
-        camera.layers.enable(0);
-        camera.layers.enable(1);
-        camera.layers.enable(2);
-        camera.layers.enable(3);
-        camera.layers.enable(4);
-        camera.layers.enable(9);
-        camera.layers.enable(10);
-
-        // camera.layers.toggle(9)
-        // var gridHelper = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
-        // gridHelper.position.set(0,-gridsize/2,0)
-        // gridHelper.layers.set(9)
-        // gridHelper.material.transparent = true;
-        // gridHelper.material.alpha = 0.01;
-        // gridHelper.translateX( gridsize / 2);
-        // gridHelper.translateY( gridsize / 2);
-        // gridHelper.translateZ( gridsize / 2);
-        // gridHelper.side = THREE.DoubleSide
-        // scene.add( gridHelper );
-
-        // var gridHelper1 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
-        // gridHelper1.position.set(0,gridsize,-gridsize/2)
-        // gridHelper1.rotateX(Math.PI/2)
-        // gridHelper1.layers.set(9)
-        // gridHelper1.material.transparent = true;
-        // gridHelper1.material.alpha = 0.01;
-        // gridHelper1.translateX( gridsize / 2);
-        // gridHelper1.translateY( gridsize / 2);
-        // gridHelper1.translateZ( gridsize / 2);
-        // gridHelper1.side = THREE.DoubleSide
-        // scene.add( gridHelper1 );
-
-        // var gridHelper2 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
-        // gridHelper2.position.set(gridsize/2,0,0)
-        // gridHelper2.rotateZ(Math.PI/2)
-        // gridHelper2.layers.set(9)
-        // gridHelper2.material.transparent = true;
-        // gridHelper2.material.alpha = 0.01;
-        // gridHelper2.translateX( gridsize / 2);
-        // gridHelper2.translateY( gridsize / 2);
-        // gridHelper2.translateZ( gridsize / 2);
-        // gridHelper2.side = THREE.DoubleSide
-        // scene.add( gridHelper2 );
-
-        // var gridHelper3 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
-        // gridHelper3.position.set(0,gridsize/2,0)
-        // gridHelper3.layers.set(9)
-        // gridHelper3.material.transparent = true;
-        // gridHelper3.material.alpha = 0.01;
-        // gridHelper3.translateX( gridsize / 2);
-        // gridHelper3.translateY( gridsize / 2);
-        // gridHelper3.translateZ( gridsize / 2);
-        // gridHelper3.side = THREE.DoubleSide
-        // scene.add( gridHelper3 );
-
-        // var gridHelper4 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
-        // gridHelper4.position.set(0,gridsize,gridsize/2)
-        // gridHelper4.rotateX(Math.PI/2)
-        // gridHelper4.layers.set(9)
-        // gridHelper4.material.transparent = true;
-        // gridHelper4.material.alpha = 0.01;
-        // gridHelper4.translateX( gridsize / 2);
-        // gridHelper4.translateY( gridsize / 2);
-        // gridHelper4.translateZ( gridsize / 2);
-        // gridHelper4.side = THREE.DoubleSide
-        // scene.add( gridHelper4 );
-
-        // var gridHelper5 = new THREE.GridHelper( gridsize, divisions, new THREE.Color( 0x222222 ), new THREE.Color( 0x444444 ) );
-        // gridHelper5.position.set(1.5*gridsize,0,0)
-        // gridHelper5.rotateZ(Math.PI/2)
-        // gridHelper5.layers.set(9)
-        // gridHelper5.material.transparent = true;
-        // gridHelper5.material.alpha = 0.01;
-        // gridHelper5.translateX( gridsize / 2);
-        // gridHelper5.translateY( gridsize / 2);
-        // gridHelper5.translateZ( gridsize / 2);
-        // gridHelper5.side = THREE.DoubleSide
-        // scene.add( gridHelper5 );
-
-        
-
-        
-
-        renderer = new THREE.WebGLRenderer( { canvas: canvas, context: context });
-        // renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        renderer.setPixelRatio(1);
-
-        renderer.antialias = true;
-        renderer.precision = 'highp';
-        renderer.powerPreference = 'high-performance'
-        renderer.sortPoints = true;
-        renderer.gammaFactor = 4.2;
-        renderer.gammaOutput = true;
-        renderer.logarithmicDepthBuffer = true
-        // var dpr = renderer.getPixelRatio();
-        
-        setupRenderTarget()
-
-        
-        // const size = new THREE.Vector2()
-        // renderer.getDrawingBufferSize( size );
-        
-        
-        // target.setSize( size.width, size.height );
     
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-        // camera.position.set(8.47, 8.47, 8.47)
-        camera.position.set(gridsize*2, gridsize*2, gridsize*2)
-        camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-        camera.zoom = 8
-        // camera.lookAt(0,0,0)
-        camera.updateProjectionMatrix();
-
-        
-        // edges.right_edge[0]-edges.left_edge[0], edges.right_edge[1]-edges.left_edge[1], edges.right_edge[2]-edges.left_edge[2]
-        // controls.target.set( 8.47/2, 8.47/2, 8.47/2 );
-
-        controls.target.set( gridsize/2, gridsize/2, gridsize/2 );
-
-        // controls.update()
-
-        controls.enableDamping = true
-        controls.dampingFactor = 0.75;
-
-        controls.addEventListener('change', requestRenderIfNotRequested)
-
-        // initMaterial();
-        initColor();
-        
-        document.body.appendChild( renderer.domElement );
-        document.addEventListener('keydown', onKeyDown, false)
-        window.addEventListener( 'resize', onWindowResize, false );
-        document.addEventListener( 'mousemove', onMouseMove, false );
-
-        document.addEventListener( 'click', onMouseClick, false );
-        document.addEventListener( 'wheel', onMouseWheel, false );
-
-
-        // changeValue()
-        // gm = document.querySelector('#gas-minval-input')
-        // gm.addEventListener('input', changeVal('gas','min',document.getElementById('gas-minval-input').value),true);
-        
-        // gmx = document.querySelector('#gas-maxval-input')
-        // gmx.addEventListener('input',changeVal('gas','min', document.getElementById('gas-maxval-input').value),true);
-        
-        // bhm = document.querySelector('#bh-minval-input')
-        // bhm.addEventListener('input', changeVal('bh','min',document.getElementById('bh-minval-input').value),true);
-        
-        // bhmx = document.querySelector('#bh-maxval-input')
-        // bhmx.addEventListener('input',changeVal('bh','min', document.getElementById('bh-maxval-input').value),true);
-        
-
-        // function changeVal(type,e,val){
-        //     if(type == 'gas' && e == 'min'){
-        //         materialGas.uniforms.min.value = val
-        //     }
-        //     if(type == 'gas' && e == 'max'){
-        //         materialGas.uniforms.max.value = val
-        //     }   
-        //     if(type == 'bh' && e == 'min'){
-        //         materialBlackHole.uniforms.min.value = val
-        //     }
-        //     if(type == 'bh' && e == 'max'){
-        //         materialBlackHole.uniforms.max.value = val
-        //     }          
-        // }
-
-        gmc = document.querySelector("#gasMinCol")
-        gmc.addEventListener('change',changeColor,false);
-        gmd = document.querySelector("#gasMidCol")
-        gmd.addEventListener('change',changeColor,false);
-        gmxc = document.querySelector("#gasMaxCol")
-        gmxc.addEventListener('change',changeColor,false);
-        
-        dmc = document.querySelector("#dmMinCol")
-        dmc.addEventListener('change',changeColor,false);
-        dmxc = document.querySelector("#dmMaxCol")
-        dmxc.addEventListener('change',changeColor,false);
-
-        // smc = document.querySelector("#starCol")
-        // smc.addEventListener('change',changeColor,false);
-        smc = document.querySelector("#starMinCol")
-        smc.addEventListener('change',changeColor,false);
-        smxc = document.querySelector("#starMaxCol")
-        smxc.addEventListener('change',changeColor,false);
-
-        bmc = document.querySelector("#bhMinCol")
-        bmc.addEventListener('change',changeColor,false);
-        bmxc = document.querySelector("#bhMaxCol")
-        bmxc.addEventListener('change',changeColor,false);
-
-        createXYZBrush('x')
-        createXYZBrush('y')
-        createXYZBrush('z')
-
-        // refreshLoop();
-
-        toggleGrid()
-
-        camPos = camera.position
-        
-        createGalaxyFilteringBrushes('sfr')
-        createGalaxyFilteringBrushes('mass')
-        
-        // loadData()
-    }
-    
-    function onMouseMove( event ) {
-        /**
-         * * onMouseMove() is an event listener for when the mouse position changes
-         */
-        mouse.x = ( event.clientX - windowHalf.x );
-        mouse.y = ( event.clientY - windowHalf.x );
-        
-    }
-    function onMouseClick( event ) {
-        /**
-         * * onMouseClick() is an event listener for when the mouse is clicked. Mainly used for drawing skewers
-         */
-        
-        //get mouse coordinates in screen space
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        
-        //find start and end points on mouse click when drawSkewers is true
-        if(drawSkewers && !container_hover){
-
-
-            //this uses the position of the camera and the location of the mouse press
-            //in order to generate a point in the space that passes from the camera through the mouse position
-            planeNormal.copy(camera.position).normalize();
-            plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
-            raycaster.setFromCamera(mouse, camera);
-            raycaster.ray.intersectPlane(plane, point);
-            var geometry = new THREE.BufferGeometry();
-            ray1 = new THREE.Vector3(point.x,point.y,point.z)
-            cd = new THREE.Vector3()
-            camera.getWorldDirection(cd)
-            var intersects = raycaster.intersectObject(object=cube,recursive=true)
-            //check to see if the mouse click intersects with invisible cube around the data
-            if(raycaster.intersectObject(cube).length>0){
-                points = []
-                for(i=0;i<intersects.length;i++){
-                    points[i]=intersects[i].point
-                }
-                //runs algorithm that finds two end points on surface of the cube
-                // findLineEnds(ray1,cd)    
-            }
-            
-            if(points[0].x < 0) points[0].x = 0
-            if(points[0].y < 0) points[0].y = 0
-            if(points[0].z < 0) points[0].z = 0
-            if(points[0].x > gridsize) points[0].x = gridsize
-            if(points[0].y > gridsize) points[0].y = gridsize
-            if(points[0].z > gridsize) points[0].z = gridsize
-            if(points[1].x < 0) points[1].x = 0
-            if(points[1].y < 0) points[1].y = 0
-            if(points[1].z < 0) points[1].z = 0
-            if(points[1].x > gridsize) points[1].x = gridsize
-            if(points[1].y > gridsize) points[1].y = gridsize
-            if(points[1].z > gridsize) points[1].z = gridsize
-            // console.log(points[0],points[1])
-
-                // printLine(point1,point2)...
-                // console.log('2/2')
-            handleLine(cd,points[0],points[1])
-                // printLine(dir,point1,point2)
-        }
-        function handleLine(dir,point1,point2){
-            /**
-             * * handleLine() sends the line data to several destinations, to be drawn, saved, etc
-             */
-
-            idx = skewers.length
-            updateSkewerList(dir,idx,point1,point2)
-            saveLine(idx,point1,point2)
-            // sendLine(idx,point1,point2)
-            printLine(idx,point1,point2)
-        }
-        function printLine(idx,point1,point2){
-            /**
-             * * printLine() draws the skewer in the scene
-             */
-
-            positions = []
-            geometry = new THREE.LineGeometry();
-            // console.log(point1,point2)
-            positions.push(point1.x,point1.y,point1.z);
-            positions.push(point2.x,point2.y,point2.z);
-            geometry.setPositions(positions)
-            skewerScene.remove(lines[idx])
-            var material = new THREE.LineMaterial( { 
-                color: 0x0000ff,//0xff5522,
-                linewidth: 0.0025,
-                transparent: true,
-                opacity: 1.0,
-                blending: THREE.AdditiveBlending
-
-            } );
-            lines[idx] = new THREE.Line2( geometry, material );
-            lines[idx].layers.set(4)
-            skewerScene.add( lines[idx] );
-        }
-
-            
-
-        function updateSkewerList(dir,idx,point1,point2){
-
-            /**
-             * * updateSkewerList() updates the skewer container UI for the corresponding line
-             */
-
-            dist = Math.sqrt( Math.pow((point1.x - point2.x),2) + Math.pow((point1.y - point2.y),2) + Math.pow((point1.z - point2.z),2))
-            //create div to hold skewer details
-            div = document.getElementById('skewer-coords')
-            id = 'skewer-coords-' + idx
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords" id="' + id + '"></div>');
-            
-            $("#" + id).hover(function(){
-                lines[idx].material.color = new THREE.Color(1,0,1)
-                }, function(){
-                    lines[idx].material.color = new THREE.Color(0x0000ff)
-            });
-            
-            //create div to show the line idx
-            div = document.getElementById(id)
-            id = 'skewer-coords-number-' + idx
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-number" id='+ id +'>' + idx + ' <img id="delete-icon-"' + idx + '" class="delete-icon" src="static/assets/delete.svg" alt="delete line" role="button" onclick="deleteLine('+idx+')"  /> <img id="retry-icon-"' + idx + '" class="retry-icon" src="static/assets/refresh.svg" alt="retry line" role="button" onclick="retryLine('+idx+')"  /> </div>')
-//create div to show pt1 details and range slider
-            id = 'skewer-coords-' + idx
-            div = document.getElementById(id)
-            id = 'skewer-coords-pt1-range-' + idx + ''
-            id_range = "p1-range-" + idx + ''
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id='+ id +'>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
-            div = document.getElementById(id)
-            id = "skewer-coords-point1-" + idx + ''
-            div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x,3) + ', ' + round(point1.y,3) + ', ' + round(point1.z,3) + ' )</div>')
-
-            //create div to show pt2 details and range slider
-            id = 'skewer-coords-' + idx
-            div = document.getElementById(id)
-            id = 'skewer-coords-pt2-range-' + idx + ''
-            id_range = "p2-range-" + idx + ''
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="'+ id +'">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
-            div = document.getElementById(id)
-            id = "skewer-coords-point2-" + idx + ''
-            div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x,3) + ', ' + round(point2.y,3) + ', ' + round(point2.z,3) + ' ) </div>')
-
-            //create event listeners for the range sliders
-            p1slider = document.getElementById('p1-range-' + idx + '')
-            p1slider.oninput = function() {
-                slider = document.getElementById('p1-range-' + idx + '')
-                pt1 = []
-                pt1.x = point1.x - slider.value*dir.x*(-1)
-                pt1.y = point1.y - slider.value*dir.y*(-1)
-                pt1.z = point1.z - slider.value*dir.z*(-1)
-
-                slider = document.getElementById('p2-range-' + idx + '')
-                pt2 = []
-                pt2.x = point2.x + slider.value*dir.x*(-1)
-                pt2.y = point2.y + slider.value*dir.y*(-1)
-                pt2.z = point2.z + slider.value*dir.z*(-1)
-
-                id = "skewer-coords-point1-" + idx + ''
-                div = document.getElementById(id)
-                div.innerHTML = ''
-                div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt1.x,3) + ', ' + round(pt1.y,3) + ', ' + round(pt1.z,3) + ' )</div>')    
-                printLine(idx,pt1,pt2)
-                saveLine(idx,pt1,pt2)
-            }
-
-            //create event listeners for the range sliders
-            p2slider = document.getElementById('p2-range-' + idx + '')
-            p2slider.oninput = function() {
-                slider = document.getElementById('p1-range-' + idx + '')
-                pt1 = []
-                pt1.x = point1.x - slider.value*dir.x*(-1)
-                pt1.y = point1.y - slider.value*dir.y*(-1)
-                pt1.z = point1.z - slider.value*dir.z*(-1)
-
-                slider = document.getElementById('p2-range-' + idx + '')
-                pt2 = []
-                pt2.x = point2.x + slider.value*dir.x*(-1)
-                pt2.y = point2.y + slider.value*dir.y*(-1)
-                pt2.z = point2.z + slider.value*dir.z*(-1)
-                
-                id = "skewer-coords-point2-" + idx + ''
-                div = document.getElementById(id)
-                div.innerHTML = ''
-                div.insertAdjacentHTML('beforeend','<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt2.x,3) + ', ' + round(pt2.y,3) + ', ' + round(pt2.z,3) + ' )</div>')    
-                printLine(idx,pt1,pt2)
-                saveLine(idx,pt1,pt2)   
-            }
-
-            //create div for REQUEST button and STATUS message below skewer details
-            id = 'skewer-coords-' + idx
-            div = document.getElementById(id)
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum('+idx+')" class="request-button button spectra-status" id="request-button-' + idx + '">request spectrum</button> <hr> </div>');            
-        }
-
-        function saveLine(idx,point1,point2){
-            /**
-             * * saveLine() stores the coordinates in the skewer array for later reference
-             */
-            skewers[idx] = {
-                point1: point1,
-                point2: point2
-            }
-        }
-    }
-    
-    function onMouseWheel( event ) {
-    
-    //   camera.position.z += event.deltaY * 0.01; // move camera along z-axis
-    
-    }
-
-    function initColor(){
-        // var color_picker = document.getElementsByClassName("color-picker");
-        // for(i=0;i<color_picker.length;i++){
-        //     color_picker[i].style.backgroundColor =  
-        // }
-
-        if( localStorage.getItem('gasMinCol') ){
-            document.querySelector("#gasMinCol").value = localStorage.getItem('gasMinCol');
-            document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
-        }
-        else{
-            let col = new THREE.Color('rgb(0,0,255)')
-            document.querySelector("#gasMinCol").value = '#'+col.getHexString();
-        }
-        document.querySelector("#gasMinCol").style.backgroundColor = document.querySelector("#gasMinCol").value
-
-        if( localStorage.getItem('gasMidCol') ){
-            document.querySelector("#gasMidCol").value = localStorage.getItem('gasMidCol');
-            document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
-        }
-        else{
-            let col = new THREE.Color('rgb(0,255,0)')
-            document.querySelector("#gasMidCol").value = '#'+col.getHexString();
-        }
-        document.querySelector("#gasMidCol").style.backgroundColor = document.querySelector("#gasMidCol").value
-
-
-        if( localStorage.getItem('gasMaxCol') ){
-            document.querySelector("#gasMaxCol").value = localStorage.getItem('gasMaxCol');
-        }
-        else{
-            let col = new THREE.Color('rgb(255,0,0)')
-            document.querySelector("#gasMaxCol").value = '#'+col.getHexString();
-        }
-        document.querySelector("#gasMaxCol").style.backgroundColor = document.querySelector("#gasMaxCol").value
-
-        
-        if( localStorage.getItem('dmMinCol') ){
-            document.querySelector("#dmMinCol").value = localStorage.getItem('dmMinCol');
-        }
-        else{
-            let col = new THREE.Color('rgb(11,158,0)')
-            document.querySelector("#dmMinCol").value = '#'+col.getHexString();
-        }
-        document.querySelector("#dmMinCol").style.backgroundColor = document.querySelector("#dmMinCol").value
-
-        if( localStorage.getItem('dmMaxCol') ){
-            document.querySelector("#dmMaxCol").value = localStorage.getItem('dmMaxCol');
-        }
-        else{
-            let col = new THREE.Color('rgb(24,106,1)')
-            document.querySelector("#dmMaxCol").value = '#'+col.getHexString();
-        }
-        document.querySelector("#dmMaxCol").style.backgroundColor = document.querySelector("#dmMaxCol").value
-
-
-        if( localStorage.getItem('starMinCol') ){
-            document.querySelector("#starMinCol").value = localStorage.getItem('starMinCol');
-        }
-        else{
-            let col = new THREE.Color('rgb(255,247,0)')
-            document.querySelector("#starMinCol").value = '#'+col.getHexString();
-        }
-        document.querySelector("#starMinCol").style.backgroundColor = document.querySelector("#starMinCol").value
-
-        if( localStorage.getItem('starMaxCol') ){
-            document.querySelector("#starMaxCol").value = localStorage.getItem('starMaxCol');
-        }
-        else{
-            let col = new THREE.Color('rgb(255,221,0)')
-            document.querySelector("#starMaxCol").value = '#'+col.getHexString();
-        }
-        document.querySelector("#starMaxCol").style.backgroundColor = document.querySelector("#starMaxCol").value
-
-
-        // if( localStorage.getItem('starCol') ){
-        //     document.querySelector("#starCol").value = localStorage.getItem('starCol');
-        // }
-        // else{
-        //     document.querySelector("#starCol").value = '#ffffff';
-        // }
-        // document.querySelector("#starCol").style.backgroundColor = document.querySelector("#starCol").value
-
-
-        if( localStorage.getItem('bhMinCol') ){
-            document.querySelector("#bhMinCol").value = localStorage.getItem('bhMinCol');
-        }
-        else{
-            document.querySelector("#bhMinCol").value = '#ffffff';
-        }
-        document.querySelector("#bhMinCol").style.backgroundColor = document.querySelector("#bhMinCol").value
-
-
-        if( localStorage.getItem('bhMaxCol') ){
-            document.querySelector("#bhMaxCol").value = localStorage.getItem('bhMaxCol');
-        }
-        else{
-            document.querySelector("#bhMaxCol").value = '#ffffff';
-        }
-        document.querySelector("#bhMaxCol").style.backgroundColor = document.querySelector("#bhMaxCol").value
-
-
-        changeColor()
-    }   
-
-
-    function onWindowResize(){
-        camera.left = window.innerWidth/-2
-        camera.right = window.innerWidth/2
-        camera.top = window.innerHeight/2
-        camera.bottom = window.innerHeight/-2
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        
-
-        var devicePixelRatio = window.devicePixelRatio || 1;
-
-        // canvas.style.width = window.innerWidth*devicePixelRatio + "px";
-        // canvas.style.height = window.innerHeight*devicePixelRatio + "px";
-
-        // canvas.width = Math.floor(canvas.clientWidth * devicePixelRatio);
-        // canvas.height = Math.floor(canvas.clientHeight * devicePixelRatio);
-
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        renderer.setPixelRatio( 1 );
-        // const size = new THREE.Vector2()
-        // renderer.getSize( size );
-
-        
-        // var pixelRatio = window.devicePixelRatio;
-        // var newWidth = window.innerWidth / pixelRatio;
-        // var newHeight = window.innerHeight / pixelRatio;
-        // target.setSize( size.x, size.y )
-        updateUniforms()
-        
-        // setupRenderTarget()
-        
-        // renderer.setSize( window.innerWidth, window.innerHeight );
-        // resizeRendererToDisplaySize(renderer)
-        // function resizeRendererToDisplaySize(renderer) {
-        //     const canvas = renderer.domElement;
-        //     const pixelRatio = window.devicePixelRatio;
-        //     const width  = window.innerWidth  * pixelRatio | 0;
-        //     const height = window.innerHeight * pixelRatio | 0;
-        //     const needResize = canvas.width !== width || canvas.height !== height;
-        //     if (needResize) {
-        //         renderer.setSize(width, height);
-        //     }
-        //     return needResize;
-        // }
-    
-    }
-
-    function onKeyDown(event){
-        // console.log(event)
-        var k = String.fromCharCode(event.keyCode);
-        // console.log(k)
-
-        if(k == "G"){
-            /*
-             * * Turn gas visibility on an off
-             TODO: make it work
-             */
-            if(!gasMesh){
-                loadAttribute(gridsize,'PartType0','Temperature',false)
-                var x = document.getElementById("gas-eye-open");
-                x.style.display = "inline-block";
-                var y = document.getElementById("gas-eye-closed");
-                y.style.display = "none";
-            }
-            
-        }
-        if(k == "D"){
-            /*
-             * * Turn gas visibility on an off
-             TODO: make it work 
-             */
-            if(!dmMesh){
-                loadAttribute(gridsize,'PartType1','density',false)
-                var x = document.getElementById("dm-eye-open");
-                x.style.display = "inline-block";
-                var y = document.getElementById("dm-eye-closed");
-                y.style.display = "none";
-            }
-            
-        }
-        if(k == "S"){
-            /*
-             * * Turn gas visibility on an off
-             TODO: make it work 
-             */
-        }
-        if(k == "B"){
-            /*
-             * * Turn gas visibility on an off
-             TODO: make it work 
-             */
-        }
-        if(k == "L"){
-            /*
-             * * Turn gas visibility on an off
-             TODO: make it work 
-             */
-            data_layers()
-        }
-        if(k == "O"){
-            /*
-             * * Turn gas visibility on an off
-             TODO: make it work 
-             */
-            ray()
-        }
-        if(k == "P"){
-            /*
-             * * Turn gas visibility on an off
-             TODO: make it work 
-             */
-            graph()
-        }
-
-        const coords = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
-    }
-
-    function exportData(name, text) {
-
-        const a = document.createElement('a');
-        const type = name.split(".").pop();
-        a.href = URL.createObjectURL( new Blob([text], { type:`text/${type === "txt" ? "plain" : type}` }) );
-        a.download = name;
-        a.click();
-    }
 })

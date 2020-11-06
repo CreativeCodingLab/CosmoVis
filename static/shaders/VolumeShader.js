@@ -20,9 +20,11 @@ THREE.VolumeRenderShader1 = {
 		
 		"u_climDensity": { value: new THREE.Vector2( 1, 1 ) },
 		
-		"u_data": { value: null },
-		"u_gasData": { value: null },
-		"u_dmData": { value: null },
+		"u_dataTexture3D" : {value: null},
+
+		// "u_data": { value: null },
+		// "u_gasData": { value: null },
+		// "u_dmData": { value: null },
 		"u_starData": { value: null },
 		"u_density": {value: null },
 
@@ -162,9 +164,10 @@ THREE.VolumeRenderShader1 = {
 		" 		uniform bool u_dmVisibility;",
 		" 		uniform bool u_starVisibility;",
 
-		"		uniform sampler3D u_data;",
-		"		uniform sampler3D u_gasData;",
-		"		uniform sampler3D u_dmData;",
+		// "		uniform sampler3D u_data;",
+		"		uniform sampler3D u_dataTexture3D;",
+		// "		uniform sampler3D u_gasData;",
+		// "		uniform sampler3D u_dmData;",
 		"		uniform float u_densityDepthMod;",
 		"		uniform float u_grayscaleDepthMod;",
 		"		uniform float u_dither;",
@@ -214,7 +217,7 @@ THREE.VolumeRenderShader1 = {
 		"		const float shininess = 40.0;",
 
 		"		void cast_dvr(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);",
-		"		void cast_iso(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);",
+		// "		void cast_iso(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);",
 		"		vec3 grayscale(vec3 inputColor);",
 		"		vec3 grayscaleAmount(vec3 inputColor, float amount);",
 		"		float sample1(vec3 texcoords);",
@@ -260,8 +263,8 @@ THREE.VolumeRenderShader1 = {
 
 		"				if (u_renderstyle == 0)",
 		"						cast_dvr(start_loc, step, nsteps, view_ray);",
-		"				else if (u_renderstyle == 1)",
-		"						cast_iso(start_loc, step, nsteps, view_ray);",
+		// "				else if (u_renderstyle == 1)",
+		// "						cast_iso(start_loc, step, nsteps, view_ray);",
 		// "				if (gl_FragColor.a < 0.05)",
 		// "						discard;",
 		"		}",
@@ -273,15 +276,15 @@ THREE.VolumeRenderShader1 = {
 		"		}",
 
 
-		"		float sampleData(sampler3D data, vec3 texcoords) {",
+		"		vec3 sampleData(sampler3D data, vec3 texcoords) {",
 		"				/* Sample float value from a 3D texture. Assumes intensity data. */",
-		"				return texture(data, texcoords.xyz).r;",
+		"				return texture(data, texcoords.xyz).rgb;",
 		"		}",
 
-		"		float sample1(vec3 texcoords) {",
-		"				/* Sample float value from a 3D texture. Assumes intensity data. */",
-		"				return texture(u_data, texcoords.xyz).r;",
-		"		}",
+		// "		float sample1(vec3 texcoords) {",
+		// "				/* Sample float value from a 3D texture. Assumes intensity data. */",
+		// "				return texture(u_data, texcoords.xyz).r;",
+		// "		}",
 		"		float sampleDensity(vec3 texcoords) {",
 		"				/* Sample float value from a 3D texture. Assumes intensity data. */",
 		"				return texture(u_density, texcoords.xyz).r;",
@@ -389,9 +392,10 @@ THREE.VolumeRenderShader1 = {
 		"					break;",
 		"				}",
 						// Sample from the 3D textures
-		"				float gasVal = sampleData(u_gasData, loc);",
-		"				float dmVal = sampleData(u_dmData, loc);",
-		"				float density = sampleDensity(loc);",
+		"				vec3 gas_darkmatter_density = sampleData(u_dataTexture3D, loc);",
+		// "				float gasVal = sampleData(u_gasData, loc);",
+		// "				float dmVal = sampleData(u_dmData, loc);",
+		// "				float density = sampleDensity(loc);",
 		"				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
 		"				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 		"				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
@@ -399,15 +403,15 @@ THREE.VolumeRenderShader1 = {
 		"				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 		"				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
 
-		"				if((loc.x>u_xyzMin[0] && loc.x<=u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<=u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<=u_xyzMax[2])){",
-		"					vec4 c_gas = apply_dvr_colormap(gasVal,u_gasClip,u_gasClim,u_cmGasData,density,loc,iter);",
-		"					vec4 c_dm = apply_dvr_colormap(dmVal,u_dmClip,u_dmClim,u_cmDMData,density,loc,iter);",
+		"				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+		"					vec4 c_gas = apply_dvr_colormap(gas_darkmatter_density.r,u_gasClip,u_gasClim,u_cmGasData,gas_darkmatter_density.b,loc,iter);",
+		"					vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
 		"					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 		"					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 
 		"					vec3 emission = vec3(0.0,0.0,0.0);",
 		"					float transmittance = 0.0;",			
-		"					float rho = 4.0*max(0.0,((density - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
+		"					float rho = 4.0*max(0.0,((gas_darkmatter_density.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
 		"					if( u_gasVisibility == true ){",
 		"						tau = length(step)*c_gas.a*rho;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
@@ -424,6 +428,7 @@ THREE.VolumeRenderShader1 = {
 		"						tau = (1.0/(exp(starDepth)))*length(step)*0.75;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += c_stars;",
+		"						if(c_stars == vec3(0.0,1.0,0.0)) break;",
 								// break if it hits a star
 
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
@@ -449,108 +454,108 @@ THREE.VolumeRenderShader1 = {
 		"		}",
 
 
-		"		void cast_iso(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
+		// "		void cast_iso(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
 
-		"				gl_FragColor = vec4(0.0);	// init transparent",
-		"				vec4 color3 = vec4(0.0);	// final color",
-		"				vec3 dstep = 1.5 / u_size;	// step to sample derivative",
-		"				vec3 loc = start_loc;",
+		// "				gl_FragColor = vec4(0.0);	// init transparent",
+		// "				vec4 color3 = vec4(0.0);	// final color",
+		// "				vec3 dstep = 1.5 / u_size;	// step to sample derivative",
+		// "				vec3 loc = start_loc;",
 
-		"				float low_threshold = u_renderthreshold - 0.02 * (u_clim[1] - u_clim[0]);",
+		// "				float low_threshold = u_renderthreshold - 0.02 * (u_clim[1] - u_clim[0]);",
 
-		// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
-		// non-constant expression. So we use a hard-coded max, and an additional condition
-		// inside the loop.
-		"				for (int iter=0; iter<MAX_STEPS; iter++) {",
-		"						if (iter >= nsteps)",
-		"								break;",
+		// // Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
+		// // non-constant expression. So we use a hard-coded max, and an additional condition
+		// // inside the loop.
+		// "				for (int iter=0; iter<MAX_STEPS; iter++) {",
+		// "						if (iter >= nsteps)",
+		// "								break;",
 
-		// Sample from the 3D texture
-		"						float val = sample1(loc);",
+		// // Sample from the 3D texture
+		// "						float val = sample1(loc);",
 
-		"						if (val > low_threshold) {",
-		// Take the last interval in smaller steps
-		"								vec3 iloc = loc - 0.5 * step;",
-		"								vec3 istep = step / float(REFINEMENT_STEPS);",
-		"								for (int i=0; i<REFINEMENT_STEPS; i++) {",
-		"										val = sample1(iloc);",
-		"										if (val > u_renderthreshold) {",
-		"												gl_FragColor = add_lighting(val, iloc, dstep, view_ray);",
-		"												return;",
-		"										}",
-		"										iloc += istep;",
-		"								}",
-		"						}",
+		// "						if (val > low_threshold) {",
+		// // Take the last interval in smaller steps
+		// "								vec3 iloc = loc - 0.5 * step;",
+		// "								vec3 istep = step / float(REFINEMENT_STEPS);",
+		// "								for (int i=0; i<REFINEMENT_STEPS; i++) {",
+		// "										val = sample1(iloc);",
+		// "										if (val > u_renderthreshold) {",
+		// "												gl_FragColor = add_lighting(val, iloc, dstep, view_ray);",
+		// "												return;",
+		// "										}",
+		// "										iloc += istep;",
+		// "								}",
+		// "						}",
 
-		// Advance location deeper into the volume
-		"						loc += step;",
-		"				}",
-		"		}",
+		// // Advance location deeper into the volume
+		// "						loc += step;",
+		// "				}",
+		// "		}",
 
 
-		"		vec4 add_lighting(float val, vec3 loc, vec3 step, vec3 view_ray)",
-		"		{",
-		// Calculate color by incorporating lighting
+		// "		vec4 add_lighting(float val, vec3 loc, vec3 step, vec3 view_ray)",
+		// "		{",
+		// // Calculate color by incorporating lighting
 
-		// View direction
-		"				vec3 V = normalize(view_ray);",
+		// // View direction
+		// "				vec3 V = normalize(view_ray);",
 
-		// calculate normal vector from gradient
-		"				vec3 N;",
-		"				float val1, val2;",
-		"				val1 = sample1(loc + vec3(-step[0], 0.0, 0.0));",
-		"				val2 = sample1(loc + vec3(+step[0], 0.0, 0.0));",
-		"				N[0] = val1 - val2;",
-		"				val = max(max(val1, val2), val);",
-		"				val1 = sample1(loc + vec3(0.0, -step[1], 0.0));",
-		"				val2 = sample1(loc + vec3(0.0, +step[1], 0.0));",
-		"				N[1] = val1 - val2;",
-		"				val = max(max(val1, val2), val);",
-		"				val1 = sample1(loc + vec3(0.0, 0.0, -step[2]));",
-		"				val2 = sample1(loc + vec3(0.0, 0.0, +step[2]));",
-		"				N[2] = val1 - val2;",
-		"				val = max(max(val1, val2), val);",
+		// // calculate normal vector from gradient
+		// "				vec3 N;",
+		// "				float val1, val2;",
+		// "				val1 = sample1(loc + vec3(-step[0], 0.0, 0.0));",
+		// "				val2 = sample1(loc + vec3(+step[0], 0.0, 0.0));",
+		// "				N[0] = val1 - val2;",
+		// "				val = max(max(val1, val2), val);",
+		// "				val1 = sample1(loc + vec3(0.0, -step[1], 0.0));",
+		// "				val2 = sample1(loc + vec3(0.0, +step[1], 0.0));",
+		// "				N[1] = val1 - val2;",
+		// "				val = max(max(val1, val2), val);",
+		// "				val1 = sample1(loc + vec3(0.0, 0.0, -step[2]));",
+		// "				val2 = sample1(loc + vec3(0.0, 0.0, +step[2]));",
+		// "				N[2] = val1 - val2;",
+		// "				val = max(max(val1, val2), val);",
 
-		"				float gm = length(N); // gradient magnitude",
-		"				N = normalize(N);",
+		// "				float gm = length(N); // gradient magnitude",
+		// "				N = normalize(N);",
 
-		// Flip normal so it points towards viewer
-		"				float Nselect = float(dot(N, V) > 0.0);",
-		"				N = (2.0 * Nselect - 1.0) * N;	// ==	Nselect * N - (1.0-Nselect)*N;",
+		// // Flip normal so it points towards viewer
+		// "				float Nselect = float(dot(N, V) > 0.0);",
+		// "				N = (2.0 * Nselect - 1.0) * N;	// ==	Nselect * N - (1.0-Nselect)*N;",
 
-		// Init colors
-		"				vec4 ambient_color = vec4(0.0, 0.0, 0.0, 0.0);",
-		"				vec4 diffuse_color = vec4(0.0, 0.0, 0.0, 0.0);",
-		"				vec4 specular_color = vec4(0.0, 0.0, 0.0, 0.0);",
+		// // Init colors
+		// "				vec4 ambient_color = vec4(0.0, 0.0, 0.0, 0.0);",
+		// "				vec4 diffuse_color = vec4(0.0, 0.0, 0.0, 0.0);",
+		// "				vec4 specular_color = vec4(0.0, 0.0, 0.0, 0.0);",
 
-		// note: could allow multiple lights
-		"				for (int i=0; i<1; i++)",
-		"				{",
-								 // Get light direction (make sure to prevent zero devision)
-		"						vec3 L = normalize(view_ray);	//lightDirs[i];",
-		"						float lightEnabled = float( length(L) > 0.0 );",
-		"						L = normalize(L + (1.0 - lightEnabled));",
+		// // note: could allow multiple lights
+		// "				for (int i=0; i<1; i++)",
+		// "				{",
+		// 						 // Get light direction (make sure to prevent zero devision)
+		// "						vec3 L = normalize(view_ray);	//lightDirs[i];",
+		// "						float lightEnabled = float( length(L) > 0.0 );",
+		// "						L = normalize(L + (1.0 - lightEnabled));",
 
-		// Calculate lighting properties
-		"						float lambertTerm = clamp(dot(N, L), 0.0, 1.0);",
-		"						vec3 H = normalize(L+V); // Halfway vector",
-		"						float specularTerm = pow(max(dot(H, N), 0.0), shininess);",
+		// // Calculate lighting properties
+		// "						float lambertTerm = clamp(dot(N, L), 0.0, 1.0);",
+		// "						vec3 H = normalize(L+V); // Halfway vector",
+		// "						float specularTerm = pow(max(dot(H, N), 0.0), shininess);",
 
-		// Calculate mask
-		"						float mask1 = lightEnabled;",
+		// // Calculate mask
+		// "						float mask1 = lightEnabled;",
 
-		// Calculate colors
-		"						ambient_color +=	mask1 * ambient_color;	// * gl_LightSource[i].ambient;",
-		"						diffuse_color +=	mask1 * lambertTerm;",
-		"						specular_color += mask1 * specularTerm * specular_color;",
-		"				}",
+		// // Calculate colors
+		// "						ambient_color +=	mask1 * ambient_color;	// * gl_LightSource[i].ambient;",
+		// "						diffuse_color +=	mask1 * lambertTerm;",
+		// "						specular_color += mask1 * specularTerm * specular_color;",
+		// "				}",
 
-		// Calculate final color by componing different components
-		"				vec4 final_color;",
-		"				vec4 color = apply_colormap(val);",
-		"				final_color = color * (ambient_color + diffuse_color) + specular_color;",
-		"				final_color.a = 0.1;",
-		"				return final_color;",
-		"		}",
+		// // Calculate final color by componing different components
+		// "				vec4 final_color;",
+		// "				vec4 color = apply_colormap(val);",
+		// "				final_color = color * (ambient_color + diffuse_color) + specular_color;",
+		// "				final_color.a = 0.1;",
+		// "				return final_color;",
+		// "		}",
 	].join( "\n" )
 };
