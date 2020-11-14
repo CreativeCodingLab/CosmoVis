@@ -716,64 +716,69 @@ function loadDarkMatter(size){
     // startLoadingAnimation()
     attr = 'density'
     return new Promise(resolve => {
-        d3.json('static/data/'+simID+'/PartType1/' + size + '_PartType1_' + attr +'.json').then(function(d){
-            log = true
+        try{
+            d3.json('static/data/'+simID+'/PartType1/' + size + '_PartType1_' + attr +'.json').then(function(d){
+                log = true
 
-            // DARK MATTER IS THE GREEN CHANNEL IN THE 3D DATA TEXTURE
-            
-            min = Infinity
-            max = -Infinity
-            for(x=0;x<size;x++){
-                for(y=0;y<size;y++){
-                    for(z=0;z<size;z++){
-                        if(log){
-                            dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] =  Math.log10(d[x][y][z])
-                        }
-                        else{
-                            dataArray3D[ 4 * ( x + y * size + z * size * size)  + 1 ] =  d[x][y][z]
-                        }
+                // DARK MATTER IS THE GREEN CHANNEL IN THE 3D DATA TEXTURE
+                
+                min = Infinity
+                max = -Infinity
+                for(x=0;x<size;x++){
+                    for(y=0;y<size;y++){
+                        for(z=0;z<size;z++){
+                            if(log){
+                                dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] =  Math.log10(d[x][y][z])
+                            }
+                            else{
+                                dataArray3D[ 4 * ( x + y * size + z * size * size)  + 1 ] =  d[x][y][z]
+                            }
 
-                        if( dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] < min ){
-                            min = dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ]
-                        }
+                            if( dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] < min ){
+                                min = dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ]
+                            }
 
-                        if( dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ] > max ){
-                            max = dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ]
+                            if( dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ] > max ){
+                                max = dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ]
+                            }
                         }
                     }
                 }
-            }
 
-            if(min==-Infinity){min = -999999999999}
-            var x = document.getElementById("dm-eye-open");
-            x.style.display = "inline-block";
-            var y = document.getElementById("dm-eye-closed");
-            y.style.display = "none";
-            if(localStorage.getItem('dmMinVal') != ""){
-                min = localStorage.getItem('dmMinVal')
-            }
-            if(localStorage.getItem('dmMaxVal') != ""){
-                max = localStorage.getItem('dmMaxVal')
-            }
-            climDMLimits = [min, max]
-            let minval = document.getElementById('dm-minval-input')
-            minval.value = round(min,2)
-            let maxval = document.getElementById('dm-maxval-input')
-            maxval.value = round(max,2)
-            min = -30
-            minval.value = -30 
-            max = -25
-            maxval.value = -25 
-            let dmUnits = document.getElementsByClassName('dm-attr-units')
-            for(i=0;i< dmUnits.length;i++){
-                dmUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
-            }
-            initColor('PartType1')
-            // updateUniforms()
-            // update3dDataTexture()
-            // stopLoadingAnimation()
+                if(min==-Infinity){min = -999999999999}
+                var x = document.getElementById("dm-eye-open");
+                x.style.display = "inline-block";
+                var y = document.getElementById("dm-eye-closed");
+                y.style.display = "none";
+                if(localStorage.getItem('dmMinVal') != ""){
+                    min = localStorage.getItem('dmMinVal')
+                }
+                if(localStorage.getItem('dmMaxVal') != ""){
+                    max = localStorage.getItem('dmMaxVal')
+                }
+                climDMLimits = [min, max]
+                let minval = document.getElementById('dm-minval-input')
+                minval.value = round(min,2)
+                let maxval = document.getElementById('dm-maxval-input')
+                maxval.value = round(max,2)
+                min = -30
+                minval.value = -30 
+                max = -25
+                maxval.value = -25 
+                let dmUnits = document.getElementsByClassName('dm-attr-units')
+                for(i=0;i< dmUnits.length;i++){
+                    dmUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+                }
+                initColor('PartType1')
+                // updateUniforms()
+                // update3dDataTexture()
+                // stopLoadingAnimation()
+                resolve()
+            })
+        }
+        catch{
             resolve()
-        })
+        }
     })
 }
 function setTwoNumberDecimal(el) {
@@ -783,15 +788,23 @@ function setTwoNumberDecimal(el) {
 async function asyncCall() {
     startLoadingAnimation()
     let init = await init3dDataTexture(gridsize)
-    var dens = await loadDensity(gridsize,'PartType0','H_number_density')
-    densityMin = dens[0]
-    densityMax = dens[1]
-    var gas = await loadGas(gridsize,'Temperature',false)
-    var darkmatter = await loadDarkMatter(gridsize)
-    var stars = await loadStars()
-    var update3dTexture = update3dDataTexture()
-    updateUniforms()
-    stopLoadingAnimation()
+    try{
+        var dens = await loadDensity(gridsize,'PartType0','H_number_density')
+        densityMin = dens[0]
+        densityMax = dens[1]
+        var stars = await loadStars()
+        var gas = await loadGas(gridsize,'Temperature',false)
+        // var darkmatter = await loadDarkMatter(gridsize)
+        volMaterial.uniforms["u_dmVisibility"].value = false;
+    }
+    catch(err){
+        console.log(err)
+    }
+    finally{
+        var update3dTexture = update3dDataTexture()
+        updateUniforms()
+        stopLoadingAnimation()
+    }
 }
 
 function loadDensity(size,type,attr){
@@ -857,6 +870,7 @@ function loadStars(){
         d3.json( 'static/data/' + simID + '/PartType4/star_particles.json' ).then( function( d ){
             // console.log( Object.keys(d).length )
             n = Object.keys(d).length
+            console.log(n)
             m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
             var starGeometry = new THREE.BufferGeometry();
             var starPositions = new Float32Array(n * 3)

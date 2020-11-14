@@ -607,6 +607,14 @@
                 div = document.getElementById(buttonId)
                 div.innerText = 'Network timeout, retrying . . . '
                 requestSpectrum(idx)
+            });      
+
+            socket.on('spectrumError',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'Network timeout, retrying . . . '
+                requestSpectrum(idx)
             });        
         });
 
@@ -1400,6 +1408,7 @@
                 <option disabled="disabled">select simulation (n&sup3;)</option>
                 <option selected="selected" value="RefL0012N0188">12 Mpc box (EAGLE)</option>
                 <option value="RefL0025N0376">25 Mpc box (EAGLE)</option>
+                <option value="RefL0100N1504">100 Mpc box (EAGLE)</option>
                 <option disabled value="TNG100">100 Mpc box (TNG)</option>
             </select></p>
 
