@@ -353,8 +353,8 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - clim[0]) / (clim[1] - clim[0]);",
 		"				tex = texture2D(cm_texture, vec2(val, 0.5));",
-		"				if(a > 0.0000001){",  //} && val<=0.5){",
-		"					a = u_densityModI*density*u_densityMod + u_valModI*u_valMod*val + u_distModI*delta*u_distMod;",
+		"				if(a > 0.00001){",  //} && val<=0.5){",
+		"					a = u_densityModI * density * u_densityMod + u_valModI * u_valMod * val;",// + u_distModI * delta * u_distMod;",
 		// "						a = exp(-u_valModI*u_valMod*val);",
 		// "					tex = texture2D(cm_texture, vec2(val, 0.5));",
 		"					tex.a *= a;",
@@ -374,9 +374,11 @@ THREE.VolumeRenderShader1 = {
 		
 		"		void cast_dvr(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
 		"			vec3 loc = start_loc - step*rnd(vec2(-0.5,0.5));",
-		"			float sigma_a = 0.1;",
-		"			float sigma_s = 0.4;",
-		"			float sigma_e = 1.0;",
+		//emission absorption model
+		"			float sigma_a = 0.5;",
+		"			float sigma_s = 0.0;", //sigma_t  = sigma_a + sigma_s (extinction)
+		"			vec3 sigma_e = vec3(1.0,1.0,1.0);",
+		
 		"			vec4 c = vec4(0.0,0.0,0.0,0.0);",
 		"			vec4 c_gas = vec4(0.0,0.0,0.0,0.0);",
 		"			vec4 c_dm = vec4(0.0,0.0,0.0,0.0);",
@@ -415,7 +417,7 @@ THREE.VolumeRenderShader1 = {
 		"					if( u_gasVisibility == true ){",
 		"						tau = length(step)*c_gas.a*rho;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
-		"						emission += c_gas.a*c_gas.rgb;",
+		"						emission += sqrt(gas_darkmatter_density.r/2.0)*c_gas.a*c_gas.rgb;",
 		// "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		"					}",
 		"					if( u_dmVisibility == true ){",
@@ -427,7 +429,7 @@ THREE.VolumeRenderShader1 = {
 		"					if(u_starVisibility == true){",
 		"						tau = (1.0/(exp(starDepth)))*length(step)*0.75;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
-		"						emission += c_stars;",
+		"						emission += transmittance*c_stars;", //multiply instead of add
 		"						if(c_stars == vec3(0.0,1.0,0.0)) break;",
 								// break if it hits a star
 

@@ -1006,20 +1006,24 @@
     <div class="title">cosmovis</div>
     
     <div id="icon_container">
-        
-        <div id="galaxy_list" class="icon_caption"><img 
+        <div id="terminal_icon" class="icon_caption"><img 
             class="icon"
-            src="static/assets/spiral.svg" 
-            alt="galaxy catalog"
+            src="static/assets/terminal.svg" 
+            alt="terminal event log"
             role="button"
-            onclick="galaxylist()"/>galaxies</div>
-
+            onclick="terminal()"/>data selection</div>        
         <div id="data_layers_icon" class="icon_caption"><img 
             class="icon"
             src="static/assets/layers.svg" 
             alt="attributes and data filtering"
             role="button"
             onclick="data_layers()"/>layers</div>
+        <div id="galaxy_list" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/spiral.svg" 
+            alt="galaxy catalog"
+            role="button"
+            onclick="galaxylist()"/>galaxies</div>
         <div id="ray" class="icon_caption"><img 
             class="icon"
             src="static/assets/hst.svg" 
@@ -1033,12 +1037,7 @@
             role="button"
             onclick="graph()"/>plot</div>
         
-        <div id="terminal_icon" class="icon_caption"><img 
-            class="icon"
-            src="static/assets/terminal.svg" 
-            alt="terminal event log"
-            role="button"
-            onclick="terminal()"/>details</div>
+        
 
         <!-- <div id="morePoints" class="pointLevels">
             +
@@ -1313,7 +1312,7 @@
                 <div id="density-mod" class="density-mod">
                     
                     <p>density opacity modulation</p>
-                    <p><input type="range" id="density-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.8" oninput="updateUniforms()"> intensity</p>
+                    <p><input type="range" id="density-mod-intensity" min="0.0" max="10.0" step="0.001" value="0.8" oninput="updateUniforms()"> intensity</p>
                     <div id="density-min">
                         min
                         <input type="number" step="0.1" id="density-minval-input" class="number-input minvalinput" name="density-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
@@ -1339,7 +1338,7 @@
                     
                     
                     <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
-                    <!-- <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p> -->
+                    <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p>
     
                     <p><input type="range" id="exposure" min="0.05" max="10.0" step="0.001" value="5.0" oninput="updateUniforms()"> exposure</p>
     

@@ -351,9 +351,12 @@ function updateUniforms(){
         h = 1
         size = w * h
         
-
-        // controls.target.set( ((domainXYZ[1]-domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]-domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]-domainXYZ[4])*gridsize)/2 );
+        controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
+        controls.update()
         // camera.lookAt(controls.target.set( ((domainXYZ[1]-domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]-domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]-domainXYZ[4])*gridsize)/2 ))
+        // camera.updateProjectionMatrix();
+
+
         starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
         starMaterial.uniforms[ "u_gridsize" ].value = gridsize
@@ -794,7 +797,7 @@ async function asyncCall() {
         densityMax = dens[1]
         var stars = await loadStars()
         var gas = await loadGas(gridsize,'Temperature',false)
-        // var darkmatter = await loadDarkMatter(gridsize)
+        var darkmatter = await loadDarkMatter(gridsize)
         volMaterial.uniforms["u_dmVisibility"].value = false;
     }
     catch(err){
@@ -2439,6 +2442,13 @@ function init(){
     
     createGalaxyFilteringBrushes('sfr')
     createGalaxyFilteringBrushes('mass')
+
+    x = document.getElementById('x-depth-brush')
+    x.addEventListener('change',updateUniforms,false)
+    y = document.getElementById('x-depth-brush')
+    y.addEventListener('change',updateUniforms,false)
+    z = document.getElementById('x-depth-brush')
+    z.addEventListener('change',updateUniforms,false)
 }
 
 function onMouseMove( event ) {
@@ -2531,7 +2541,6 @@ function onMouseClick( event ) {
             transparent: true,
             opacity: 1.0,
             blending: THREE.AdditiveBlending
-
         } );
         lines[idx] = new THREE.Line2( geometry, material );
         lines[idx].layers.set(4)
