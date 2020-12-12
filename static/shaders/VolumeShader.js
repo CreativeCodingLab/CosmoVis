@@ -353,7 +353,7 @@ THREE.VolumeRenderShader1 = {
 		"				}",
 		"				val = (val - clim[0]) / (clim[1] - clim[0]);",
 		"				tex = texture2D(cm_texture, vec2(val, 0.5));",
-		"				if(a > 0.00001){",  //} && val<=0.5){",
+		"				if(a > 0.00000001){",  //} && val<=0.5){",
 		"					a = u_densityModI * density * u_densityMod + u_valModI * u_valMod * val;",// + u_distModI * delta * u_distMod;",
 		// "						a = exp(-u_valModI*u_valMod*val);",
 		// "					tex = texture2D(cm_texture, vec2(val, 0.5));",
@@ -371,6 +371,44 @@ THREE.VolumeRenderShader1 = {
 		"				return tex;",
 		"		}",
 
+
+	// 	"		void cast_raymarching(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
+	// "				vec3 gas_darkmatter_density = sampleData(u_dataTexture3D, loc);",
+	// "				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+	// "				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+	// "				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+	// "				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
+	// "				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+	// "				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+
+	// // "				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+	// "					vec4 c_gas = apply_dvr_colormap(gas_darkmatter_density.r,u_gasClip,u_gasClim,u_cmGasData,gas_darkmatter_density.b,loc,iter);",
+	// "					vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
+	// "					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+	// "					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+	// // determine step size, length, direction
+	// "					int iSteps = int(length(rd));",
+	// "					vec3 dd = rd / float(iSteps);", //dd = distance differential (one step forward)
+	// "					rd = normalize(rd);", //direction is normalized to use as multiplier
+	// 						// can use random seed
+	// "					rp += (rnd(gl_FragCoord.xy) - 0.5) * dd;", //perturbing the position where the integration starts by half a voxel, reduce effects of artefacts by introducing a little noise
+	// "					vec3 path_L = vec3(0.0, 0.0, 0.0);", // light collected for the ray (path tracer) -- total quantity light coming from the volume
+	// "					float tau = 0.0;", // accumulated optical thickness through the volume 
+	// "					float rho0 = get_rho(rp), rho1;", // rho ~ density; rho0 ~ first point in the volume; rho1 ~ not initialized yet
+	
+	// "					for (int i = 0; i < iSteps; ++i) {",
+	// "						rp += dd;", // move position along the ray by 1 step forward (dd)
+	// "						rho1 = get_rho(rp);", // gets rho1 for the position
+	// "						float rho = 0.5 * (rho0 + rho1);", // actual density (rho) is the average between the two (assume piecewise linear density function)
+	// "						tau += rho;", // tau ~ accumulated thickness/density of the volume
+	// "						float transmittance = exp(-sigma_t * tau);", // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
+	// "						float3 emission = float3(0.0, 0.0, 0.0);", 
+	// "						emission += get_emitted_L(rho);", // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
+	// "						path_L += transmittance * rho * sigma_e * emission;", // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
+	// "						rho0 = rho1;", // move the integration one step forward
+	// 	// "				}",
+	// 	"			}",			
+	// 	"		}",
 		
 		"		void cast_dvr(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
 		"			vec3 loc = start_loc - step*rnd(vec2(-0.5,0.5));",

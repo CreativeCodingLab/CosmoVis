@@ -81,10 +81,9 @@ def handle_ray_selection_background(simID,idx,start,end):
     socketio.sleep(0)
 
     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-    # fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
     ds = yt.load(fn)
     socketio.sleep(0)
-    ad = ds.all_data()
+    # ad = ds.all_data()
 
     print('received args: ' + str(start) + str(end))
 
