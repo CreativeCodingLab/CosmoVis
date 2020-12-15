@@ -380,16 +380,18 @@ THREE.VolumeRenderShader1 = {
 	// "				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
 	// "				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 	// "				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
-
 	// // "				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
 	// "					vec4 c_gas = apply_dvr_colormap(gas_darkmatter_density.r,u_gasClip,u_gasClim,u_cmGasData,gas_darkmatter_density.b,loc,iter);",
 	// "					vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
 	// "					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 	// "					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
-	// // determine step size, length, direction
-	// "					int iSteps = int(length(rd));",
-	// "					vec3 dd = rd / float(iSteps);", //dd = distance differential (one step forward)
-	// "					rd = normalize(rd);", //direction is normalized to use as multiplier
+	
+	// // three sources of signal: attribute (gas), dark matter, density
+	// // stars act as stopping condition
+	
+	// "					int iSteps = int(length(rd));", // determine step size, length, direction
+	// "					vec3 dd = rd / float(iSteps);", // dd = distance differential (one step forward in world size units)
+	// "					rd = normalize(rd);", // direction is normalized to use as multiplier
 	// 						// can use random seed
 	// "					rp += (rnd(gl_FragCoord.xy) - 0.5) * dd;", //perturbing the position where the integration starts by half a voxel, reduce effects of artefacts by introducing a little noise
 	// "					vec3 path_L = vec3(0.0, 0.0, 0.0);", // light collected for the ray (path tracer) -- total quantity light coming from the volume
@@ -403,6 +405,7 @@ THREE.VolumeRenderShader1 = {
 	// "						tau += rho;", // tau ~ accumulated thickness/density of the volume
 	// "						float transmittance = exp(-sigma_t * tau);", // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
 	// "						float3 emission = float3(0.0, 0.0, 0.0);", 
+								// star color will get added to emission, star detection
 	// "						emission += get_emitted_L(rho);", // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
 	// "						path_L += transmittance * rho * sigma_e * emission;", // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
 	// "						rho0 = rho1;", // move the integration one step forward
@@ -427,18 +430,25 @@ THREE.VolumeRenderShader1 = {
 					// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
 					// non-constant expression. So we use a hard-coded max, and an additional condition
 					// inside the loop.
-		"			for (int iter=0; iter<nsteps; iter++) {",//int(float(MAX_STEPS)/u_stepSize
-		"				if (iter > nsteps){",
-		"					break;",
-		"				}",
+		"			float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		"			float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		"			float starDepth = u_size.x*viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+
+					// run for loop only until given star depth (if there is a star there)
+					// maybe a use a while loop
+		"			for (int iter=0; iter<int(starDepth); iter++) {",//int(float(MAX_STEPS)/u_stepSize
+
 						// Sample from the 3D textures
 		"				vec3 gas_darkmatter_density = sampleData(u_dataTexture3D, loc);",
 		// "				float gasVal = sampleData(u_gasData, loc);",
 		// "				float dmVal = sampleData(u_dmData, loc);",
 		// "				float density = sampleDensity(loc);",
-		"				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
-		"				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-		"				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		// depth of the stars
+		// "				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		// "				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		// "				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		
+		// depth of skewer
 		"				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
 		"				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 		"				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
@@ -465,12 +475,17 @@ THREE.VolumeRenderShader1 = {
 		// "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		"					}",
 		"					if(u_starVisibility == true){",
+								// if there is a star in the pixel, run integration only until that depth
 		"						tau = (1.0/(exp(starDepth)))*length(step)*0.75;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += transmittance*c_stars;", //multiply instead of add
-		"						if(c_stars == vec3(0.0,1.0,0.0)) break;",
-								// break if it hits a star
-
+		// "						if(c_stars != vec3(0.0,0.0,0.0)){",
+		// "							path_L.a = 1.0;",
+		// "							c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L.rgba);",
+		// "							gl_FragColor = c;",
+		// "							break;", // break if it hits a star
+		// "						}", 
+							
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
 		"					bool u_skewerVisibility = true;",
@@ -480,9 +495,9 @@ THREE.VolumeRenderShader1 = {
 		"						emission += c_skewers;",
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
-		"					if(transmittance < 0.0001){",
-		"						break;",
-		"					}",
+		// "					if(transmittance < 0.0001){",
+		// "						break;",
+		// "					}",
 		"					path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;", //multiply by step size
 		"				}",
 						// Resolve final color

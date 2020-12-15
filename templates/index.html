@@ -239,14 +239,11 @@
                 if (distance > 2.0) {
                     discard;
                 }
-                
-                
-
-
+    
 
                 //gl_FragColor = vec4(0.8*vStarAttribute,0.8*vStarAttribute,0.2*vStarAttribute,0.2);//* texture2D( texture, gl_PointCoord );
                 //gl_FragColor = mix( vMinCol,vMaxCol,vStarAttribute );
-                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,0.75);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
                 //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
                 //gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
     

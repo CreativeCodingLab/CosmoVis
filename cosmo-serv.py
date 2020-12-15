@@ -116,7 +116,7 @@ def handle_ray_selection_background(simID,idx,start,end):
             c+=1
             continue
         field = line.split()
-        print(field)
+        # print(field)
 
         wavelength = float(field[2])
         element = field[0] + field[1] + truncate(wavelength,0)
@@ -136,16 +136,16 @@ def handle_ray_selection_background(simID,idx,start,end):
     socketio.sleep(0)
     ray = trident.make_simple_ray(ds, start_position=ray_start,
                                end_position=ray_end,
-                               data_filename="ray.h5",
+                               data_filename="ray.h5", # update file name if we need multiple
                                lines=line_list)
     socketio.sleep(0)
-    sg = trident.SpectrumGenerator(inst ,line_database="lines_subset_test.txt")
+    sg = trident.SpectrumGenerator(inst ,line_database="lines_subset_test.txt")#, dlambda=1)
     # sg = trident.SpectrumGenerator('COS-G130M',line_database="lines.txt")
     
     # emit('my_response', {'data': 'Connected', 'count': -1})
     socketio.sleep(0)
     print('making spectrum')
-    sg.make_spectrum(ray, lines=line_list)
+    sg.make_spectrum(ray, lines=line_list) #spitting information through std_out, scrape information
     socketio.sleep(0)
     sg.add_qso_spectrum(emitting_redshift=0.5)
     
