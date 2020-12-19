@@ -224,6 +224,28 @@ THREE.VolumeRenderShader1 = {
 		"		vec4 apply_colormap(float val);",
 		"		vec4 add_lighting(float val, vec3 loc, vec3 step, vec3 view_ray);",
 
+		//intersection code
+		// rp = ray position, initial value = camera position relative to big_box=[0,gridsize]
+		// rd = normalized ray direction relative to big_box=[0,gridsize] vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);
+		// c_lo, c_hi = min and max corners of the box (respectively)  trimmed_box=[get coords based on uniform]
+		//return val = vec2 --> both intersections
+			// x = near intersection 
+			// y = far intersection
+			// no intersection --> both negative (-1,-1)?
+		// after getting return value, to get coord --> rp + rd * val (first and last 3D position on the cube)
+		// use this to get number of integration steps
+		// float2 ray_AABB_intersection(float3 rp, float3 rd, float3 c_lo, float3 c_hi) {
+		// 	float t[8];
+		// 	t[0] = (c_lo.x - rp.x) / rd.x;
+		// 	t[1] = (c_hi.x - rp.x) / rd.x;
+		// 	t[2] = (c_lo.y - rp.y) / rd.y;
+		// 	t[3] = (c_hi.y - rp.y) / rd.y;
+		// 	t[4] = (c_lo.z - rp.z) / rd.z;
+		// 	t[5] = (c_hi.z - rp.z) / rd.z;
+		// 	t[6] = max(max(min(t[0], t[1]), min(t[2], t[3])), min(t[4], t[5]));
+		// 	t[7] = min(min(max(t[0], t[1]), max(t[2], t[3])), max(t[4], t[5]));
+		// 	return (t[7] < 0 || t[6] >= t[7]) ? float2(-1.0, -1.0) : float2(t[6], t[7]);
+		// }
 
 		"		void main() {",
 		// Normalize clipping plane info
@@ -244,6 +266,7 @@ THREE.VolumeRenderShader1 = {
 
 		// Now we have the starting position on the front surface
 		"				vec3 front = v_position + view_ray * distance;",
+		// don't have backside, don't know when the ray stops intersecting the box
 
 		// Decide how many steps to take
 		// "				int nsteps = int(-distance / relative_step_size + 0.5);",
@@ -377,6 +400,7 @@ THREE.VolumeRenderShader1 = {
 	// "				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
 	// "				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 	// "				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+
 	// "				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
 	// "				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 	// "				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
@@ -386,10 +410,24 @@ THREE.VolumeRenderShader1 = {
 	// "					vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
 	// "					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 	// "					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
-	// // determine step size, length, direction
-	// "					int iSteps = int(length(rd));",
-	// "					vec3 dd = rd / float(iSteps);", //dd = distance differential (one step forward)
-	// "					rd = normalize(rd);", //direction is normalized to use as multiplier
+	
+	// // three sources of signal: attribute (gas), dark matter, density
+	// // stars act as stopping condition
+	// 					// rp = ray position, initial value = camera position relative to big_box=[0,gridsize]
+	// 					// rd = normalized ray direction relative to big_box=[0,gridsize] vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);
+	// 					// c_lo, c_hi = min and max corners of the box (respectively)  trimmed_box=[get coords based on uniform]
+	// 					// vec2 t = ray_AABB_intersection(float3 rp, float3 rd, float3 c_lo, float3 c_hi)
+						
+	// 					// clamp t.x to 0 to avoid rendering anything behind the camera
+	// 					// if t.y is + there is something to render, if t.y is - then the integral is behind the camera...
+						
+	// 				// convert current position and ray direction to voxel distance
+	// 					// rp = rp + t.x * rd;
+	// 					// rd = rd * (t.y - t.x); // not normalized, in voxel distance
+
+	// "					int iSteps = int(length(rd));", // determine step size, length, direction
+	// "					vec3 dd = rd / float(iSteps);", // dd = distance differential (one step forward in world size units)
+	// "					rd = normalize(rd);", // direction is normalized to use as multiplier
 	// 						// can use random seed
 	// "					rp += (rnd(gl_FragCoord.xy) - 0.5) * dd;", //perturbing the position where the integration starts by half a voxel, reduce effects of artefacts by introducing a little noise
 	// "					vec3 path_L = vec3(0.0, 0.0, 0.0);", // light collected for the ray (path tracer) -- total quantity light coming from the volume
@@ -403,6 +441,7 @@ THREE.VolumeRenderShader1 = {
 	// "						tau += rho;", // tau ~ accumulated thickness/density of the volume
 	// "						float transmittance = exp(-sigma_t * tau);", // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
 	// "						float3 emission = float3(0.0, 0.0, 0.0);", 
+	// 						//star color will get added to emission, star detection
 	// "						emission += get_emitted_L(rho);", // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
 	// "						path_L += transmittance * rho * sigma_e * emission;", // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
 	// "						rho0 = rho1;", // move the integration one step forward
@@ -427,18 +466,26 @@ THREE.VolumeRenderShader1 = {
 					// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
 					// non-constant expression. So we use a hard-coded max, and an additional condition
 					// inside the loop.
-		"			for (int iter=0; iter<nsteps; iter++) {",//int(float(MAX_STEPS)/u_stepSize
-		"				if (iter > nsteps){",
-		"					break;",
-		"				}",
+		"			float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		"			float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		"			float starDepth = u_size.x*viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+
+					// run for loop only until given star depth (if there is a star there)
+					// maybe a use a while loop
+					// start iteration at the edge of xyzMin/Max cube instead of checking each step, empty space skipping
+		"			for (int iter=0; iter<int(starDepth); iter++) {",//int(float(MAX_STEPS)/u_stepSize
+
 						// Sample from the 3D textures
 		"				vec3 gas_darkmatter_density = sampleData(u_dataTexture3D, loc);",
 		// "				float gasVal = sampleData(u_gasData, loc);",
 		// "				float dmVal = sampleData(u_dmData, loc);",
 		// "				float density = sampleDensity(loc);",
-		"				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
-		"				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-		"				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		// depth of the stars
+		// "				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		// "				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		// "				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		
+		// depth of skewer
 		"				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
 		"				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
 		"				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
@@ -465,12 +512,17 @@ THREE.VolumeRenderShader1 = {
 		// "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		"					}",
 		"					if(u_starVisibility == true){",
+								// if there is a star in the pixel, run integration only until that depth
 		"						tau = (1.0/(exp(starDepth)))*length(step)*0.75;", // number of occluded particles (do this twice, DM + Gas)
 		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
 		"						emission += transmittance*c_stars;", //multiply instead of add
-		"						if(c_stars == vec3(0.0,1.0,0.0)) break;",
-								// break if it hits a star
-
+		// "						if(c_stars != vec3(0.0,0.0,0.0)){",
+		// "							path_L.a = 1.0;",
+		// "							c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L.rgba);",
+		// "							gl_FragColor = c;",
+		// "							break;", // break if it hits a star
+		// "						}", 
+							
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
 		"					bool u_skewerVisibility = true;",
@@ -480,9 +532,9 @@ THREE.VolumeRenderShader1 = {
 		"						emission += c_skewers;",
 		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
 		"					}",
-		"					if(transmittance < 0.0001){",
-		"						break;",
-		"					}",
+		// "					if(transmittance < 0.0001){",
+		// "						break;",
+		// "					}",
 		"					path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;", //multiply by step size
 		"				}",
 						// Resolve final color

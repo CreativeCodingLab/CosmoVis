@@ -2370,7 +2370,7 @@ function init(){
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setPixelRatio(1);
 
-    renderer.antialias = true;
+    renderer.antialias = false;
     renderer.precision = 'highp';
     renderer.powerPreference = 'high-performance'
     renderer.sortPoints = true;
