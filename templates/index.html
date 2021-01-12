@@ -383,7 +383,6 @@
         
         $(document).ready(function(){
 
-
             socket.on('connect', function() {
                 socket.emit('my_event', {data: 'I\'m connected!'});
             });
@@ -733,6 +732,8 @@
                     var y = document.getElementById("skewer-eye-closed");
                     y.style.display = "none";
 
+                    volMaterial.uniforms[ "u_skewerVisibility" ].value = true
+
                 }
 
                 else{
@@ -740,6 +741,8 @@
                     x.style.display = "none";
                     var y = document.getElementById("skewer-eye-closed");
                     y.style.display = "inline-block";
+
+                    volMaterial.uniforms[ "u_skewerVisibility" ].value = false
 
                 }
             }
@@ -753,50 +756,6 @@
                 }
             }
         }
-        // function requestPoints(type,attr,renderCount){
-        //     if(attr != 'Select an attribute'){
-
-                
-        //         exist = false
-        //         for(i=0;i<particles.length;i++){
-
-        //             if(particles[i].particle_type == type && particles[i].attribute == attr && particles[i].i >= renderCount){
-        //                 exist = true
-        //             }
-        //         }
-
-        //         if(!exist){
-        //             socket.emit('requestPoints',type, attr,renderCount)
-        //         }
-
-        //         else{
-        //             let min, max
-        //             for(i=0;i<particles.length;i++){
-        //                 if(particles[i].particle_type == type && particles[i].attribute == attr){
-        //                     min = particles[i].min
-        //                     max = particles[i].max
-        //                 }
-        //             }
-        //             if(type == 'PartType0'){
-        //                 col = document.getElementById('gas-minval-input')
-        //                 col.value=min
-        //                 materialGas.uniforms.min.value = min
-        //                 col = document.getElementById('gas-maxval-input')
-        //                 col.value=max
-        //                 materialGas.uniforms.max.value = max
-        //             }
-        //             if (type == 'PartType5'){
-        //                 col = document.getElementById('bh-minval-input')
-        //                 col.value=min
-        //                 materialGas.uniforms.min.value = min
-        //                 col = document.getElementById('bh-maxval-input')
-        //                 col.value=max
-        //                 materialBlackHole.uniforms.max.value = max
-        //             }
-        //             plotPoints()
-        //         }
-        //     }
-        // }
         
         function galaxylist(){ 
             var x = document.getElementById("galaxylist");
@@ -980,25 +939,6 @@
 
         $
     </script>
-    <!-- <script type="text/javascript" src="libs/Tween.js"></script>
-    <script type="text/javascript" src="libs/OrbitControls.js"></script>
-    <script type="text/javascript" src="js/cosmo-vis.js"></script> -->
-        <!-- <h1>Flask-SocketIO Test</h1>
-    <p>Async mode is: <b>{{ async_mode }}</b></p>
-    <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
-    <h2>Send:</h2>
-     -->
-    <!-- <form id="disconnect" method="POST" action="#">
-        <input type="submit" value="Disconnect">
-    </form>
-    
-    <form id="loadData" method="POST" action="#">
-            <input type="submit" value="loadData">
-    </form>
-    
-    <form id="sendCoords" method="POST" action="#">
-            <input type="submit" value="sendCoords">
-    </form> -->
 
     <div class="title">cosmovis</div>
     
@@ -1033,16 +973,6 @@
             alt="view spectrum"
             role="button"
             onclick="graph()"/>plot</div>
-        
-        
-
-        <!-- <div id="morePoints" class="pointLevels">
-            +
-        </div>
-        <div id="lessPoints" class="pointLevels">
-            -
-        </div> -->
-        
     </div>
 
     <div id="containers">
@@ -1337,7 +1267,8 @@
                     <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
                     <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p>
     
-                    <p><input type="range" id="exposure" min="0.05" max="10.0" step="0.001" value="5.0" oninput="updateUniforms()"> exposure</p>
+                    <p><input type="range" id="exposure" min="1.0" max="10.0" step="0.001" value="5.0" oninput="updateUniforms()"> exposure</p>
+
     
                     <hr>
                 </div>

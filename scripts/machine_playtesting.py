@@ -49,7 +49,7 @@ def analyzeDifferences(path1,path2):
     # cv2.imshow("Original", imageA)
     # cv2.imshow("Modified", imageB)
     cv2.imshow("Diff", diff)
-    cv2.imwrite(path1 + "+" + path2 + ".png", diff)
+    cv2.imwrite("translate_" + path1 + "+" + path2 + ".png", diff)
     # cv2.imshow("Thresh", thresh)
     cv2.waitKey(0)
     return score
@@ -63,6 +63,7 @@ async def hoverAndClick(page,mouse,divID,delay):
     # time.sleep(delay)
 
 async def main():
+    scores = []
     browser = await launch(executablePath="C:\\Program Files (x86)\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",headless=False,args=['--no-sandbox'],ignoreDefaultArgs=True,autoClose=False)
     page = await browser.newPage()
     await page.setViewport({'width': 1200, 'height': 800, 'deviceScaleFactor': 1})
@@ -92,7 +93,7 @@ async def main():
 
     # zoom
     await page.screenshot({'path': '2.png'})
-    analyzeDifferences('1.png','2.png')
+    scores.append(analyzeDifferences('1.png','2.png'))
 
     await keyboard.down('KeyS')
     await mouse.move(innerWidth/2, innerHeight/2)

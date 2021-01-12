@@ -1,6 +1,4 @@
 /**
- * @author Almar Klein / http://almarklein.org
- *
  * Shaders to render 3D volumes using raycasting.
  * The applied techniques are based on similar implementations in the Visvis and Vispy projects.
  * This is not the only approach, therefore it's marked 1.
@@ -12,39 +10,27 @@ THREE.VolumeRenderShader1 = {
 		"u_size": { value: new THREE.Vector3( 1, 1, 1 ) },
 		"u_renderstyle": { value: 0 },
 		"u_renderthreshold": { value: 0.5 },
-		
 		"u_clim": { value: new THREE.Vector2( 1, 1 ) },
 		"u_gasClim": { value: new THREE.Vector2( 1, 1 ) },
 		"u_dmClim": { value: new THREE.Vector2( 1, 1 ) },
-		
-		
 		"u_climDensity": { value: new THREE.Vector2( 1, 1 ) },
-		
 		"u_dataTexture3D" : {value: null},
-
-		// "u_data": { value: null },
-		// "u_gasData": { value: null },
-		// "u_dmData": { value: null },
 		"u_starData": { value: null },
 		"u_density": {value: null },
-
 		"u_cmdata": { value: null },
 		"u_cmGasData": { value: null },
 		"u_cmDMData": { value: null },
-
 		"u_grayscaleDepthMod": { value: null },
-		// "u_clip": {value: [ false, false ]},
 		"u_gasVisibility": {value: true },
 		"u_dmVisibility": {value: true },
 		"u_starVisibility": {value: true },
+		"u_skewerVisibility": {value: true },
 		"u_gasClip": {value: [ true, true ]},
 		"u_dmClip": {value: [ true, true ]},
 		"u_stepSize": { value: 1.0 },
 		"u_exposure": { value: 3.0 },
-		
 		"u_xyzMin": {value: new THREE.Vector3( 0.0, 0.0, 0.0)},
 		"u_xyzMax": {value: new THREE.Vector3( 1.0, 1.0, 1.0)},
-		
 		"u_densityMod": {value: null},
 		"u_densityModI": {value: null},
 		"u_densityDepthMod": { value: null },
@@ -52,7 +38,6 @@ THREE.VolumeRenderShader1 = {
 		"u_distModI": {value: null},
 		"u_valMod": {value: null},
 		"u_valModI": {value: null},
-
 		"u_starDiffuse": {value: null},
 		"u_starDepth": {value: null},
 		"u_skewerDiffuse": {value: null},
@@ -62,6 +47,8 @@ THREE.VolumeRenderShader1 = {
 		"u_cameraFar": { value: 4000.0 },
 		"u_screenWidth": {value : null},
 		"u_screenHeight": {value : null},
+		"u_sigma_t": {value : 0.5},
+		"u_sigma_e": {value : 0.5},
     },
 	vertexShader: [
 		
@@ -69,7 +56,8 @@ THREE.VolumeRenderShader1 = {
 		"		varying vec4 v_farpos;",
 		"		varying vec3 v_position;",
 		"		varying vec3 v_cameraPosition;",
-		// "		uniform vec3 cameraPosition;",
+		"		out vec3 v_Origin;",
+		"		out vec3 v_Direction;",
 
 		"		mat4 inversemat(mat4 m) {",
 		// Taken from https://github.com/stackgl/glsl-inverse/blob/master/index.glsl
@@ -139,6 +127,9 @@ THREE.VolumeRenderShader1 = {
 
 		// Set varyings and output pos
 		"				v_position = position;",
+
+		"				v_Origin = vec3( inverse( modelMatrix ) * vec4( cameraPosition, 1.0 ) ).xyz;",
+		"				v_Direction = position - v_Origin;",
 		"				gl_Position = projectionMatrix * viewMatrix * modelMatrix * position4;",
 		"		}",
 	].join( "\n" ),
@@ -163,11 +154,10 @@ THREE.VolumeRenderShader1 = {
 		" 		uniform bool u_gasVisibility;",
 		" 		uniform bool u_dmVisibility;",
 		" 		uniform bool u_starVisibility;",
+		" 		uniform bool u_skewerVisibility;",
 
-		// "		uniform sampler3D u_data;",
 		"		uniform sampler3D u_dataTexture3D;",
-		// "		uniform sampler3D u_gasData;",
-		// "		uniform sampler3D u_dmData;",
+
 		"		uniform float u_densityDepthMod;",
 		"		uniform float u_grayscaleDepthMod;",
 		"		uniform float u_dither;",
@@ -204,92 +194,136 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_cameraFar;",
 		"		uniform float u_screenWidth;",
 		"		uniform float u_screenHeight;",
-		// "		uniform vec3 cameraPosition;",
-		
 
-		// The maximum distance through our rendering volume is sqrt(3)*size.
-		"		const int MAX_STEPS = 887;	// 887 for 512^3, 1774 for 1024^3",
-		"		const int REFINEMENT_STEPS = 4;",
-		"		const float relative_step_size = 1.0;",
-		"		const vec4 ambient_color = vec4(0.2, 0.4, 0.2, 1.0);",
-		"		const vec4 diffuse_color = vec4(0.8, 0.2, 0.2, 1.0);",
-		"		const vec4 specular_color = vec4(1.0, 1.0, 1.0, 1.0);",
-		"		const float shininess = 40.0;",
+		"		uniform float u_sigma_t;",
+		"		uniform float u_sigma_e;",
+	
+		"		in vec3 v_Origin;",
+		"		in vec3 v_Direction;",
 
-		"		void cast_dvr(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);",
-		// "		void cast_iso(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);",
+		"		vec2 ray_AABB_intersection(vec3 rp, vec3 rd, vec3 c_lo, vec3 c_hi);",
+		"		void cast_raymarching();",
+		"		float rnd(vec2 x);",
+		"		vec3 sampleData(sampler3D data, vec3 texcoords);",
+		"		vec4 get_emitted_L_gas(float gas_val, float density_val);",
+		"		vec4 get_emitted_L_darkmatter(float dm_val, float density_val);",
 		"		vec3 grayscale(vec3 inputColor);",
 		"		vec3 grayscaleAmount(vec3 inputColor, float amount);",
-		"		float sample1(vec3 texcoords);",
 		"		vec4 apply_colormap(float val);",
-		"		vec4 add_lighting(float val, vec3 loc, vec3 step, vec3 view_ray);",
-
-		//intersection code
-		// rp = ray position, initial value = camera position relative to big_box=[0,gridsize]
-		// rd = normalized ray direction relative to big_box=[0,gridsize] vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);
-		// c_lo, c_hi = min and max corners of the box (respectively)  trimmed_box=[get coords based on uniform]
-		//return val = vec2 --> both intersections
-			// x = near intersection 
-			// y = far intersection
-			// no intersection --> both negative (-1,-1)?
-		// after getting return value, to get coord --> rp + rd * val (first and last 3D position on the cube)
-		// use this to get number of integration steps
-		// float2 ray_AABB_intersection(float3 rp, float3 rd, float3 c_lo, float3 c_hi) {
-		// 	float t[8];
-		// 	t[0] = (c_lo.x - rp.x) / rd.x;
-		// 	t[1] = (c_hi.x - rp.x) / rd.x;
-		// 	t[2] = (c_lo.y - rp.y) / rd.y;
-		// 	t[3] = (c_hi.y - rp.y) / rd.y;
-		// 	t[4] = (c_lo.z - rp.z) / rd.z;
-		// 	t[5] = (c_hi.z - rp.z) / rd.z;
-		// 	t[6] = max(max(min(t[0], t[1]), min(t[2], t[3])), min(t[4], t[5]));
-		// 	t[7] = min(min(max(t[0], t[1]), max(t[2], t[3])), max(t[4], t[5]));
-		// 	return (t[7] < 0 || t[6] >= t[7]) ? float2(-1.0, -1.0) : float2(t[6], t[7]);
-		// }
+		"		vec3 coord_normalized_to_texture(vec3 coord, vec3 c_lo, vec3 c_hi, vec3 size);",
 
 		"		void main() {",
-		// Normalize clipping plane info
-		"				vec3 farpos = v_farpos.xyz / v_farpos.w;",
-		"				vec3 nearpos = v_nearpos.xyz / v_nearpos.w;",
-		// Calculate unit vector pointing in the view direction through this fragment.
-		"				vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);",
-		// Compute the (negative) distance to the front surface or near clipping plane.
-		// v_position is the back face of the cuboid, so the initial distance calculated in the dot
-		// product below is the distance from near clip plane to the back of the cuboid
-		"				float distance = dot(nearpos - v_position, view_ray)*length(u_xyzMax-u_xyzMin);",
-		"				distance = max(distance, min((-0.5 - v_position.x) / view_ray.x,",
-		"																		(u_size.x*(u_xyzMax[0]-u_xyzMin[0]) - 0.5 - v_position.x + u_size.x*u_xyzMin[0])  / view_ray.x));",
-		"				distance = max(distance, min((-0.5 - v_position.y) / view_ray.y,",
-		"																		(u_size.y*(u_xyzMax[1]-u_xyzMin[1]) - 0.5 - v_position.y + u_size.y*u_xyzMin[1]) / view_ray.y));",
-		"				distance = max(distance, min((-0.5 - v_position.z) / view_ray.z,",
-		"																		(u_size.z*(u_xyzMax[2]-u_xyzMin[2]) - 0.5 - v_position.z + u_size.z*u_xyzMin[2]) / view_ray.z));",
+		"			cast_raymarching();",
+		"		}",
 
-		// Now we have the starting position on the front surface
-		"				vec3 front = v_position + view_ray * distance;",
-		// don't have backside, don't know when the ray stops intersecting the box
+		`		void cast_raymarching() {
+					// three sources of signal: attribute (gas), dark matter, density
+					// stars act as stopping condition
 
-		// Decide how many steps to take
-		// "				int nsteps = int(-distance / relative_step_size + 0.5);",
-		"				int nsteps = int(length(distance));",// / u_stepSize );",
-		"				if ( nsteps < 1 )",
-		"						discard;",
+					vec3 c_lo = u_xyzMin*u_size;
+					vec3 c_hi = u_xyzMax*u_size;
+						//if camera == perspective , else camera == orthographic
+					vec3 rp = cameraPosition;
+					vec3 rd = normalize(v_Direction); //normalize(nearpos.xyz - farpos.xyz);
+						// rp = ray position, initial value = camera position relative to big_box=[0,gridsize]
+						// rd = normalized ray direction relative to big_box=[0,gridsize] vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);
+						// c_lo, c_hi = min and max corners of the box (respectively)  trimmed_box=[get coords based on uniform]
 
-		// Get starting location and step vector in texture coordinates
-		"				vec3 step = ((v_position - front) / u_size) / float(nsteps);",
-		"				vec3 start_loc = front / u_size;",
+					vec2 t = ray_AABB_intersection(rp, rd, c_lo, c_hi);
+						// clamp t.x to 0 to avoid rendering anything behind the camera
+						// if t.y is + there is something to render, if t.y is - then the integral is behind the camera...		
+						// convert current position and ray direction to voxel distance
+					rp = rp + t.x * rd;
+					rd = rd * (t.y - t.x); // not normalized, in voxel distance
+					int iSteps = int(length(rd)); // determine step size, length, direction
+					vec3 dd = rd / float(iSteps); // dd = distance differential (one step forward in world size units)
+					rd = normalize(rd); // direction is normalized to use as multiplier
+						// can use random seed
+					rp += (rnd(gl_FragCoord.xy) - 0.5) * dd; //perturbing the position where the integration starts by half a voxel, reduce effects of artefacts by introducing a little noise
+					vec4 path_L = vec4(0.0, 0.0, 0.0, 0.0); // light collected for the ray (path tracer) -- total quantity light coming from the volume
+					float tau = 0.0; // accumulated optical thickness through the volume 
+					vec3 gas_darkmatter_density0 = sampleData(u_dataTexture3D, rp);
+					float rho0 = max(0.0,((gas_darkmatter_density0.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp), rho1; // rho ~ density; rho0 ~ first point in the volume; rho1 ~ not initialized yet
+					for (int i = 0; i < iSteps; i++) {
+						vec3 gas_darkmatter_density1 = sampleData(u_dataTexture3D, rp);
+						rp += dd; // move position along the ray by 1 step forward (dd)
+						float rho1 = max(0.0,((gas_darkmatter_density1.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp); // gets rho1 for the position
+						float rho = 0.5 * (rho0 + rho1); // actual density (rho) is the average between the two (assume piecewise linear density function)
+						vec3 emission = vec3(0.0, 0.0, 0.0);
+						float transmittance = 0.0;
+					// gas + dark matter contribute to optical density
+						if( u_gasVisibility == true ){
+							vec4 gas_emission = get_emitted_L_gas(gas_darkmatter_density1.r,rho0);
+							tau += length(dd)*(gas_emission.a)*rho; // tau ~ accumulated thickness/density of the volume 
+							transmittance += exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
+							emission += gas_emission.rgb*gas_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
+						}
 
-		// For testing: show the number of steps. This helps to establish
-		// whether the rays are correctly oriented
-		// 'gl_FragColor = vec4(0.0, float(nsteps) / 1.0 / u_size.x, 1.0, 1.0);',
-		// 'return;',
+						if( u_dmVisibility == true ){
+							vec4 darkmatter_emission = get_emitted_L_darkmatter(gas_darkmatter_density1.g,rho0);
+							tau += length(dd)*(darkmatter_emission.a)*rho; // tau ~ accumulated thickness/density of the volume 
+							transmittance += exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
+							emission += darkmatter_emission.rgb*darkmatter_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
+						}
 
+					//star color will get added to emission, star detection
+						
+						if(u_starVisibility == true) {
+							float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
+							float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+							float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+							
+							vec3 star_emission = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
+							// tau += length(dd)*(1.0/exp(starDepth));
+							// transmittance += exp(-u_sigma_t * tau);
+							emission += transmittance*star_emission;
+						}
+						
+						if(u_skewerVisibility == true){
+							vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
+							emission += c_skewers;
 
-		"				if (u_renderstyle == 0)",
-		"						cast_dvr(start_loc, step, nsteps, view_ray);",
-		// "				else if (u_renderstyle == 1)",
-		// "						cast_iso(start_loc, step, nsteps, view_ray);",
-		// "				if (gl_FragColor.a < 0.05)",
-		// "						discard;",
+						}
+						
+						path_L.rgb += length(dd) * transmittance * rho * u_sigma_e * emission; // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
+						rho0 = rho1; // move the integration one step forward
+					}
+					path_L.a = 1.0;
+					vec4 c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L);
+					gl_FragColor = c;
+				}
+		`,
+
+		`
+				vec3 coord_normalized_to_texture(vec3 coord, vec3 c_lo, vec3 c_hi, vec3 size) {
+					vec3 coord_rel = (coord - c_lo) / (c_hi - c_lo);
+					coord_rel.y = 1.0-coord_rel.y;
+					coord_rel.z = 1.0-coord_rel.z;
+					return coord_rel * size;
+				}
+		`,
+
+		"		vec2 ray_AABB_intersection(vec3 rp, vec3 rd, vec3 c_lo, vec3 c_hi) {",
+					//intersection code
+					// rp = ray position, initial value = camera position relative to big_box=[0,gridsize]
+					// rd = normalized ray direction relative to big_box=[0,gridsize] vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);
+					// c_lo, c_hi = min and max corners of the box (respectively)  trimmed_box=[get coords based on uniform]
+					// return val = vec2 --> both intersections
+					// x = near intersection 
+					// y = far intersection
+					// no intersection --> both negative (-1,-1)?
+					// after getting return value, to get coord --> rp + rd * val (first and last 3D position on the cube)
+					// use this to get number of integration steps
+		"			float t[8];",
+		"			t[0] = (c_lo.x - rp.x) / rd.x;",
+		"			t[1] = (c_hi.x - rp.x) / rd.x;",
+		"			t[2] = (c_lo.y - rp.y) / rd.y;",
+		"			t[3] = (c_hi.y - rp.y) / rd.y;",
+		"			t[4] = (c_lo.z - rp.z) / rd.z;",
+		"			t[5] = (c_hi.z - rp.z) / rd.z;",
+		"			t[6] = max(max(min(t[0], t[1]), min(t[2], t[3])), min(t[4], t[5]));",
+		"			t[7] = min(min(max(t[0], t[1]), max(t[2], t[3])), max(t[4], t[5]));",
+		"			return (t[7] < 0.0 || t[6] >= t[7]) ? vec2(-1.0, -1.0) : vec2(t[6], t[7]);",
 		"		}",
 
 		"		float rnd(vec2 x){",
@@ -298,20 +332,46 @@ THREE.VolumeRenderShader1 = {
 		"			return 1.0 - float( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;",
 		"		}",
 
-
 		"		vec3 sampleData(sampler3D data, vec3 texcoords) {",
 		"				/* Sample float value from a 3D texture. Assumes intensity data. */",
-		"				return texture(data, texcoords.xyz).rgb;",
+		"				return texture(data, texcoords.xyz/u_size).rgb;",
 		"		}",
 
-		// "		float sample1(vec3 texcoords) {",
-		// "				/* Sample float value from a 3D texture. Assumes intensity data. */",
-		// "				return texture(u_data, texcoords.xyz).r;",
-		// "		}",
-		"		float sampleDensity(vec3 texcoords) {",
-		"				/* Sample float value from a 3D texture. Assumes intensity data. */",
-		"				return texture(u_density, texcoords.xyz).r;",
-		"		}",
+		`		vec4 get_emitted_L_gas(float gas_val, float density_val){
+					float a;
+					if( (u_gasClip[0] == true) && (gas_val < u_gasClim[0]) ) a = 0.0;
+					else if( (u_gasClip[1] == true) && (gas_val > u_gasClim[1]) ) a = 0.0;
+					else a = 1.0;
+					
+					gas_val = (gas_val - u_gasClim[0]) / (u_gasClim[1] - u_gasClim[0]);
+					vec4 tex = texture2D(u_cmGasData, vec2(gas_val, 0.5));
+
+					if (a > 0.0){
+						a = density_val * u_densityModI + u_valModI * u_valMod * gas_val;
+						tex.a *= a;
+					}
+					else tex = vec4(0.0,0.0,0.0,0.0);
+					return tex;
+				}
+		`,
+
+		`		vec4 get_emitted_L_darkmatter(float dm_val, float density_val){
+					float a;
+					if( (u_dmClip[0] == true) && (dm_val < u_dmClim[0]) ) a = 0.0;
+					else if( (u_dmClip[1] == true) && (dm_val > u_dmClim[1]) ) a = 0.0;
+					else a = 1.0;
+					dm_val = (dm_val - u_dmClim[0]) / (u_dmClim[1] - u_dmClim[0]);
+					vec4 tex = texture2D(u_cmDMData, vec2(dm_val, 0.5));
+					
+					if (a > 0.0){
+						a = density_val * u_densityModI + u_valModI * u_valMod * dm_val;
+						tex.a *= a;
+					}
+					else tex = vec4(0.0,0.0,0.0,0.0);
+
+					return tex;
+				}
+		`,
 
 		"		vec4 apply_colormap(float val) {",
 		"				vec4 tex = texture2D(u_cmdata, vec2(val, 0.5));",
@@ -335,7 +395,6 @@ THREE.VolumeRenderShader1 = {
 		"			eye.z = u_cameraNear * u_cameraFar / ((depth * (u_cameraFar - u_cameraNear)) - u_cameraNear);",
 		"			eye.x = ( -ndc.x * eye.z ) * 1.0 / u_cameraNear;",
 		"			eye.y = ( -ndc.y * eye.z ) * 1.0 / u_cameraNear;",
-		
 		"			return eye;",
 		"		}",
 
@@ -345,14 +404,6 @@ THREE.VolumeRenderShader1 = {
 		"			ndc.y = ( ( gl_FragCoord.y * (1.0/u_screenHeight) ) - 0.5) * 2.0;",
 		"			return ndc;",			
 		"		}",
-		// "			float z = depth * 2.0 - 1.0;",
-		// "			vec4 clipSpacePosition = vec4(gl_FragCoord.xy * 2.0 - 1.0, z, 1.0);",
-		// "			vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;",
-		// 	// Perspective division
-		// "			viewSpacePosition /= viewSpacePosition.w;",
-		// "			vec4 worldSpacePosition = viewMatrixInv * viewSpacePosition;",
-		// "			return worldSpacePosition.xyz;",
-		// "		}",
 
 		"		vec4 apply_dvr_colormap(float val, bvec2 clip, vec2 clim, sampler2D cm_texture, float density, vec3 texcoords, int iter) {",
 		"				float a;",
@@ -394,259 +445,114 @@ THREE.VolumeRenderShader1 = {
 		"				return tex;",
 		"		}",
 
+		// "			float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		// "			float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		// "			float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		// "			fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
+		// "			viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		// "			float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		// // "			if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+		// "				vec4 c_gas = apply_dvr_colormap(gas_darkmatter_density.r,u_gasClip,u_gasClim,u_cmGasData,gas_darkmatter_density.b,loc,iter);",
+		// "				vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
+		// "				vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+		// "				vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
 
-	// 	"		void cast_raymarching(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
-	// "				vec3 gas_darkmatter_density = sampleData(u_dataTexture3D, loc);",
-	// "				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
-	// "				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-	// "				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
-
-	// "				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
-	// "				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-	// "				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
-	// // "				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
-	// "					vec4 c_gas = apply_dvr_colormap(gas_darkmatter_density.r,u_gasClip,u_gasClim,u_cmGasData,gas_darkmatter_density.b,loc,iter);",
-	// "					vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
-	// "					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
-	// "					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
-	
-	// // three sources of signal: attribute (gas), dark matter, density
-	// // stars act as stopping condition
-	// 					// rp = ray position, initial value = camera position relative to big_box=[0,gridsize]
-	// 					// rd = normalized ray direction relative to big_box=[0,gridsize] vec3 view_ray = normalize(nearpos.xyz - farpos.xyz);
-	// 					// c_lo, c_hi = min and max corners of the box (respectively)  trimmed_box=[get coords based on uniform]
-	// 					// vec2 t = ray_AABB_intersection(float3 rp, float3 rd, float3 c_lo, float3 c_hi)
-						
-	// 					// clamp t.x to 0 to avoid rendering anything behind the camera
-	// 					// if t.y is + there is something to render, if t.y is - then the integral is behind the camera...
-						
-	// 				// convert current position and ray direction to voxel distance
-	// 					// rp = rp + t.x * rd;
-	// 					// rd = rd * (t.y - t.x); // not normalized, in voxel distance
-
-	// "					int iSteps = int(length(rd));", // determine step size, length, direction
-	// "					vec3 dd = rd / float(iSteps);", // dd = distance differential (one step forward in world size units)
-	// "					rd = normalize(rd);", // direction is normalized to use as multiplier
-	// 						// can use random seed
-	// "					rp += (rnd(gl_FragCoord.xy) - 0.5) * dd;", //perturbing the position where the integration starts by half a voxel, reduce effects of artefacts by introducing a little noise
-	// "					vec3 path_L = vec3(0.0, 0.0, 0.0);", // light collected for the ray (path tracer) -- total quantity light coming from the volume
-	// "					float tau = 0.0;", // accumulated optical thickness through the volume 
-	// "					float rho0 = get_rho(rp), rho1;", // rho ~ density; rho0 ~ first point in the volume; rho1 ~ not initialized yet
-	
-	// "					for (int i = 0; i < iSteps; ++i) {",
-	// "						rp += dd;", // move position along the ray by 1 step forward (dd)
-	// "						rho1 = get_rho(rp);", // gets rho1 for the position
-	// "						float rho = 0.5 * (rho0 + rho1);", // actual density (rho) is the average between the two (assume piecewise linear density function)
-	// "						tau += rho;", // tau ~ accumulated thickness/density of the volume
-	// "						float transmittance = exp(-sigma_t * tau);", // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
-	// "						float3 emission = float3(0.0, 0.0, 0.0);", 
-	// 						//star color will get added to emission, star detection
-	// "						emission += get_emitted_L(rho);", // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
-	// "						path_L += transmittance * rho * sigma_e * emission;", // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
-	// "						rho0 = rho1;", // move the integration one step forward
-	// 	// "				}",
-	// 	"			}",			
-	// 	"		}",
 		
-		"		void cast_dvr(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
-		"			vec3 loc = start_loc - step*rnd(vec2(-0.5,0.5));",
-		//emission absorption model
-		"			float sigma_a = 0.5;",
-		"			float sigma_s = 0.0;", //sigma_t  = sigma_a + sigma_s (extinction)
-		"			vec3 sigma_e = vec3(1.0,1.0,1.0);",
 		
-		"			vec4 c = vec4(0.0,0.0,0.0,0.0);",
-		"			vec4 c_gas = vec4(0.0,0.0,0.0,0.0);",
-		"			vec4 c_dm = vec4(0.0,0.0,0.0,0.0);",
-		"			vec4 path_L = vec4(0.0,0.0,0.0,0.0);",//0.4*vec4(0.0156,0.0234,0.0898,0.0);",
-		"			float tau = 0.0;",
-		"			float rho0 = sampleDensity(loc);",
-		"			rho0 = max(0.0,((rho0 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
-					// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
-					// non-constant expression. So we use a hard-coded max, and an additional condition
-					// inside the loop.
-		"			float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
-		"			float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-		"			float starDepth = u_size.x*viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
-
-					// run for loop only until given star depth (if there is a star there)
-					// maybe a use a while loop
-					// start iteration at the edge of xyzMin/Max cube instead of checking each step, empty space skipping
-		"			for (int iter=0; iter<int(starDepth); iter++) {",//int(float(MAX_STEPS)/u_stepSize
-
-						// Sample from the 3D textures
-		"				vec3 gas_darkmatter_density = sampleData(u_dataTexture3D, loc);",
-		// "				float gasVal = sampleData(u_gasData, loc);",
-		// "				float dmVal = sampleData(u_dmData, loc);",
-		// "				float density = sampleDensity(loc);",
-		// depth of the stars
-		// "				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
-		// "				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-		// "				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		// "		void cast_dvr(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
+		// "			vec3 loc = start_loc - step*rnd(vec2(-0.5,0.5));",
+		// //emission absorption model
+		// "			float sigma_a = 0.5;",
+		// "			float sigma_s = 0.0;", //sigma_t  = sigma_a + sigma_s (extinction)
+		// "			vec3 sigma_e = vec3(1.0,1.0,1.0);",
 		
-		// depth of skewer
-		"				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
-		"				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
-		"				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		// "			vec4 c = vec4(0.0,0.0,0.0,0.0);",
+		// "			vec4 c_gas = vec4(0.0,0.0,0.0,0.0);",
+		// "			vec4 c_dm = vec4(0.0,0.0,0.0,0.0);",
+		// "			vec4 path_L = vec4(0.0,0.0,0.0,0.0);",//0.4*vec4(0.0156,0.0234,0.0898,0.0);",
+		// "			float tau = 0.0;",
+		// "			float rho0 = sampleDensity(loc);",
+		// "			rho0 = max(0.0,((rho0 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));",
+		// 			// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
+		// 			// non-constant expression. So we use a hard-coded max, and an additional condition
+		// 			// inside the loop.
+		// "			float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		// "			float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		// "			float starDepth = u_size.x*viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
 
-		"				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
-		"					vec4 c_gas = apply_dvr_colormap(gas_darkmatter_density.r,u_gasClip,u_gasClim,u_cmGasData,gas_darkmatter_density.b,loc,iter);",
-		"					vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
-		"					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
-		"					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+		// 			// run for loop only until given star depth (if there is a star there)
+		// 			// maybe a use a while loop
+		// 			// start iteration at the edge of xyzMin/Max cube instead of checking each step, empty space skipping
+		// "			for (int iter=0; iter<int(starDepth); iter++) {",//int(float(MAX_STEPS)/u_stepSize
 
-		"					vec3 emission = vec3(0.0,0.0,0.0);",
-		"					float transmittance = 0.0;",			
-		"					float rho = 4.0*max(0.0,((gas_darkmatter_density.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
-		"					if( u_gasVisibility == true ){",
-		"						tau = length(step)*c_gas.a*rho;", // number of occluded particles (do this twice, DM + Gas)
-		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
-		"						emission += sqrt(gas_darkmatter_density.r/2.0)*c_gas.a*c_gas.rgb;",
-		// "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
-		"					}",
-		"					if( u_dmVisibility == true ){",
-		"						tau = length(step)*c_dm.a*rho;", // number of occluded particles (do this twice, DM + Gas)
-		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
-		"						emission += c_dm.a * c_dm.rgb;",
-		// "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
-		"					}",
-		"					if(u_starVisibility == true){",
-								// if there is a star in the pixel, run integration only until that depth
-		"						tau = (1.0/(exp(starDepth)))*length(step)*0.75;", // number of occluded particles (do this twice, DM + Gas)
-		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
-		"						emission += transmittance*c_stars;", //multiply instead of add
-		// "						if(c_stars != vec3(0.0,0.0,0.0)){",
-		// "							path_L.a = 1.0;",
-		// "							c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L.rgba);",
-		// "							gl_FragColor = c;",
-		// "							break;", // break if it hits a star
-		// "						}", 
-							
-		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
-		"					}",
-		"					bool u_skewerVisibility = true;",
-		"					if(u_skewerVisibility == true){",
-		"						tau = (1.0/(exp(skewerDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
-		"						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
-		"						emission += c_skewers;",
-		// "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
-		"					}",
-		// "					if(transmittance < 0.0001){",
-		// "						break;",
+		// 				// Sample from the 3D textures
+		// "				vec3 gas_darkmatter_density = sampleData(u_dataTexture3D, loc);",
+		// // "				float gasVal = sampleData(u_gasData, loc);",
+		// // "				float dmVal = sampleData(u_dmData, loc);",
+		// // "				float density = sampleDensity(loc);",
+		// // depth of the stars
+		// // "				float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;",
+		// // "				float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		// // "				float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+		
+		// // depth of skewer
+		// "				fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;",
+		// "				viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);",
+		// "				float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );",
+
+		// "				if((loc.x>u_xyzMin[0] && loc.x<u_xyzMax[0]) && (loc.y>u_xyzMin[1] && loc.y<u_xyzMax[1]) && (loc.z>u_xyzMin[2] && loc.z<u_xyzMax[2])){",
+		// "					vec4 c_gas = apply_dvr_colormap(gas_darkmatter_density.r,u_gasClip,u_gasClim,u_cmGasData,gas_darkmatter_density.b,loc,iter);",
+		// "					vec4 c_dm = apply_dvr_colormap(gas_darkmatter_density.g,u_dmClip,u_dmClim,u_cmDMData,gas_darkmatter_density.b,loc,iter);",
+		// "					vec3 c_stars = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+		// "					vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;",
+
+		// "					vec3 emission = vec3(0.0,0.0,0.0);",
+		// "					float transmittance = 0.0;",			
+		// "					float rho = 4.0*max(0.0,((gas_darkmatter_density.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0])));", //try out gasVal + dmVal
+		// "					if( u_gasVisibility == true ){",
+		// "						tau = length(step)*c_gas.a*rho;", // number of occluded particles (do this twice, DM + Gas)
+		// "						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		// "						emission += sqrt(gas_darkmatter_density.r/2.0)*c_gas.a*c_gas.rgb;",
+		// // "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
 		// "					}",
-		"					path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;", //multiply by step size
-		"				}",
-						// Resolve final color
-		"				path_L.a = 1.0;",
-		"				c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L.rgba);",
-		"				gl_FragColor = c;",
-		"				loc += step;",
-		"			}",
-		"		}",
-
-
-		// "		void cast_iso(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {",
-
-		// "				gl_FragColor = vec4(0.0);	// init transparent",
-		// "				vec4 color3 = vec4(0.0);	// final color",
-		// "				vec3 dstep = 1.5 / u_size;	// step to sample derivative",
-		// "				vec3 loc = start_loc;",
-
-		// "				float low_threshold = u_renderthreshold - 0.02 * (u_clim[1] - u_clim[0]);",
-
-		// // Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
-		// // non-constant expression. So we use a hard-coded max, and an additional condition
-		// // inside the loop.
-		// "				for (int iter=0; iter<MAX_STEPS; iter++) {",
-		// "						if (iter >= nsteps)",
-		// "								break;",
-
-		// // Sample from the 3D texture
-		// "						float val = sample1(loc);",
-
-		// "						if (val > low_threshold) {",
-		// // Take the last interval in smaller steps
-		// "								vec3 iloc = loc - 0.5 * step;",
-		// "								vec3 istep = step / float(REFINEMENT_STEPS);",
-		// "								for (int i=0; i<REFINEMENT_STEPS; i++) {",
-		// "										val = sample1(iloc);",
-		// "										if (val > u_renderthreshold) {",
-		// "												gl_FragColor = add_lighting(val, iloc, dstep, view_ray);",
-		// "												return;",
-		// "										}",
-		// "										iloc += istep;",
-		// "								}",
-		// "						}",
-
-		// // Advance location deeper into the volume
-		// "						loc += step;",
+		// "					if( u_dmVisibility == true ){",
+		// "						tau = length(step)*c_dm.a*rho;", // number of occluded particles (do this twice, DM + Gas)
+		// "						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		// "						emission += c_dm.a * c_dm.rgb;",
+		// // "						path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;",
+		// "					}",
+		// "					if(u_starVisibility == true){",
+		// 						// if there is a star in the pixel, run integration only until that depth
+		// "						tau = (1.0/(exp(starDepth)))*length(step)*0.75;", // number of occluded particles (do this twice, DM + Gas)
+		// "						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		// "						emission += transmittance*c_stars;", //multiply instead of add
+		// // "						if(c_stars != vec3(0.0,0.0,0.0)){",
+		// // "							path_L.a = 1.0;",
+		// // "							c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L.rgba);",
+		// // "							gl_FragColor = c;",
+		// // "							break;", // break if it hits a star
+		// // "						}", 
+							
+		// // "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
+		// "					}",
+		// "					bool u_skewerVisibility = true;",
+		// "					if(u_skewerVisibility == true){",
+		// "						tau = (1.0/(exp(skewerDepth)))*length(step)*1.0;", // number of occluded particles (do this twice, DM + Gas)
+		// "						transmittance += exp(-(sigma_a+sigma_s)*tau);", // the photons that make it through, as tau increases, transm -> 0
+		// "						emission += c_skewers;",
+		// // "						path_L.rgb += length(step) * transmittance * sigma_e * emission;",
+		// "					}",
+		// // "					if(transmittance < 0.0001){",
+		// // "						break;",
+		// // "					}",
+		// "					path_L.rgb += length(step) * transmittance * rho * sigma_e * emission;", //multiply by step size
 		// "				}",
-		// "		}",
-
-
-		// "		vec4 add_lighting(float val, vec3 loc, vec3 step, vec3 view_ray)",
-		// "		{",
-		// // Calculate color by incorporating lighting
-
-		// // View direction
-		// "				vec3 V = normalize(view_ray);",
-
-		// // calculate normal vector from gradient
-		// "				vec3 N;",
-		// "				float val1, val2;",
-		// "				val1 = sample1(loc + vec3(-step[0], 0.0, 0.0));",
-		// "				val2 = sample1(loc + vec3(+step[0], 0.0, 0.0));",
-		// "				N[0] = val1 - val2;",
-		// "				val = max(max(val1, val2), val);",
-		// "				val1 = sample1(loc + vec3(0.0, -step[1], 0.0));",
-		// "				val2 = sample1(loc + vec3(0.0, +step[1], 0.0));",
-		// "				N[1] = val1 - val2;",
-		// "				val = max(max(val1, val2), val);",
-		// "				val1 = sample1(loc + vec3(0.0, 0.0, -step[2]));",
-		// "				val2 = sample1(loc + vec3(0.0, 0.0, +step[2]));",
-		// "				N[2] = val1 - val2;",
-		// "				val = max(max(val1, val2), val);",
-
-		// "				float gm = length(N); // gradient magnitude",
-		// "				N = normalize(N);",
-
-		// // Flip normal so it points towards viewer
-		// "				float Nselect = float(dot(N, V) > 0.0);",
-		// "				N = (2.0 * Nselect - 1.0) * N;	// ==	Nselect * N - (1.0-Nselect)*N;",
-
-		// // Init colors
-		// "				vec4 ambient_color = vec4(0.0, 0.0, 0.0, 0.0);",
-		// "				vec4 diffuse_color = vec4(0.0, 0.0, 0.0, 0.0);",
-		// "				vec4 specular_color = vec4(0.0, 0.0, 0.0, 0.0);",
-
-		// // note: could allow multiple lights
-		// "				for (int i=0; i<1; i++)",
-		// "				{",
-		// 						 // Get light direction (make sure to prevent zero devision)
-		// "						vec3 L = normalize(view_ray);	//lightDirs[i];",
-		// "						float lightEnabled = float( length(L) > 0.0 );",
-		// "						L = normalize(L + (1.0 - lightEnabled));",
-
-		// // Calculate lighting properties
-		// "						float lambertTerm = clamp(dot(N, L), 0.0, 1.0);",
-		// "						vec3 H = normalize(L+V); // Halfway vector",
-		// "						float specularTerm = pow(max(dot(H, N), 0.0), shininess);",
-
-		// // Calculate mask
-		// "						float mask1 = lightEnabled;",
-
-		// // Calculate colors
-		// "						ambient_color +=	mask1 * ambient_color;	// * gl_LightSource[i].ambient;",
-		// "						diffuse_color +=	mask1 * lambertTerm;",
-		// "						specular_color += mask1 * specularTerm * specular_color;",
-		// "				}",
-
-		// // Calculate final color by componing different components
-		// "				vec4 final_color;",
-		// "				vec4 color = apply_colormap(val);",
-		// "				final_color = color * (ambient_color + diffuse_color) + specular_color;",
-		// "				final_color.a = 0.1;",
-		// "				return final_color;",
+		// 				// Resolve final color
+		// "				path_L.a = 1.0;",
+		// "				c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L.rgba);",
+		// "				gl_FragColor = c;",
+		// "				loc += step;",
+		// "			}",
 		// "		}",
 	].join( "\n" )
 };

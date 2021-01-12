@@ -907,317 +907,6 @@ function loadStars(){
     })
 }
 
-
-
-// function loadGasDMAttributes(size,attr,resolution_bool){
-//     loading = document.getElementById("loading-animation")
-//     loading.style.display = "inline-block"
-//     type='PartType0'
-//     d3.json('static/data/'+simID+'/PartType0/' + size + '_' + type + '_' + attr +'.json').then(function(d){
-        
-        
-//         //arr holds the flattened data in Float32Array to be used as a 3D texture
-//         gasArr = new Float32Array(size * size * size)
-
-//         let log
-//         if(elements.includes(attr)){
-//             log = false
-//             if(attr=="Temperature"){
-//                 min = 3.745
-//                 max = 7
-//             }
-//         }
-//         else{
-//             log = true
-//         }
-//         if(attr=="GFM_Metallicity") log = false
-        
-//         console.log(log)
-//         if(attr == "Temperature" && (gridsize == 512 || gridsize == 384)) log = false
-//         // else log = true
-//         //fill arr array with loaded data
-//         for(x=0;x<size;x++){
-//             for(y=0;y<size;y++){
-//                 for(z=0;z<size;z++){
-//                     if(simID=="TNG100" && attr =="GFM_Metallicity"){
-//                         gasArr[ x + y * size + z * size * size ] =  d[x][y][z]
-//                     }
-//                     else if(log){
-//                         gasArr[ x + y * size + z * size * size ] =  Math.log10(d[x][y][z])
-//                     }
-//                     else{
-//                         gasArr[ x + y * size + z * size * size ] =  d[x][y][z]
-//                     }
-//                 }
-//             }
-//         }
-//         // console.log(arr)
-//         d = [] //clear loaded data since it is no longer needed
-
-//         //find the min and max values in the dataset and set the values in the container GUI input boxes
-        
-//         var min = gasArr.reduce(function(a, b) {
-//             return Math.min(a, b);
-//         });
-//         var max = gasArr.reduce(function(a, b) {
-//             return Math.max(a, b);
-//         });
-//         // console.log(min)
-        
-//         if(min==-Infinity){min = -999999999999}
-        
-//         var x = document.getElementById("gas-eye-open");
-//         x.style.display = "inline-block";
-//         var y = document.getElementById("gas-eye-closed");
-//         y.style.display = "none";
-//         if(resolution_bool && localStorage.getItem('gasMinVal') != ""){
-//             min = localStorage.getItem('gasMinVal')
-//         }
-//         if(resolution_bool && localStorage.getItem('gasMaxVal') != ""){
-//             max = localStorage.getItem('gasMaxVal')
-//         }
-        
-//         climGasLimits = [min, max]
-//         let minval = document.getElementById('gas-minval-input')
-        
-//         minval.value = round(min,2)
-//         let maxval = document.getElementById('gas-maxval-input')
-//         maxval.value = round(max,2)
-//         // if(elements.includes(attr)){
-//         if(attr=="Temperature"){
-//             min = 3.745
-//             minval.value = 3.745
-//             max = 7
-//             maxval.value = 7
-//         }
-//         // min = 4.5
-//         // minval.value = 4.5
-//         // }
-//         let gasUnits = document.getElementsByClassName('gas-attr-units')
-//         for(i=0;i< gasUnits.length;i++){
-//             if((attr == 'Temperature') || (attr == 'MaximumTemperature')){
-//                 gasUnits[i].innerHTML = 'log(K)'
-//             }
-//             else if(elements.includes(attr)){
-//                 gasUnits[i].innerHTML = 'unitless'
-//             }
-//             else if(attr == "Mass"){
-//                 gasUnits[i].innerHTML = 'log(Msun)'
-//             }
-//             else if(attr == "Density"){
-//                 gasUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
-//             }
-//             else if(attr == "InternalEnergy"){
-//                 gasUnits[i].innerHTML = "log(erg/g)"
-//             }
-//             else{
-//                 gasUnits[i].innerHTML = 'dimensionless'
-//             }
-//         }
-
-//         var gasTexture = new THREE.DataTexture3D( gasArr, size, size, size)
-//         gasTexture.format = THREE.RedFormat
-//         gasTexture.type = THREE.FloatType
-//         gasTexture.minFilter = gasTexture.magFilter = THREE.LinearFilter
-//         gasTexture.unpackAlignment = 1
-
-//         type='PartType1'
-//         attr = 'density'
-//         d3.json('static/data/'+simID+'/PartType1/' + size + '_' + type + '_' + attr +'.json').then(function(d){
-//             // clearLayer(1)
-
-//             dmArr = new Float32Array(size * size * size)
-
-//             // let log = true
-//             // if(elements.includes(attr)){
-//             //     log = false
-//             // }
-//             // else{
-//             //     log = true
-//             // }    
-            
-//             log = true
-//             //fill arr array with loaded data
-//             for(x=0;x<size;x++){
-//                 for(y=0;y<size;y++){
-//                     for(z=0;z<size;z++){
-//                         if(log){
-//                             dmArr[ x + y * size + z * size * size ] =  Math.log10(d[x][y][z])
-//                         }
-//                         else{
-//                             dmArr[ x + y * size + z * size * size ] =  d[x][y][z]
-//                         }
-//                     }
-//                 }
-//             }
-
-//             // console.log(arr)
-//             d = [] //clear loaded data since it is no longer needed  
-            
-//             var max = dmArr.reduce(function(a, b) {
-//                 return Math.max(a, b);
-//             });
-//             var min = dmArr.reduce(function(a, b) {
-//                 return Math.min(a, b);
-//             });
-//             // console.log(min)
-//             if(min==-Infinity){min = -999999999999}
-
-//             var x = document.getElementById("dm-eye-open");
-//             x.style.display = "inline-block";
-//             var y = document.getElementById("dm-eye-closed");
-//             y.style.display = "none";
-//             if(localStorage.getItem('dmMinVal') != ""){
-//                 min = localStorage.getItem('dmMinVal')
-//             }
-//             if(localStorage.getItem('dmMaxVal') != ""){
-//                 max = localStorage.getItem('dmMaxVal')
-//             }
-//             climDMLimits = [min, max]
-
-//             let minval = document.getElementById('dm-minval-input')
-//             minval.value = round(min,2)
-//             let maxval = document.getElementById('dm-maxval-input')
-//             maxval.value = round(max,2)
-
-//             min = -30
-//             minval.value = -30 
-
-//             max = -25
-//             maxval.value = -25 
-
-//             let dmUnits = document.getElementsByClassName('dm-attr-units')
-//             for(i=0;i< dmUnits.length;i++){
-//                 dmUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
-//             }
-            
-//             var dmTexture = new THREE.DataTexture3D( dmArr, size, size, size)
-//             dmTexture.format = THREE.RedFormat
-//             dmTexture.type = THREE.FloatType
-//             dmTexture.minFilter = dmTexture.magFilter = THREE.LinearFilter
-//             dmTexture.unpackAlignment = 1
-//             var shader = THREE.VolumeRenderShader1;
-//             var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-
-           
-//             dmArr = []
-
-            
-//             d3.json( 'static/data/' + simID + '/PartType4/star_particles.json' ).then( function( d ){
-//                 console.log("loading stars")
-//                 // console.log( Object.keys(d).length )
-//                 n = Object.keys(d).length
-//                 m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
-//                 var starGeometry = new THREE.BufferGeometry();
-//                 var starPositions = new Float32Array(n * 3)
-//                 if( Object.keys(d).length > 0 ){
-//                     for ( i = 0; i < n; i++ ){
-//                         let vertex = new THREE.Vector3( d[i].x*m, d[i].y*m, d[i].z*m )
-//                         vertex.toArray( starPositions, i * 3 )
-//                         // console.log(vertex)
-//                     }
-//                     // console.log(starPositions)
-//                     starScene.remove( boxOfStarPoints )
-//                     starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
-//                     // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
-//                     boxOfStarPoints = new THREE.Points( starGeometry, starMaterial );
-//                     starScene.add ( boxOfStarPoints );
-//                     var x = document.getElementById("star-eye-open"); 
-//                     x.style.display = "inline-block";
-//                     var y = document.getElementById("star-eye-closed");
-//                     y.style.display = "none";
-//                     // renderer.setRenderTarget( target )
-//                     // renderer.render( starScene, camera );
-//                     // renderer.setRenderTarget( null )
-
-//                 }
-//                 initColor('PartType0')
-//                 initColor('PartType1')
-
-//                 // uniforms[ "u_data" ].value = texture;
-//                 uniforms[ "u_gasData" ].value = gasTexture;
-//                 uniforms[ "u_dmData" ].value = dmTexture;;
-//                 uniforms[ "u_size" ].value.set( size, size, size );
-//                 uniforms[ "u_gasClim" ].value.set( climGasLimits[0], climGasLimits[1] );
-//                 uniforms[ "u_dmClim" ].value.set( null,null);//climDMLimits[0], climDMLimits[1] );
-//                 uniforms[ "u_renderstyle" ].value = 'mip' == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-//                 uniforms[ "u_renderthreshold" ].value = 1.0; // For ISO renderstyle
-//                 uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
-//                 uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
-//                 uniforms[ "u_gasClip" ].value = [true, true]
-//                 uniforms[ "u_dmClip" ].value = [true, true]
-
-//                 var material = new THREE.ShaderMaterial( {
-//                     uniforms: uniforms,
-//                     vertexShader: shader.vertexShader,
-//                     fragmentShader: shader.fragmentShader,
-//                     clipping: false,
-//                     side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
-//                     transparent: true,
-//                     // opacity: 0.05,
-
-//                     // blending: THREE.CustomBlending,
-//                     blendEquation: THREE.AddEquation,
-//                     blendSrc: THREE.OneFactor,
-//                     blendDst: THREE.OneMinusSrcAlphaFactor,
-//                     depthWrite: false,
-//                 } );
-
-//                 volMaterial = material
-
-//                 // THREE.Mesh
-//                 var geometry = new THREE.BoxBufferGeometry( size, size, size );
-//                 geometry.translate( size / 2, size / 2, size / 2 );
-//                 clearLayer(0)
-//                 if(oldPos && oldSize){
-//                     camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
-//                     // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-//                     // camera.zoom = 6
-//                     camera.updateProjectionMatrix()
-//                     controls.target.set( gridsize/2,  gridsize/2,  gridsize/2 );
-//                 }
-//                 var mesh = new THREE.Mesh( geometry, material );
-//                 mesh.layers.set(0)
-//                 mesh.renderOrder = 1
-//                 volMesh = mesh
-//                 updateUniforms()
-//                 scene.add( mesh );
-
-//                 gm = document.querySelector('#gas-minval-input')
-//                 gm.addEventListener('input', updateUniforms);
-//                 gmx = document.querySelector('#gas-maxval-input')
-//                 gmx.addEventListener('input', updateUniforms);
-
-//                 dmm = document.querySelector('#dm-minval-input')
-//                 dmm.addEventListener('input', updateUniforms);
-//                 dmmx = document.querySelector('#dm-maxval-input')
-//                 dmmx.addEventListener('input', updateUniforms);
-
-//                 sm = document.querySelector('#star-minval-input')
-//                 sm.addEventListener('input', updateUniforms);
-//                 smx = document.querySelector('#star-maxval-input')
-//                 smx.addEventListener('input', updateUniforms);
-
-//                 bm = document.querySelector('#bh-minval-input')
-//                 bm.addEventListener('input', updateUniforms);
-//                 bmx = document.querySelector('#bh-maxval-input')
-//                 bmx.addEventListener('input', updateUniforms);
-//                 updateUniforms()
-
-//                 loading = document.getElementById("loading-animation")
-//                 loading.style.display = "none"
-//                 // loadHaloCenters()
-
-//                 render()
-//                 gasArr = []
-
-//             })
-
-            
-//         })
-//     })
-// }
-
 function disposeArray() {
     this.array = null;
 }
@@ -1299,7 +988,6 @@ function setupSkewerScene(){
 
 function setupRenderTarget(){
 
-
     //STAR SCENE TARGET
 
     if( target ) target.dispose();
@@ -1323,7 +1011,6 @@ function setupRenderTarget(){
     target.depthTexture.type = type;
     target.scissorTest = true;
     target.scissor
-
 
     //SKEWER SCENE TARGET
 
@@ -1407,6 +1094,7 @@ function goToPoint(x,y,z){
     updateUniforms()
     camera.updateProjectionMatrix()
     camera.zoom = 15;
+    
 }
 
 function initColor(type){
@@ -1555,6 +1243,8 @@ function render() {
     //render stars into target
     renderer.setRenderTarget( null )
 
+
+    // render star depth buffer
     if( target ){
         renderer.setRenderTarget( target )
         renderer.render( starScene, camera );   
@@ -1565,6 +1255,7 @@ function render() {
         renderer.setRenderTarget( null )
     }
 
+    // render skewer depth buffer
     if( skewerTarget ){
         renderer.setRenderTarget( skewerTarget )
         renderer.render( skewerScene, camera );   
@@ -1620,8 +1311,6 @@ function toggleValueThreshold(type,e){
      * example: unchecked (default) users can change the value in the number input below. when checked, returns the value to the min or max
      type = particle type. 'gas' or 'bh'
      e = 'min' or 'max' checkbox
-
-     TODO: Hook this up to the volume rendering
      */
 
     if(type == 'gas' && e == 'min'){
@@ -1725,7 +1414,6 @@ function clipPoints(type, e){
 function updateUnits(type,units){
     /**
      * * updateUnits() Updates the units displayed underneath the number input box
-     * TODO: get the units for the volume renderer
      */
     if (type == 'PartType0'){
         gas_units = document.getElementsByClassName('gas-attr-units')
@@ -1763,7 +1451,6 @@ function retryLine(idx){
     /**
      * * retryLine() requests another spectrum if the first one did not compute
      */
-
     requestSpectrum(idx)
 }
 
@@ -2357,7 +2044,9 @@ function init(){
     scene = new THREE.Scene();
     scene.background = new THREE.Color("rgb(4,6,23)")
 
-    camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.0001, 10000 );
+    // camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.0001, 10000 );
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 10000 );
+
     camera.layers.enable(0);
     camera.layers.enable(1);
     camera.layers.enable(2);
@@ -2394,7 +2083,7 @@ function init(){
     controls = new THREE.TrackballControls(camera, renderer.domElement);
     camera.position.set(gridsize*2, gridsize*2, gridsize*2)
     camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-    camera.zoom = 8
+    camera.zoom = 1
     camera.updateProjectionMatrix();
     controls.target.set( gridsize/2, gridsize/2, gridsize/2 );
     controls.noRotate = false
@@ -2546,7 +2235,7 @@ function onMouseClick( event ) {
         geometry.setPositions(positions)
         skewerScene.remove(lines[idx])
         var material = new THREE.LineMaterial( { 
-            color: 0x0000ff,//0xff5522,
+            color: 0xffff00,//0xff5522,
             linewidth: 0.0025,
             transparent: true,
             opacity: 1.0,
@@ -2556,8 +2245,6 @@ function onMouseClick( event ) {
         lines[idx].layers.set(4)
         skewerScene.add( lines[idx] );
     }
-
-        
 
     function updateSkewerList(dir,idx,point1,point2){
 
@@ -2574,7 +2261,7 @@ function onMouseClick( event ) {
         $("#" + id).hover(function(){
             lines[idx].material.color = new THREE.Color(1,0,1)
             }, function(){
-                lines[idx].material.color = new THREE.Color(0x0000ff)
+                lines[idx].material.color = new THREE.Color(0xffff00)
         });
         
         //create div to show the line idx

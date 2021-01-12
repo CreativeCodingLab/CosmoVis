@@ -22,12 +22,10 @@ import mpi4py
 import os.path
 from os import path
 
-
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
 # access to low latency bi-directional communications
 # between the clients and the server.
-
  
 async_mode = 'eventlet'
 app = Flask(__name__)
