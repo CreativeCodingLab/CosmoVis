@@ -10,6 +10,7 @@
         <!-- <script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script> -->
         
         <link href="https://fonts.googleapis.com/css?family=Odibee+Sans&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://use.typekit.net/efx5ycv.css">
         <link rel="stylesheet" href="https://use.typekit.net/qnm2bha.css">
         <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/jQuery.min.js') }}"></script>
@@ -54,131 +55,7 @@
         </script>
         
         
-        <script type="x-shader/x-vertex" id="vertexshader-gas">
-            
-            uniform float zoom;
-            uniform vec4 minCol;
-            uniform vec4 maxCol;
-            uniform float min;
-            uniform float max;
-            attribute float gasAttribute;
-            
-            varying float vZoom;
-            varying vec4 vMinCol;
-            varying vec4 vMaxCol;
-            varying float vMin;
-            varying float vMax;
-            varying float vGasAttr;
-
-            
-            void main() {
-                
-                vGasAttr = gasAttribute;
-                vZoom = zoom;
-                vMinCol = minCol;
-                vMaxCol = maxCol;
-                vMin = min;
-                vMax = max;
-                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-                //gl_PointSize = zoom / (100.0);//* -mvPosition.z);
-                gl_PointSize = 2.0;
-                gl_Position = projectionMatrix * mvPosition;
-                
-            }
-        
-        </script>
-        
-        <script type="x-shader/x-fragment" id="fragmentshader-gas">
-            
-            uniform sampler2D texture;
-            
-            uniform bool minClip;
-            uniform bool maxClip;
-            varying float vZoom;
-            varying float vGasAttr;
-            varying vec4 vMinCol;
-            varying vec4 vMaxCol;
-            varying float vMin;
-            varying float vMax;
-
-
-            void main() {
-
-                if(minClip){
-                    if(vGasAttr < vMin){
-                        discard;
-                    }
-                }
-                if(maxClip){
-                    if(vGasAttr > vMax){
-                        discard;
-                    }
-                }
-
-                //gl_FragColor = vec4(0.6,0.6,0.3,log(vZoom)/70.0));//* texture2D( texture, gl_PointCoord );
-                //gl_FragColor = vec4(vGasAttr,vGasAttr,vGasAttr,log(vZoom)/70.0);//* texture2D( texture, gl_PointCoord ); 
-                
-                float alpha = ( vGasAttr - vMin ) / ( vMax - vMin ); 
-                float r = (1.0 - alpha)*(vMinCol.r) + alpha*vMaxCol.r;
-                float g = (1.0 - alpha)*(vMinCol.g) + alpha*vMaxCol.g;
-                float b = (1.0 - alpha)*(vMinCol.b) + alpha*vMaxCol.b;
-                gl_FragColor = vec4(r,g,b,1.0);
-
-                //gl_FragColor = mix( vMinCol, vMaxCol, ( vGasAttr - vMin ) / ( vMax - vMin ) );
-
-                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
-
-                gl_FragColor.a = 1.0 ;    
-
-                //if(vGasAttr<=vMin || vGasAttr>=vMax){
-                //    gl_FragColor.a = 0.0 ;
-                //}
-                //else{
-                //    gl_FragColor.a = 1.0 ;    
-                //}
-    
-            }
-        </script>
-
-        <script type="x-shader/x-vertex" id="vertexshader-darkmatter">
-            uniform vec4 Col;
-            //uniform vec4 maxCol;
-            attribute float dmAttribute;
-            uniform float zoom;
-            varying float vZoom;
-            varying float vDMAttr;
-            varying vec4 vCol;
-            //varying vec4 vMaxCol;
-            void main() {
-                vZoom = zoom;
-                vCol = Col;
-                //vMaxCol = maxCol;
-                vDMAttr = dmAttribute;
-                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-                //gl_PointSize = zoom / 100.0; //( -mvPosition.z * 000.0 );
-                gl_PointSize = 2.0;
-                gl_Position = projectionMatrix * mvPosition;
-                
-            }
-        </script>
-        
-        <script type="x-shader/x-fragment" id="fragmentshader-darkmatter">
-            
-            varying vec4 vCol;
-            //varying vec4 vMaxCol;
-            uniform sampler2D texture;
-            varying float vZoom;
-            varying float vDMAttr;
-            void main() {
-
-                //gl_FragColor = vec4(0.55,0.35,0.55,log(vZoom)/70.0);//* texture2D( texture, gl_PointCoord );
-                //gl_FragColor = mix( vMinCol,vMaxCol,vDMAttr );
-                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//* texture2D( texture, gl_PointCoord ); 
-                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
-                //gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
-    
-            }
-        </script>
+       
 
         <script type="x-shader/x-vertex" id="vertexshader-star">
             
@@ -225,6 +102,7 @@
             varying vec4 vCol;
             // varying vec3 vPosition;
             //varying vec4 vMaxCol;
+
             highp float rand(vec2 co)
             {
                 highp float a = 12.9898;
@@ -234,13 +112,13 @@
                 highp float sn= mod(dt,3.14);
                 return fract(sin(sn) * c);
             }
+
             void main() {
                 float distance = length(4.0 * gl_PointCoord - 2.0);
                 if (distance > 2.0) {
                     discard;
                 }
     
-
                 //gl_FragColor = vec4(0.8*vStarAttribute,0.8*vStarAttribute,0.2*vStarAttribute,0.2);//* texture2D( texture, gl_PointCoord );
                 //gl_FragColor = mix( vMinCol,vMaxCol,vStarAttribute );
                 gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
@@ -250,71 +128,54 @@
             }
         </script>
 
-        <script type="x-shader/x-vertex" id="vertexshader-blackhole">
-            uniform float zoom;
-            attribute float bhAttribute;
-            uniform float min;
-            uniform float max;
-            uniform vec4 minCol;
-            uniform vec4 maxCol;
+        <script type="x-shader/x-vertex" id="vertexshader-skewer">
             
-            varying vec4 vMinCol;
-            varying vec4 vMaxCol;
-            varying float vMin;
-            varying float vMax;
-            varying float vBHA;
-            
+            uniform vec4 Col;
+            varying vec4 vCol;
+
+            uniform vec3 u_xyzMin;
+            uniform vec3 u_xyzMax;
+            uniform float u_gridsize;
+            uniform float u_starSize;
+
 
             void main() {
-                vBHA = bhAttribute;
-                vMin = min;
-                vMax = max;
-                vMinCol = minCol;
-                vMaxCol = maxCol;
-                vec4 mvPosition = 4.0*modelViewMatrix * vec4( position, 1.0 );
-                gl_PointSize = 4.0; //( -mvPosition.z * 000.0 );
+                vCol = Col;
+
+                
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                
+                //gl_PointSize = u_starSize;
+
                 gl_Position = projectionMatrix * mvPosition;
+                vec3 vPosition = position.xyz/u_gridsize;
+                if( (vPosition.x < u_xyzMin.x) || (vPosition.x >= u_xyzMax.x ) || ( vPosition.y < u_xyzMin.y ) || (vPosition.y>=u_xyzMax.y ) || ( vPosition.z<u_xyzMin.z ) || ( vPosition.z>=u_xyzMax.z )){
+                    gl_Position.w = 0.0;
+                }
                 
             }
         </script>
         
-        <script type="x-shader/x-fragment" id="fragmentshader-blackhole">
+        <script type="x-shader/x-fragment" id="fragmentshader-skewer">
             
-            //varying float vRotation;
-            varying float vColor;
-            varying float vBHA;
-            uniform sampler2D texture;
-            uniform bool minClip;
-            uniform bool maxClip;
-            varying vec4 vMinCol;
-            varying vec4 vMaxCol;
-            varying float vMin;
-            varying float vMax;
+            varying vec4 vCol;
+
+            highp float rand(vec2 co)
+            {
+                highp float a = 12.9898;
+                highp float b = 78.233;
+                highp float c = 43758.5453;
+                highp float dt= dot(co.xy ,vec2(a,b));
+                highp float sn= mod(dt,3.14);
+                return fract(sin(sn) * c);
+            }
 
             void main() {
-                if(minClip){
-                    if(vBHA < vMin){
-                        discard;
-                    }
-                }
-                if(maxClip){
-                    if(vBHA > vMax){
-                        discard;
-                    }
-                }
-
-                float distanceFromCenter = length(2.0 * gl_PointCoord - 1.0);
-                if(distanceFromCenter > 1.0){
-                    discard;
-                }
-
-                //gl_FragColor = vec4(0.8*vBHA,0.2*vBHA,0.2*vBHA,1.0);//* texture2D( texture, gl_PointCoord );
-                gl_FragColor = mix( vMinCol, vMaxCol, ( vBHA - vMin ) / ( vMax - vMin ) );
-                //gl_FragColor = vec4(vColor,vColor,vColor,0.5);//* texture2D( texture, gl_PointCoord ); 
-                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
-                gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
     
+                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+            
             }
+    
         </script>
 
         <script type="x-shader/x-vertex" id="vertexshader-volume">
@@ -403,7 +264,6 @@
                 }
 
                 // console.log(field_list);
-                
                 
                 
                 function createAttributeSelectors(field_list){
@@ -564,6 +424,23 @@
                     plotPoints()
                 }
             });
+
+            socket.on('retrievingLineData',function(msg){
+                idx = msg.idx
+
+                //TODO: connect to DIV indicator
+            });
+
+            socket.on('simple_line_data',function(msg){
+                console.log(msg)
+                buttonId = 'simple-line-request-button-' + msg.index + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'column densities recieved'
+
+                createColumnDensityInfoPanel(msg)
+            });
+
+
 
             socket.on('processingRay',function(msg){
                 idx = msg.index

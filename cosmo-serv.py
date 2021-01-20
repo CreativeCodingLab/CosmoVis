@@ -60,6 +60,110 @@ def truncate(f, n):
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
 
+#getSkewerSimpleRay -- this function is used to get the 'quick' data along the skewer and sends it back to the frontend
+@socketio.on('getSkewerSimpleRay',namespace="/test")
+def handle_skewer_simple_ray(simID,idx,start,end):
+    print('recieved simple ray request')
+    socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
+    fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    ds = yt.load(fn)
+
+    ray_start = list(np.float_(start))
+    ray_end = list(np.float_(end))
+    print(ds.domain_left_edge)
+    print(ds.domain_right_edge)
+    line_list = ['H', 'C', 'N', 'O', 'Mg']
+
+    # This LightRay object is a yt dataset of a 1D data structure representing the skewer path as it traverses the dataset. 
+    ray = trident.make_simple_ray(ds, start_position=ray_start,
+                               end_position=ray_end,
+                               data_filename="ray.h5", # update file name if we need multiple
+                               lines=line_list)
+    
+    # ('gas', 'l') -- the 1D location of the gas going from nearby (0) to faraway along the LightRay
+    # convert to kpc
+    l = ray.r[('gas', 'l')].to('kpc')
+
+    # ('gas', 'temperature') -- the gas temperature along l (K)
+    T = ray.r[('gas', 'temperature')]
+
+    # the way trident+yt represents ions as fields is a little weird
+    # ex: For H I, which is neutral hydrogen, which is H (plus zero energy state), it's represented as H_p0
+    # multiply number density by path length (dl) to get column density of ions (units cm^-2)
+
+    H_I   = ray.r[('gas', 'H_p0_number_density')] * ray.r[('gas', 'dl')]
+    H_II  = ray.r[('gas', 'H_p1_number_density')] * ray.r[('gas', 'dl')]
+
+    C_I   = ray.r[('gas', 'C_p0_number_density')] * ray.r[('gas', 'dl')]
+    C_II  = ray.r[('gas', 'C_p1_number_density')] * ray.r[('gas', 'dl')]
+    C_III = ray.r[('gas', 'C_p2_number_density')] * ray.r[('gas', 'dl')]
+    C_IV  = ray.r[('gas', 'C_p3_number_density')] * ray.r[('gas', 'dl')]
+    C_V   = ray.r[('gas', 'C_p4_number_density')] * ray.r[('gas', 'dl')]
+    C_VI  = ray.r[('gas', 'C_p5_number_density')] * ray.r[('gas', 'dl')]
+
+    He_III= ray.r[('gas', 'He_p2_number_density')] * ray.r[('gas', 'dl')]
+
+    Mg_I  = ray.r[('gas', 'Mg_p0_number_density')] * ray.r[('gas', 'dl')]
+    Mg_II = ray.r[('gas', 'Mg_p1_number_density')] * ray.r[('gas', 'dl')]
+
+    N_II  = ray.r[('gas', 'N_p1_number_density')] * ray.r[('gas', 'dl')]
+    N_III = ray.r[('gas', 'N_p2_number_density')] * ray.r[('gas', 'dl')]
+    N_IV  = ray.r[('gas', 'N_p3_number_density')] * ray.r[('gas', 'dl')]
+    N_V   = ray.r[('gas', 'N_p4_number_density')] * ray.r[('gas', 'dl')]
+    N_VI  = ray.r[('gas', 'N_p5_number_density')] * ray.r[('gas', 'dl')]
+    N_VII = ray.r[('gas', 'N_p6_number_density')] * ray.r[('gas', 'dl')]
+
+    O_I   = ray.r[('gas', 'O_p0_number_density')] * ray.r[('gas', 'dl')]
+    O_VI  = ray.r[('gas', 'O_p5_number_density')] * ray.r[('gas', 'dl')]
+    O_VII = ray.r[('gas', 'O_p6_number_density')] * ray.r[('gas', 'dl')]
+    O_VIII= ray.r[('gas', 'O_p7_number_density')] * ray.r[('gas', 'dl')]
+
+    El    = ray.r[('gas', 'El_number_density')] * ray.r[('gas', 'dl')]
+
+    density       = ray.r[('gas', 'density')] * ray.r[('gas', 'dl')]
+    entropy       = ray.r[('gas', 'entropy')] * ray.r[('gas', 'dl')]
+    # metal_mass    = ray.r[('gas', 'metal_mass')] * ray.r[('gas', 'dl')]
+    # mass          = ray.r[('gas', 'mass')] * ray.r[('gas', 'dl')]
+    optical_depth = ray.r[('gas', 'optical_depth')] * ray.r[('gas', 'dl')]
+
+    # total gas density, entropy, metal mass, mass, optical depth
+    
+    
+    socketio.emit('simple_line_data',{'index':   idx,
+                                        'start': start,
+                                        'end':   end,
+                                        'l':     l.tolist(),
+                                        'T':     T.tolist(),
+                                        'H_I':   H_I.tolist(),
+                                        'H_II':  H_II.tolist(),
+                                        'C_I':   C_I.tolist(),
+                                        'C_II':  C_II.tolist(),
+                                        'C_III': C_III.tolist(),
+                                        'C_IV':  C_IV.tolist(),
+                                        'C_V':   C_V.tolist(),
+                                        'C_VI':  C_IV.tolist(),
+                                        'He_III':He_III.tolist(),
+                                        'Mg_I':  Mg_I.tolist(),
+                                        'Mg_II': Mg_II.tolist(),
+                                        'N_II':  N_II.tolist(),
+                                        'N_III': N_III.tolist(),
+                                        'N_IV':  N_IV.tolist(),
+                                        'N_V':   N_V.tolist(),
+                                        'N_VI':  N_VI.tolist(),
+                                        'N_VII': N_VII.tolist(),
+                                        'O_I':   O_I.tolist(),
+                                        'O_VI':  O_VI.tolist(),
+                                        'O_VII': O_VII.tolist(),
+                                        'O_VIII':O_VIII.tolist(),
+                                        'El':    El.tolist(),
+                                        'density': density.tolist(),
+                                        'entropy': entropy.tolist(),
+                                        # 'metal_mass': metal_mass.tolist(),
+                                        # 'mass': mass.tolist(),
+                                        'optical_depth': optical_depth.tolist()
+                                        }, namespace='/test')
+    print('sent simple ray data')
+
 # selectRay is called from index.html when 
 @socketio.on('selectRay', namespace='/test')
 def handle_ray_selection(simID,idx, start, end):

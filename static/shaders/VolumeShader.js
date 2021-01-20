@@ -339,11 +339,19 @@ THREE.VolumeRenderShader1 = {
 
 		`		vec4 get_emitted_L_gas(float gas_val, float density_val){
 					float a;
+
+					// check if region is clipped based on min/max values in the data
+					// 
 					if( (u_gasClip[0] == true) && (gas_val < u_gasClim[0]) ) a = 0.0;
 					else if( (u_gasClip[1] == true) && (gas_val > u_gasClim[1]) ) a = 0.0;
 					else a = 1.0;
 					
+					// scale gas value between 0 and 1
 					gas_val = (gas_val - u_gasClim[0]) / (u_gasClim[1] - u_gasClim[0]);
+					
+					// fetch transfer function texture from gas data
+					// rgb comes from the color pickers
+					// a comes from sliders
 					vec4 tex = texture2D(u_cmGasData, vec2(gas_val, 0.5));
 
 					if (a > 0.0){

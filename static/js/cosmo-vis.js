@@ -1454,6 +1454,172 @@ function retryLine(idx){
     requestSpectrum(idx)
 }
 
+function requestSimpleLineData(idx){
+    pt1 = scalePointCoords(skewers[idx].point1)
+    pt2 = scalePointCoords(skewers[idx].point2)
+    
+    buttonId = 'simple-line-request-button-' + idx + ''
+    div = document.getElementById(buttonId)
+    div.disabled = true
+    sendLine(idx,pt1,pt2)
+    div.innerText = 'requesting simple ray info . . . '
+
+    function scalePointCoords(pt){
+        x_scale = (edges_scaled.right_edge[0]-edges_scaled.left_edge[0])/(edges.right_edge[0] - edges.left_edge[0])
+        y_scale = (edges_scaled.right_edge[1]-edges_scaled.left_edge[1])/(edges.right_edge[1] - edges.left_edge[1])
+        z_scale = (edges_scaled.right_edge[2]-edges_scaled.left_edge[2])/(edges.right_edge[2] - edges.left_edge[2])
+        pt.x = pt.x/x_scale
+        pt.y = pt.y/y_scale
+        pt.z = pt.z/z_scale
+        return pt
+    }
+
+    function sendLine(idx,point1,point2){
+        socket.emit('getSkewerSimpleRay',simID,idx, [point1.x,point1.y,point1.z],[point2.x,point2.y,point2.z])
+    }
+}
+
+function createColumnDensityInfoPanel(msg){
+    // this function creates the dropdown menu containing column density information along with accompanying graph
+
+    idx = msg.index
+    divID = 'simple-line-status-skewer-coords-' + idx + ''
+    div = document.getElementById(divID)
+    
+    dropdown_elements = ['H_I', 'H_II', 'C_I', 'C_II', 'C_III', 'C_IV', 'C_V', 'C_VI', 'He_III', 'Mg_I', 'Mg_II', 'N_II', 'N_III', 'N_IV', 'N_V', 'N_VI', 'N_VII', 'O_I', 'O_VI', 'O_VII', 'O_VIII', 'El', 'density', 'entropy', 'optical_depth', 'T']
+    var select = document.createElement("select")
+    select.name = 'simple-line-results-' + idx + ''
+    select.id = 'simple-line-results-' + idx + ''
+
+    for(const el of dropdown_elements){
+        var option = document.createElement("option")
+        option.value = el
+        option.text = el
+        select.appendChild(option)
+    }
+
+    var label = document.createElement("label")
+    label.innerHTML = "Choose column density:"
+    label.htmlfor = 'simple-line-results-' + idx + ''
+
+    div.appendChild(label).appendChild(select).append("br")
+    var margin = {top: 10, right: 20, bottom: 30, left: 40},
+        width = 250 - margin.left - margin.right,
+        height = 250 - margin.top - margin.bottom;
+    
+    s = document.getElementById('simple-line-results-' + idx + '')
+    s.onchange = function(){                    
+        // remove old plot
+        // select = document.getElementById('col-density-graph-'+idx+'')
+        console.log(msg)
+        d3.select("#"+divID).selectAll(".graph").remove()
+        
+        // make new plot
+        data = []
+        
+        for(i=0;i<msg.l.length;i++){
+            data[i] = { 'l': msg.l[i], 'c': msg[s.value][i] }
+        }
+        
+        var svg = d3.select('#' + divID)
+            .append("svg")
+            .attr("class","graph col-density-graph")
+            .attr("id","col-density-graph-" + idx + '')
+            .attr("width", width + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        domainL = d3.extent(msg.l)
+        var xScale = d3.scaleLinear()
+            .range([0, width + margin.left + margin.right])
+            .domain(domainL);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(xScale).ticks(6));
+        svg.append("text")             
+            .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 30) + ")")
+            .style("text-anchor", "middle")
+            .text("Distance (Kpc)")
+
+        var yScale = d3.scaleLinear()
+            .range([height, 0])
+            .domain(d3.extent(msg[s.value]));
+        svg.append("g")
+            .call(d3.axisLeft(yScale));
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "0.9em")
+            .style("text-anchor", "middle")
+            .text("Column Density");
+
+        var line = d3.line()
+            .x(d => xScale(d.l))
+            .y(d => yScale(d.c))
+                    
+        svg.append("path")
+            .datum(data)
+            .attr("class", "line")
+            .attr("d", line)
+        
+    }
+
+
+    //by defualt plot dist vs temp
+    data = []
+    // var margin = {top: 10, right: 40, bottom: 30, left: 50},
+    //     width = 300 - margin.left - margin.right,
+    //     height = 200 - margin.top - margin.bottom;
+    for(i=0;i<msg.l.length;i++){
+        data[i] = { 'l': msg.l[i], 'c': msg.T[i] }
+    }
+    
+    var svg = d3.select('#' + divID)
+        .append("svg")
+        .attr("class","graph")
+        .attr("id","col-density-graph-" + idx + '')
+        .attr("width", width + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    domainL = d3.extent(msg.l)
+    var xScale = d3.scaleLinear()
+        .range([0, width + margin.left + margin.right])
+        .domain(domainL);
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(xScale).ticks(6));
+    svg.append("text")             
+        .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 30) + ")")
+        .style("text-anchor", "middle")
+        .text("Distance (Kpc)")
+
+    var yScale = d3.scaleLinear()
+        .range([height, 0])
+        .domain(d3.extent(msg.T));
+    svg.append("g")
+        .call(d3.axisLeft(yScale));
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (height / 2))
+        .attr("dy", "0.9em")
+        .style("text-anchor", "middle")
+        .text("Temperature (K)");
+
+    var line = d3.line()
+        .x(d => xScale(d.l))
+        .y(d => yScale(d.c))
+                
+    svg.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .attr("d", line)
+}
+
 function requestSpectrum(idx){
     /**
      * * requestSpectrum() prepares and sends the coordinates of a skewer to the python backend for processing 
@@ -1512,7 +1678,7 @@ function plotSyntheticSpectrum(points) {
 }
 
 /**
- * * GRAPH PLOTTING
+ * * SPECTRUM PLOTTING
  */
 
 function updateGraph(){
@@ -2059,7 +2225,7 @@ function init(){
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setPixelRatio(1);
 
-    renderer.antialias = false;
+    renderer.antialias = true;
     renderer.precision = 'highp';
     renderer.powerPreference = 'high-performance'
     renderer.sortPoints = true;
@@ -2208,7 +2374,10 @@ function onMouseClick( event ) {
 
             // printLine(point1,point2)...
             // console.log('2/2')
-        handleLine(cd,points[0],points[1])
+        dir = new THREE.Vector3(points[1].x-points[0].x,points[1].y-points[0].y,points[1].z-points[0].z)
+        dir.normalize()
+        console.log(dir)
+        handleLine(dir,points[0],points[1])
             // printLine(dir,point1,point2)
     }
     function handleLine(dir,point1,point2){
@@ -2333,6 +2502,13 @@ function onMouseClick( event ) {
             printLine(idx,pt1,pt2)
             saveLine(idx,pt1,pt2)   
         }
+
+        // button for requesting column density data
+        id = 'skewer-coords-' + idx
+        div = document.getElementById(id)
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords simple-line-status" id="simple-line-status-' + id + '">   <button type="button" onclick="requestSimpleLineData('+idx+')" class="request-button button simple-line-status" id="simple-line-request-button-' + idx + '">request skewer column densities</button> </div>');            
+
+        // hook for plotting that graph + dropdown
 
         //create div for REQUEST button and STATUS message below skewer details
         id = 'skewer-coords-' + idx

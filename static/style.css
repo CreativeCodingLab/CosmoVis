@@ -348,6 +348,7 @@ h1{
 }
 
 .container{
+
     font-family: mr-eaves-modern, sans-serif;
     font-weight: 300;
     font-style: normal;
@@ -370,6 +371,10 @@ h1{
     border-radius: 10px;
     border-style: double;
     border-color: #00ffca;
+}
+
+.simple-line-status{
+    font-family: mr-eaves-modern, sans-serif;
 }
 
 progress{
@@ -637,7 +642,7 @@ h3 {
     display: inline-block;
     float: right;
     font-size: 0.87em;
-    font-family: sans monospace;
+    
 }
 
 .pt-range{
@@ -657,13 +662,16 @@ h3 {
     /* width: 6vw; */
     display: inline-block;
     float: right;
-    font-family: sans monospace;
-    font-size: 0.9em;
+    /* font-family: sans monospace; */
+    /* font-size: 0.9em; */
 }
 
 .skewer-coords-pt{
     /* width: 8vw; */
     float:left;
+    font-family: interstate-mono, sans-serif;
+    font-weight: 400;
+    font-style: normal;
 }
 
 .skewer-coords-pt1-range{
@@ -728,6 +736,13 @@ h3 {
     height: 0.8em;
     display:inline-block;
     cursor: pointer;
+}
+
+.simple-line-status{
+    width: 100%;
+    display: inline-block;
+    font-size: 1em;
+    position: relative;
 }
 
 .spectra-status{
