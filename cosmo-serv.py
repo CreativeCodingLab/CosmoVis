@@ -65,21 +65,27 @@ def index():
 def handle_skewer_simple_ray(simID,idx,start,end):
     print('recieved simple ray request')
     socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
+    socketio.sleep(0)
+
     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
     ds = yt.load(fn)
+    socketio.sleep(0)
+
 
     ray_start = list(np.float_(start))
     ray_end = list(np.float_(end))
     print(ds.domain_left_edge)
     print(ds.domain_right_edge)
     line_list = ['H', 'C', 'N', 'O', 'Mg']
+    socketio.sleep(0)
 
     # This LightRay object is a yt dataset of a 1D data structure representing the skewer path as it traverses the dataset. 
     ray = trident.make_simple_ray(ds, start_position=ray_start,
                                end_position=ray_end,
                                data_filename="ray.h5", # update file name if we need multiple
                                lines=line_list)
-    
+    socketio.sleep(0)
+
     # ('gas', 'l') -- the 1D location of the gas going from nearby (0) to faraway along the LightRay
     # convert to kpc
     l = ray.r[('gas', 'l')].to('kpc')
@@ -90,6 +96,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     # the way trident+yt represents ions as fields is a little weird
     # ex: For H I, which is neutral hydrogen, which is H (plus zero energy state), it's represented as H_p0
     # multiply number density by path length (dl) to get column density of ions (units cm^-2)
+    socketio.sleep(0)
 
     H_I   = ray.r[('gas', 'H_p0_number_density')] * ray.r[('gas', 'dl')]
     H_II  = ray.r[('gas', 'H_p1_number_density')] * ray.r[('gas', 'dl')]
@@ -127,8 +134,9 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     optical_depth = ray.r[('gas', 'optical_depth')] * ray.r[('gas', 'dl')]
 
     # total gas density, entropy, metal mass, mass, optical depth
-    
-    
+
+    socketio.sleep(0)
+
     socketio.emit('simple_line_data',{'index':   idx,
                                         'start': start,
                                         'end':   end,
@@ -162,6 +170,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
                                         # 'mass': mass.tolist(),
                                         'optical_depth': optical_depth.tolist()
                                         }, namespace='/test')
+    socketio.sleep(0)
+
     print('sent simple ray data')
 
 # selectRay is called from index.html when 

@@ -373,9 +373,11 @@ THREE.VolumeRenderShader1 = {
 					
 					if (a > 0.0){
 						a = density_val * u_densityModI + u_valModI * u_valMod * dm_val;
-						tex.a *= a;
+						tex.rgb*0.75;
+						tex.a *= (0.5*a);
 					}
 					else tex = vec4(0.0,0.0,0.0,0.0);
+
 
 					return tex;
 				}

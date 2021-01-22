@@ -26,7 +26,7 @@ var uniforms
 var densityTexture, densityMin, densityMax
 var gasMesh, dmMesh, starMesh, bhMesh
 var dataArray3D, dataTexture3D, volumeShader, volumeUniforms, volMaterial, volGeometry
-var gasMaterial, dmMaterial, starMaterial, bhMaterial
+var gasMaterial, dmMaterial, starMaterial, bhMaterial, skewerMaterial
 var climGasLimits = []
 var climDMLimits = []
 var climStarLimits = []
@@ -136,6 +136,10 @@ function clearLayer(l){
         }
         if(l==3 && layer == 4){
             scene.remove(scene.children[i])
+        }
+        if(l==8 && layer == 256){
+            scene.remove(scene.children[i])
+            console.log('clear')
         }
         if(l==9 && layer == 512){
             scene.remove(scene.children[i])
@@ -356,6 +360,10 @@ function updateUniforms(){
         // camera.lookAt(controls.target.set( ((domainXYZ[1]-domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]-domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]-domainXYZ[4])*gridsize)/2 ))
         // camera.updateProjectionMatrix();
 
+
+        skewerMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
+        skewerMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
+        skewerMaterial.uniforms[ "u_gridsize" ].value = gridsize
 
         starMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         starMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
@@ -957,32 +965,24 @@ function setupStarScene(){
 function setupSkewerScene(){
     skewerScene = new THREE.Scene();
     skewerScene.background = new THREE.Color("rgb(0,0,0)")
-    // skewerCol = new THREE.Color( 1,1,0 )
-    // console.log(starCol)
-    // skewerMaterial = new THREE.ShaderMaterial( {
+    skewerMaterial = new THREE.ShaderMaterial( {
+        uniforms: {
+            Col: { value: new THREE.Vector4(1.0,1.0,0.0,1.0) },
+            u_xyzMin: {value: new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])},
+            u_xyzMax: {value: new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])},
+            u_gridsize: {value: gridsize},
+        },
+        vertexShader:   document.getElementById('vertexshader-skewer').textContent,
+        fragmentShader: document.getElementById('fragmentshader-skewer').textContent,
+        blending:       THREE.CustomBlending,
+        // blendEquation:  THREE.AddEquation, //default
+        blendSrc:       THREE.OneFactor,
+        blendDst:       THREE.ZeroFactor,
+        depthTest:      true,
+        depthWrite:     false,
+        transparent:    false,
 
-    //     uniforms: {
-    //         Col: { value: new THREE.Vector4(starCol.r,starCol.g,starCol.b,1.0) },
-    //         u_xyzMin: {value: null},
-    //         u_xyzMax: {value: null},
-    //         u_gridsize: {value: gridsize}
-    //         // maxCol: { value: new THREE.Vector4(starMaxCol.r,starMaxCol.g,starMaxCol.b,1.0) }
-    //     },
-    //     vertexShader:   document.getElementById( 'vertexshader-star' ).textContent,
-    //     fragmentShader: document.getElementById( 'fragmentshader-star' ).textContent,
-
-    //     // // blending:       THREE.AdditiveBlending,
-    //     blending:       THREE.CustomBlending,
-    //     // blendEquation:  THREE.AddEquation, //default
-    //     blendSrc:       THREE.OneFactor,
-    //     blendDst:       THREE.ZeroFactor,
-    //     depthTest:      true,
-    //     depthWrite:     false,
-    //     transparent:    false,
-    //     // alphaTest:      0.3
-
-    // });
-    // checkSelectedSimID()
+    });
 
 }
 
@@ -1205,16 +1205,22 @@ function createSkewerCube(size){
      * * this is used for using a raycaster when placing skewers
      * size = voxels per edge
      */
-    console.log(size)
-    var geometry = new THREE.BoxBufferGeometry(size,size,size );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true, transparent: true, opacity: 0.0, side: THREE.DoubleSide} );
+    // console.log(size)
+    clearLayer(8)
+    
+    min = new THREE.Vector3(domainXYZ[0]*size,domainXYZ[2]*size,domainXYZ[4]*size)
+    max = new THREE.Vector3(domainXYZ[1]*size,domainXYZ[3]*size,domainXYZ[5]*size)
+    diff = max.sub(min)
+    var geometry = new THREE.BoxBufferGeometry(diff.x,diff.y,diff.z);
+    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true, transparent: true, opacity: 1.0, side: THREE.DoubleSide} );
     material.depthWrite = false;
     cube = new THREE.Mesh( geometry, material );
-    cube.position.set(size/2, size/2, size/2);
+    cube.position.set(diff.x/2+min.x, diff.y/2+min.y, diff.z/2+min.z);
+    cube.layers.set(8)
     scene.add( cube );
 
     edges_scaled = {
-        'left_edge' : [0,0,0],
+        'left_edge' : [0.0,0.0,0.0],
         'right_edge' : [size,size,size]
     }
 }
@@ -1461,6 +1467,7 @@ function requestSimpleLineData(idx){
     buttonId = 'simple-line-request-button-' + idx + ''
     div = document.getElementById(buttonId)
     div.disabled = true
+    console.log(pt1,pt2)
     sendLine(idx,pt1,pt2)
     div.innerText = 'requesting simple ray info . . . '
 
@@ -1503,15 +1510,18 @@ function createColumnDensityInfoPanel(msg){
     label.htmlfor = 'simple-line-results-' + idx + ''
 
     div.appendChild(label).appendChild(select).append("br")
-    var margin = {top: 10, right: 20, bottom: 30, left: 40},
-        width = 250 - margin.left - margin.right,
-        height = 250 - margin.top - margin.bottom;
+    var margin = {top: 10, right: 20, bottom: 30, left: 60},
+        width = 300 - margin.left - margin.right,
+        height = 200 - margin.top - margin.bottom;
     
     s = document.getElementById('simple-line-results-' + idx + '')
     s.onchange = function(){                    
         // remove old plot
         // select = document.getElementById('col-density-graph-'+idx+'')
+        s = document.getElementById('simple-line-results-' + msg.index + '')
         console.log(msg)
+        divID = 'simple-line-status-skewer-coords-' + msg.index + ''
+        console.log(divID)
         d3.select("#"+divID).selectAll(".graph").remove()
         
         // make new plot
@@ -1520,11 +1530,11 @@ function createColumnDensityInfoPanel(msg){
         for(i=0;i<msg.l.length;i++){
             data[i] = { 'l': msg.l[i], 'c': msg[s.value][i] }
         }
-        
+        console.log(s.value)
         var svg = d3.select('#' + divID)
             .append("svg")
             .attr("class","graph col-density-graph")
-            .attr("id","col-density-graph-" + idx + '')
+            .attr("id","col-density-graph-" + msg.index + '')
             .attr("width", width + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
@@ -1546,14 +1556,15 @@ function createColumnDensityInfoPanel(msg){
             .range([height, 0])
             .domain(d3.extent(msg[s.value]));
         svg.append("g")
-            .call(d3.axisLeft(yScale));
+            .call(d3.axisLeft(yScale)
+            .tickFormat(d3.format(".1e")));
         svg.append("text")
             .attr("transform", "rotate(-90)")
-            .attr("y", 0 - margin.left)
+            .attr("y", 0 - margin.left-5)
             .attr("x", 0 - (height / 2))
             .attr("dy", "0.9em")
             .style("text-anchor", "middle")
-            .text("Column Density");
+            .text(s.value);
 
         var line = d3.line()
             .x(d => xScale(d.l))
@@ -1994,7 +2005,7 @@ function updateXYZDomain(xyz, min, max){
         domainXYZ[4] = min
         domainXYZ[5] = max
     }
-
+    createSkewerCube(gridsize)
     updateUniforms();
     
     xSliderScale = d3.scaleLinear().domain([domainXYZ[0],domainXYZ[1]]).range([0, 210])
@@ -2358,25 +2369,28 @@ function onMouseClick( event ) {
             // findLineEnds(ray1,cd)    
         }
         
-        if(points[0].x < 0) points[0].x = 0
-        if(points[0].y < 0) points[0].y = 0
-        if(points[0].z < 0) points[0].z = 0
-        if(points[0].x > gridsize) points[0].x = gridsize
-        if(points[0].y > gridsize) points[0].y = gridsize
-        if(points[0].z > gridsize) points[0].z = gridsize
-        if(points[1].x < 0) points[1].x = 0
-        if(points[1].y < 0) points[1].y = 0
-        if(points[1].z < 0) points[1].z = 0
-        if(points[1].x > gridsize) points[1].x = gridsize
-        if(points[1].y > gridsize) points[1].y = gridsize
-        if(points[1].z > gridsize) points[1].z = gridsize
+
+        dir = new THREE.Vector3(points[1].x-points[0].x,points[1].y-points[0].y,points[1].z-points[0].z)
+        dir.normalize()
+
+        if(points[0].x < domainXYZ[0]*gridsize) points[0].x = domainXYZ[0]*gridsize
+        if(points[0].y < domainXYZ[2]*gridsize) points[0].y = domainXYZ[2]*gridsize
+        if(points[0].z < domainXYZ[4]*gridsize) points[0].z = domainXYZ[4]*gridsize
+        if(points[0].x > domainXYZ[1]*gridsize) points[0].x = domainXYZ[1]*gridsize
+        if(points[0].y > domainXYZ[3]*gridsize) points[0].y = domainXYZ[3]*gridsize
+        if(points[0].z > domainXYZ[5]*gridsize) points[0].z = domainXYZ[5]*gridsize
+        if(points[1].x < domainXYZ[0]*gridsize) points[1].x = domainXYZ[0]*gridsize
+        if(points[1].y < domainXYZ[2]*gridsize) points[1].y = domainXYZ[2]*gridsize
+        if(points[1].z < domainXYZ[4]*gridsize) points[1].z = domainXYZ[4]*gridsize
+        if(points[1].x > domainXYZ[1]*gridsize) points[1].x = domainXYZ[1]*gridsize
+        if(points[1].y > domainXYZ[3]*gridsize) points[1].y = domainXYZ[3]*gridsize
+        if(points[1].z > domainXYZ[5]*gridsize) points[1].z = domainXYZ[5]*gridsize
         // console.log(points[0],points[1])
 
             // printLine(point1,point2)...
             // console.log('2/2')
-        dir = new THREE.Vector3(points[1].x-points[0].x,points[1].y-points[0].y,points[1].z-points[0].z)
-        dir.normalize()
-        console.log(dir)
+        
+        // console.log(dir)
         handleLine(dir,points[0],points[1])
             // printLine(dir,point1,point2)
     }
@@ -2396,21 +2410,62 @@ function onMouseClick( event ) {
          * * printLine() draws the skewer in the scene
          */
 
-        positions = []
-        geometry = new THREE.LineGeometry();
+        // positions = []
+        // geometry = new THREE.LineGeometry();
         // console.log(point1,point2)
-        positions.push(point1.x,point1.y,point1.z);
-        positions.push(point2.x,point2.y,point2.z);
-        geometry.setPositions(positions)
+        // positions.push(point1.x,point1.y,point1.z);
+        // positions.push(point2.x,point2.y,point2.z);
+        // geometry.setPositions(positions)
         skewerScene.remove(lines[idx])
-        var material = new THREE.LineMaterial( { 
-            color: 0xffff00,//0xff5522,
-            linewidth: 0.0025,
-            transparent: true,
-            opacity: 1.0,
-            blending: THREE.AdditiveBlending
-        } );
-        lines[idx] = new THREE.Line2( geometry, material );
+        // var material = new THREE.LineMaterial( { 
+        //     color: 0xffff00,//0xff5522,
+        //     linewidth: 0.0025,
+        //     transparent: true,
+        //     opacity: 1.0,
+        //     blending: THREE.AdditiveBlending
+        // } );
+        
+        function cylinderMesh(pointX, pointY) {
+            // edge from X to Y
+            console.log(pointY)
+            let direction = new THREE.Vector3().subVectors(pointY, pointX);
+            // let skewerMaterial = new THREE.MeshBasicMaterial({ color: 0x5B5B5B });
+
+            
+            // Make the geometry (of "direction" length)
+            let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 100, false, 0, 2*Math.PI);
+            // shift it so one end rests on the origin
+            skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
+            // rotate it the right way for lookAt to work
+            skewerGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
+            // Make a mesh with the geometry
+            let skewerMesh = new THREE.Mesh(skewerGeometry, skewerMaterial);
+            // Position it where we want
+            skewerMesh.position.copy(pointX);
+            // And make it point to where we want
+            skewerMesh.lookAt(pointY.x,pointY.y,pointY.z);
+        
+            return skewerMesh;
+        }
+
+        skewerGeometry = cylinderMesh(point1,point2)
+
+        // skewerGeometry.updateMatrix();
+        // skewerGeometry.verticesNeedUpdate = true;
+        // skewerGeometry.elementsNeedUpdate = true;
+        // skewerGeometry.morphTargetsNeedUpdate = true;
+        // skewerGeometry.uvsNeedUpdate = true;
+        // skewerGeometry.normalsNeedUpdate = true;
+        // skewerGeometry.colorsNeedUpdate = true;
+        // skewerGeometry.tangentsNeedUpdate = true;
+
+        // console.log(skewerGeometry)
+        // render()
+
+
+        // lines[idx] = new THREE.Line2( geometry, material );
+        lines[idx] = skewerGeometry
+
         lines[idx].layers.set(4)
         skewerScene.add( lines[idx] );
     }

@@ -136,29 +136,23 @@
             uniform vec3 u_xyzMin;
             uniform vec3 u_xyzMax;
             uniform float u_gridsize;
-            uniform float u_starSize;
+            varying vec3 vPosition;
 
 
             void main() {
                 vCol = Col;
-
-                
                 vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-                
-                //gl_PointSize = u_starSize;
-
                 gl_Position = projectionMatrix * mvPosition;
-                vec3 vPosition = position.xyz/u_gridsize;
-                if( (vPosition.x < u_xyzMin.x) || (vPosition.x >= u_xyzMax.x ) || ( vPosition.y < u_xyzMin.y ) || (vPosition.y>=u_xyzMax.y ) || ( vPosition.z<u_xyzMin.z ) || ( vPosition.z>=u_xyzMax.z )){
-                    gl_Position.w = 0.0;
-                }
-                
+                vec3 vPosition = gl_Position.xyz/u_gridsize;
             }
         </script>
         
         <script type="x-shader/x-fragment" id="fragmentshader-skewer">
             
             varying vec4 vCol;
+            uniform vec3 u_xyzMin;
+            uniform vec3 u_xyzMax;
+            varying vec3 vPosition;
 
             highp float rand(vec2 co)
             {
@@ -171,9 +165,13 @@
             }
 
             void main() {
-    
+               //if( (vPosition.x < u_xyzMin.x) || (vPosition.x >= u_xyzMax.x ) || ( vPosition.y < u_xyzMin.y ) || (vPosition.y>=u_xyzMax.y ) || ( vPosition.z<u_xyzMin.z ) || ( vPosition.z>=u_xyzMax.z )){
+               //    gl_FragColor = vec4(0.0,0.0,0.0,0.0);
+               //}
+               //else{
                 gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
-            
+               //}
+
             }
     
         </script>
