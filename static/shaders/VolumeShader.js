@@ -220,8 +220,8 @@ THREE.VolumeRenderShader1 = {
 					// three sources of signal: attribute (gas), dark matter, density
 					// stars act as stopping condition
 
-					vec3 c_lo = u_xyzMin*u_size;
-					vec3 c_hi = u_xyzMax*u_size;
+					vec3 c_lo = u_xyzMin*u_size; // xyzMin/Max between 0 and 1
+					vec3 c_hi = u_xyzMax*u_size; // u_size is the edge voxel count
 						//if camera == perspective , else camera == orthographic
 					vec3 rp = cameraPosition;
 					vec3 rd = normalize(v_Direction); //normalize(nearpos.xyz - farpos.xyz);
@@ -235,39 +235,40 @@ THREE.VolumeRenderShader1 = {
 						// convert current position and ray direction to voxel distance
 					rp = rp + t.x * rd;
 					rd = rd * (t.y - t.x); // not normalized, in voxel distance
-					int iSteps = int(length(rd)); // determine step size, length, direction
-					vec3 dd = rd / float(iSteps); // dd = distance differential (one step forward in world size units)
+					int iSteps = int(length(rd)); // iSteps = number of steps in the ray; determine step size, length, direction
+					vec3 dd = rd / float(iSteps); // dd = distance differential (one step forward in world size units), should end up being ~1 (voxel units)
 					rd = normalize(rd); // direction is normalized to use as multiplier
 						// can use random seed
 					rp += (rnd(gl_FragCoord.xy) - 0.5) * dd; //perturbing the position where the integration starts by half a voxel, reduce effects of artefacts by introducing a little noise
-					vec4 path_L = vec4(0.0, 0.0, 0.0, 0.0); // light collected for the ray (path tracer) -- total quantity light coming from the volume
+					vec3 path_L = vec3(0.0, 0.0, 0.0); // light collected for the ray (path tracer) -- total quantity light coming from the volume
 					float tau = 0.0; // accumulated optical thickness through the volume 
-					vec3 gas_darkmatter_density0 = sampleData(u_dataTexture3D, rp);
+					vec3 gas_darkmatter_density0 = sampleData(u_dataTexture3D, rp); // normally called 'rho'
 					float rho0 = max(0.0,((gas_darkmatter_density0.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp), rho1; // rho ~ density; rho0 ~ first point in the volume; rho1 ~ not initialized yet
 					for (int i = 0; i < iSteps; i++) {
-						vec3 gas_darkmatter_density1 = sampleData(u_dataTexture3D, rp);
-						rp += dd; // move position along the ray by 1 step forward (dd)
+						rp += dd; // move position along the ray by 1 step forward (dd), ~1 voxel unit
+						vec3 gas_darkmatter_density1 = sampleData(u_dataTexture3D, rp); //get texture values at each step
 						float rho1 = max(0.0,((gas_darkmatter_density1.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp); // gets rho1 for the position
 						float rho = 0.5 * (rho0 + rho1); // actual density (rho) is the average between the two (assume piecewise linear density function)
+						vec3 gas_darkmatter_density = 0.5 * (gas_darkmatter_density0 + gas_darkmatter_density1);
 						vec3 emission = vec3(0.0, 0.0, 0.0);
 						float transmittance = 0.0;
+						float scaling_factor = 100.0/u_size.x;
 					// gas + dark matter contribute to optical density
 						if( u_gasVisibility == true ){
-							vec4 gas_emission = get_emitted_L_gas(gas_darkmatter_density1.r,rho0);
-							tau += length(dd)*(gas_emission.a)*rho; // tau ~ accumulated thickness/density of the volume 
-							transmittance += exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
-							emission += gas_emission.rgb*gas_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
+							vec4 gas_emission = get_emitted_L_gas(gas_darkmatter_density.r,rho);
+							tau      += scaling_factor * rho * gas_emission.a; 					  // tau ~ accumulated thickness/density of the volume 
+							emission += scaling_factor * rho * gas_emission.rgb * gas_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
 						}
 
 						if( u_dmVisibility == true ){
-							vec4 darkmatter_emission = get_emitted_L_darkmatter(gas_darkmatter_density1.g,rho0);
-							tau += length(dd)*(darkmatter_emission.a)*rho; // tau ~ accumulated thickness/density of the volume 
-							transmittance += exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
-							emission += darkmatter_emission.rgb*darkmatter_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
+							vec4 darkmatter_emission = get_emitted_L_darkmatter(gas_darkmatter_density.g,rho);
+							tau      += rho * darkmatter_emission.a ; 							// tau ~ accumulated thickness/density of the volume 
+							emission += rho * darkmatter_emission.rgb * darkmatter_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
 						}
 
 					//star color will get added to emission, star detection
-						
+						transmittance = exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
+
 						if(u_starVisibility == true) {
 							float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
 							float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
@@ -276,20 +277,19 @@ THREE.VolumeRenderShader1 = {
 							vec3 star_emission = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
 							// tau += length(dd)*(1.0/exp(starDepth));
 							// transmittance += exp(-u_sigma_t * tau);
-							emission += transmittance*star_emission;
+							emission += 0.05*star_emission / (starDepth * starDepth);
 						}
 						
 						if(u_skewerVisibility == true){
 							vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-							emission += c_skewers;
+							emission += 1000.0*c_skewers/u_size.x;
 
 						}
-						
-						path_L.rgb += length(dd) * transmittance * rho * u_sigma_e * emission; // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
+						path_L += transmittance * u_sigma_e * emission; // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
+						gas_darkmatter_density0 = gas_darkmatter_density1;
 						rho0 = rho1; // move the integration one step forward
 					}
-					path_L.a = 1.0;
-					vec4 c = vec4(1.0,1.0,1.0,1.0) - exp(-u_exposure*path_L);
+					vec4 c = vec4(vec3(1.0,1.0,1.0) - exp(-u_exposure*path_L),1.0);
 					gl_FragColor = c;
 				}
 		`,
@@ -365,19 +365,20 @@ THREE.VolumeRenderShader1 = {
 
 		`		vec4 get_emitted_L_darkmatter(float dm_val, float density_val){
 					float a;
+					
 					if( (u_dmClip[0] == true) && (dm_val < u_dmClim[0]) ) a = 0.0;
 					else if( (u_dmClip[1] == true) && (dm_val > u_dmClim[1]) ) a = 0.0;
 					else a = 1.0;
+					
 					dm_val = (dm_val - u_dmClim[0]) / (u_dmClim[1] - u_dmClim[0]);
+					
 					vec4 tex = texture2D(u_cmDMData, vec2(dm_val, 0.5));
 					
 					if (a > 0.0){
 						a = density_val * u_densityModI + u_valModI * u_valMod * dm_val;
-						tex.rgb*0.75;
-						tex.a *= (0.5*a);
+						tex.a *= a;
 					}
 					else tex = vec4(0.0,0.0,0.0,0.0);
-
 
 					return tex;
 				}

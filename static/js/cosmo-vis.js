@@ -27,6 +27,8 @@ var densityTexture, densityMin, densityMax
 var gasMesh, dmMesh, starMesh, bhMesh
 var dataArray3D, dataTexture3D, volumeShader, volumeUniforms, volMaterial, volGeometry
 var gasMaterial, dmMaterial, starMaterial, bhMaterial, skewerMaterial
+var skewerMaterial1 = []
+var skewerTexture = []
 var climGasLimits = []
 var climDMLimits = []
 var climStarLimits = []
@@ -894,7 +896,7 @@ function loadStars(){
                     vertex.toArray( starPositions, i * 3 )
                     // console.log(vertex)
                 }
-                // console.log(starPositions)
+                console.log(starPositions)
                 
                 starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
                 // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
@@ -932,7 +934,7 @@ function stopLoadingAnimation(){
 function setupStarScene(){
     starScene = new THREE.Scene();
     starScene.background = new THREE.Color("rgb(0,0,0)")
-    starCol = new THREE.Color( 1,1,0 )
+    starCol = new THREE.Color( 0.8,0.8,0 )
     // console.log(starCol)
     starMaterial = new THREE.ShaderMaterial( {
 
@@ -965,23 +967,33 @@ function setupStarScene(){
 function setupSkewerScene(){
     skewerScene = new THREE.Scene();
     skewerScene.background = new THREE.Color("rgb(0,0,0)")
+    emptyData = new Uint8Array( 3 * 1000 )
+    emptyData.fill(255)
+    emptyTexture = new THREE.DataTexture(emptyData.fill(1), 1, 100, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
+    THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
+    emptyTexture.needsUpdate = true
     skewerMaterial = new THREE.ShaderMaterial( {
         uniforms: {
             Col: { value: new THREE.Vector4(1.0,1.0,0.0,1.0) },
             u_xyzMin: {value: new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])},
             u_xyzMax: {value: new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])},
             u_gridsize: {value: gridsize},
+            skewer_tex: {value: emptyTexture,
+            }
         },
         vertexShader:   document.getElementById('vertexshader-skewer').textContent,
         fragmentShader: document.getElementById('fragmentshader-skewer').textContent,
-        blending:       THREE.CustomBlending,
-        // blendEquation:  THREE.AddEquation, //default
-        blendSrc:       THREE.OneFactor,
-        blendDst:       THREE.ZeroFactor,
+        // blending:       THREE.CustomBlending,
+        // // blendEquation:  THREE.AddEquation, //default
+        // blendSrc:       THREE.OneFactor,
+        // blendDst:       THREE.ZeroFactor,
         depthTest:      true,
-        depthWrite:     false,
+        depthWrite:     true,
         transparent:    false,
-
+        dithering: true,
+        vertexColors: false,
+        morphTargets: true,
+        morphNormals: true,
     });
 
 }
@@ -1493,7 +1505,7 @@ function createColumnDensityInfoPanel(msg){
     divID = 'simple-line-status-skewer-coords-' + idx + ''
     div = document.getElementById(divID)
     
-    dropdown_elements = ['H_I', 'H_II', 'C_I', 'C_II', 'C_III', 'C_IV', 'C_V', 'C_VI', 'He_III', 'Mg_I', 'Mg_II', 'N_II', 'N_III', 'N_IV', 'N_V', 'N_VI', 'N_VII', 'O_I', 'O_VI', 'O_VII', 'O_VIII', 'El', 'density', 'entropy', 'optical_depth', 'T']
+    dropdown_elements = ['H_I', 'H_II', 'C_I', 'C_II', 'C_III', 'C_IV', 'C_V', 'C_VI', 'He_III', 'Mg_I', 'Mg_II', 'N_II', 'N_III', 'N_IV', 'N_V', 'N_VI', 'N_VII', 'O_I', 'O_VI', 'O_VII', 'O_VIII', 'El', 'density', 'entropy', 'optical_depth', 'temperature']
     var select = document.createElement("select")
     select.name = 'simple-line-results-' + idx + ''
     select.id = 'simple-line-results-' + idx + ''
@@ -1506,7 +1518,7 @@ function createColumnDensityInfoPanel(msg){
     }
 
     var label = document.createElement("label")
-    label.innerHTML = "Choose column density:"
+    label.innerHTML = "Choose attribute:"
     label.htmlfor = 'simple-line-results-' + idx + ''
 
     div.appendChild(label).appendChild(select).append("br")
@@ -1526,11 +1538,57 @@ function createColumnDensityInfoPanel(msg){
         
         // make new plot
         data = []
+        scaled_data = [] //will store scaled data between 0 and 1 for adding the skewer banding pattern
         
+        min_l = d3.min(msg.l)
+        max_l = d3.max(msg.l)
+        min_val = Math.log10(d3.min(msg[s.value])+1)
+        max_val = Math.log10(d3.max(msg[s.value])+1)
+
+
+
         for(i=0;i<msg.l.length;i++){
-            data[i] = { 'l': msg.l[i], 'c': msg[s.value][i] }
+            data[i] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]+1) }
+            scaled_data[i] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i]+1)-min_val)/(max_val-min_val) }    
         }
-        console.log(s.value)
+
+        createSkewerDataTexture(msg.index, scaled_data)
+
+        function createSkewerDataTexture(skewer_index, attr_data){
+            // console.log(attr_data)
+            size = attr_data.length
+            d = new Uint8Array( 3 * size )
+
+            for (i = 0; i < size; i++){
+                band_col = attr_data[i].c*255
+                stride = i*3
+
+                d[ stride ]     = 1.0*band_col; // stores length along skewer (to be used as texture UV lookup)
+                d[ stride + 1 ] = 0.0*band_col; // stores attribute value at distance x
+                d[ stride + 2 ] = 0.0*band_col; // empty
+                // color will be programmed in the shader based on these values since delta_x is not uniform
+            }
+            console.log(d)
+
+            skewerTexture[skewer_index] = new THREE.DataTexture( d, 1, size, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
+				THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter )
+            console.log(skewer_index)
+            skewerTexture[skewer_index].needsUpdate = true
+            lines[skewer_index].material.uniforms.skewer_tex.value = skewerTexture[skewer_index]
+            lines[skewer_index].material.uniformsNeedUpdate = true
+            lines[skewer_index].material.uniforms.skewer_tex.needsUpdate = true
+            lines[skewer_index].updateMatrix();
+            lines[skewer_index].verticesNeedUpdate = true;
+            lines[skewer_index].elementsNeedUpdate = true;
+            lines[skewer_index].morphTargetsNeedUpdate = true;
+            lines[skewer_index].uvsNeedUpdate = true;
+            lines[skewer_index].normalsNeedUpdate = true;
+            lines[skewer_index].colorsNeedUpdate = true;
+            lines[skewer_index].tangentsNeedUpdate = true;
+            lines[skewer_index].material.needsUpdate = true
+        }
+
+        // console.log(scaled_data)
         var svg = d3.select('#' + divID)
             .append("svg")
             .attr("class","graph col-density-graph")
@@ -1554,7 +1612,7 @@ function createColumnDensityInfoPanel(msg){
 
         var yScale = d3.scaleLinear()
             .range([height, 0])
-            .domain(d3.extent(msg[s.value]));
+            .domain([min_val,max_val]);
         svg.append("g")
             .call(d3.axisLeft(yScale)
             .tickFormat(d3.format(".1e")));
@@ -1564,12 +1622,12 @@ function createColumnDensityInfoPanel(msg){
             .attr("x", 0 - (height / 2))
             .attr("dy", "0.9em")
             .style("text-anchor", "middle")
-            .text(s.value);
+            .text("log("+s.value+"+1)");
 
         var line = d3.line()
             .x(d => xScale(d.l))
             .y(d => yScale(d.c))
-                    
+        // console.log(line)    
         svg.append("path")
             .datum(data)
             .attr("class", "line")
@@ -1583,8 +1641,9 @@ function createColumnDensityInfoPanel(msg){
     // var margin = {top: 10, right: 40, bottom: 30, left: 50},
     //     width = 300 - margin.left - margin.right,
     //     height = 200 - margin.top - margin.bottom;
+
     for(i=0;i<msg.l.length;i++){
-        data[i] = { 'l': msg.l[i], 'c': msg.T[i] }
+        data[i] = { 'l': msg.l[i], 'c': msg.temperature[i] }
     }
     
     var svg = d3.select('#' + divID)
@@ -1610,7 +1669,7 @@ function createColumnDensityInfoPanel(msg){
 
     var yScale = d3.scaleLinear()
         .range([height, 0])
-        .domain(d3.extent(msg.T));
+        .domain(d3.extent(msg.temperature));
     svg.append("g")
         .call(d3.axisLeft(yScale));
     svg.append("text")
@@ -2430,16 +2489,43 @@ function onMouseClick( event ) {
             console.log(pointY)
             let direction = new THREE.Vector3().subVectors(pointY, pointX);
             // let skewerMaterial = new THREE.MeshBasicMaterial({ color: 0x5B5B5B });
-
             
+            emptyData = new Uint8Array( 3 * 1000 )
+            emptyData.fill(255)
+            emptyTexture = new THREE.DataTexture(emptyData.fill(1), 1, 100, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
+            emptyTexture.needsUpdate = true
+            skewerMaterial1[idx] = new THREE.ShaderMaterial( {
+                uniforms: {
+                    Col: { value: new THREE.Vector4(1.0,1.0,0.0,1.0) },
+                    u_xyzMin: {value: new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])},
+                    u_xyzMax: {value: new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])},
+                    u_gridsize: {value: gridsize},
+                    skewer_tex: {value: emptyTexture},
+                },
+                vertexShader:   document.getElementById('vertexshader-skewer').textContent,
+                fragmentShader: document.getElementById('fragmentshader-skewer').textContent,
+                // blending:       THREE.CustomBlending,
+                // // blendEquation:  THREE.AddEquation, //default
+                // blendSrc:       THREE.OneFactor,
+                // blendDst:       THREE.ZeroFactor,
+                depthTest:      true,
+                depthWrite:     true,
+                transparent:    false,
+                dithering: true,
+                vertexColors: false,
+                morphTargets: true,
+                morphNormals: true,
+            });
             // Make the geometry (of "direction" length)
-            let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 100, false, 0, 2*Math.PI);
+            let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 1000, false, 0, 2*Math.PI);
+            skewerGeometry.setDrawRange(0,Infinity)
             // shift it so one end rests on the origin
             skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
             // rotate it the right way for lookAt to work
             skewerGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
             // Make a mesh with the geometry
-            let skewerMesh = new THREE.Mesh(skewerGeometry, skewerMaterial);
+            let skewerMesh = new THREE.Mesh(skewerGeometry, skewerMaterial1[idx]);
             // Position it where we want
             skewerMesh.position.copy(pointX);
             // And make it point to where we want
@@ -2449,15 +2535,17 @@ function onMouseClick( event ) {
         }
 
         skewerGeometry = cylinderMesh(point1,point2)
+        skewerGeometry.DefaultUp = new THREE.Vector3(0,0,1);
 
-        // skewerGeometry.updateMatrix();
-        // skewerGeometry.verticesNeedUpdate = true;
-        // skewerGeometry.elementsNeedUpdate = true;
-        // skewerGeometry.morphTargetsNeedUpdate = true;
-        // skewerGeometry.uvsNeedUpdate = true;
-        // skewerGeometry.normalsNeedUpdate = true;
-        // skewerGeometry.colorsNeedUpdate = true;
-        // skewerGeometry.tangentsNeedUpdate = true;
+
+        skewerGeometry.updateMatrix();
+        skewerGeometry.verticesNeedUpdate = true;
+        skewerGeometry.elementsNeedUpdate = true;
+        skewerGeometry.morphTargetsNeedUpdate = true;
+        skewerGeometry.uvsNeedUpdate = true;
+        skewerGeometry.normalsNeedUpdate = true;
+        skewerGeometry.colorsNeedUpdate = true;
+        skewerGeometry.tangentsNeedUpdate = true;
 
         // console.log(skewerGeometry)
         // render()
@@ -2484,8 +2572,10 @@ function onMouseClick( event ) {
         
         $("#" + id).hover(function(){
             lines[idx].material.color = new THREE.Color(1,0,1)
+            lines[idx].material.needsUpdate = true
             }, function(){
                 lines[idx].material.color = new THREE.Color(0xffff00)
+                lines[idx].material.needsUpdate = true
         });
         
         //create div to show the line idx
@@ -2561,7 +2651,7 @@ function onMouseClick( event ) {
         // button for requesting column density data
         id = 'skewer-coords-' + idx
         div = document.getElementById(id)
-        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords simple-line-status" id="simple-line-status-' + id + '">   <button type="button" onclick="requestSimpleLineData('+idx+')" class="request-button button simple-line-status" id="simple-line-request-button-' + idx + '">request skewer column densities</button> </div>');            
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords simple-line-status" id="simple-line-status-' + id + '">   <button type="button" onclick="requestSimpleLineData('+idx+')" class="request-button button simple-line-status" id="simple-line-request-button-' + idx + '">request skewer attributes</button> </div>');            
 
         // hook for plotting that graph + dropdown
 

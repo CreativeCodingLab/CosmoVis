@@ -26,36 +26,38 @@
         <script type="text/javascript" src="{{ url_for('static', filename='libs/Line2.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='shaders/VolumeShader.js') }}"></script>
         
-        <script>
-        $( function() {
-            $( "#galaxylist" ).draggable();
-        } );
-        $( function() {
-            $( "#data_layers" ).draggable();
-        } );
-        $( function() {
-            $( "#raySelection" ).draggable();
-        } );
-        // $( function() {
-        //     $( "#my-gui-container" ).draggable();
-        // } );
-        $( function() {
-            $( "#spectrum" ).draggable();
-        } );
-        $( function() {
-            $( "#terminal" ).draggable();
-        } );
 
-        $( function() {
-            $( "#welcome-container" ).draggable();
-        } );
-        // $( function() {
-        //     $( ".icon" ).draggable();
-        // } );
+        <!-- DOM manipulation -- makes containers dragable -->
+        <script>
+            $( function() {
+                $( "#galaxylist" ).draggable();
+            } );
+            $( function() {
+                $( "#data_layers" ).draggable();
+            } );
+            $( function() {
+                $( "#raySelection" ).draggable();
+            } );
+            // $( function() {
+            //     $( "#my-gui-container" ).draggable();
+            // } );
+            $( function() {
+                $( "#spectrum" ).draggable();
+            } );
+            $( function() {
+                $( "#terminal" ).draggable();
+            } );
+
+            $( function() {
+                $( "#welcome-container" ).draggable();
+            } );
+            // $( function() {
+            //     $( ".icon" ).draggable();
+            // } );
         </script>
         
         
-       
+       <!-- shader code for the stars and skewers -->
 
         <script type="x-shader/x-vertex" id="vertexshader-star">
             
@@ -67,22 +69,10 @@
             uniform float u_gridsize;
             uniform float u_starSize;
 
-
-            // varying vec3 vPosition;
-            
-            //uniform vec4 maxCol;
-            //varying vec4 vMaxCol;
-            //uniform float zoom;
-            //attribute float starAttribute;
-            //varying float vStarAttribute;
-
             void main() {
                 vCol = Col;
-                //vMaxCol = maxCol;
-                
+
                 vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-                //vStarAttribute = starAttribute;
-                //gl_PointSize = zoom / 100.0; //( -mvPosition.z * 000.0 );
                 
                 gl_PointSize = u_starSize;
 
@@ -97,7 +87,7 @@
         
         <script type="x-shader/x-fragment" id="fragmentshader-star">
             
-            //uniform sampler2D texture;
+            
             //varying float vStarAttribute;
             varying vec4 vCol;
             // varying vec3 vPosition;
@@ -137,13 +127,16 @@
             uniform vec3 u_xyzMax;
             uniform float u_gridsize;
             varying vec3 vPosition;
-
+            varying vec2 vUv;
+            // varying vec3 vWorldPosition;
 
             void main() {
-                vCol = Col;
+                vCol = vec4( position/u_gridsize, 1.0 );
+                vUv = uv;
                 vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
                 gl_Position = projectionMatrix * mvPosition;
-                vec3 vPosition = gl_Position.xyz/u_gridsize;
+
+                vec3 vPosition = position.xyz/u_gridsize;
             }
         </script>
         
@@ -153,6 +146,8 @@
             uniform vec3 u_xyzMin;
             uniform vec3 u_xyzMax;
             varying vec3 vPosition;
+            varying vec2 vUv;
+            uniform sampler2D skewer_tex;
 
             highp float rand(vec2 co)
             {
@@ -165,13 +160,13 @@
             }
 
             void main() {
-               //if( (vPosition.x < u_xyzMin.x) || (vPosition.x >= u_xyzMax.x ) || ( vPosition.y < u_xyzMin.y ) || (vPosition.y>=u_xyzMax.y ) || ( vPosition.z<u_xyzMin.z ) || ( vPosition.z>=u_xyzMax.z )){
-               //    gl_FragColor = vec4(0.0,0.0,0.0,0.0);
-               //}
-               //else{
-                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
-               //}
-
+                vec3 tex = texture2D(skewer_tex, vec2(vUv)).rgb;
+                //if( (vPosition.x < u_xyzMin.x) || (vPosition.x >= u_xyzMax.x ) || ( vPosition.y < u_xyzMin.y ) || (vPosition.y>=u_xyzMax.y ) || ( vPosition.z<u_xyzMin.z ) || ( vPosition.z>=u_xyzMax.z )){
+                //    gl_FragColor = vec4(0.0,0.0,0.0,0.0);
+                //}
+                //else{
+                gl_FragColor = vec4(1.0*tex.r,1.0*tex.g,0.0,1.0*tex.b);  //rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+                //}
             }
     
         </script>
@@ -194,7 +189,7 @@
             }
         </script>
     
-        <script type="x-shader/x-vertex" id="vertexshader-235">
+        <!-- <script type="x-shader/x-vertex" id="vertexshader-235">
             attribute float density;
             attribute float temperature;
             //uniform float spin;
@@ -225,19 +220,17 @@
                 //gl_FragColor.a *= 1/pow( gl_FragCoord.z, 2.0 );
     
             }
-        </script>
+        </script> -->
 
+
+        <!-- Mostly listeners/event handlers from backend  -->
         <script>
-        // c holds the coordinate data
-        // var c = new Array()
+
 
         var skewerData = []
         var domainLambda = []
         var xScale
-        // var gasCoordLookup = []
-        // var dmCoordLookup = []
-        // var starCoordLookup = []
-        // var bhCoordLookup = []
+
 
         
         $(document).ready(function(){
@@ -246,6 +239,8 @@
                 socket.emit('my_event', {data: 'I\'m connected!'});
             });
 
+
+            // populates dropdown menu for gas data
             socket.on('field_list', function(msg) {
                 if(!field_list){
                     field_list = msg.data
@@ -255,13 +250,11 @@
                     
                     function clearDropDowns(){
                         $("#gas_select").empty();
-                        $("#dm_select").empty();
-                        $("#star_select").empty();
-                        $("#bh_select").empty();
+                        // $("#dm_select").empty();
+                        // $("#star_select").empty();
+                        // $("#bh_select").empty();
                     }
                 }
-
-                // console.log(field_list);
                 
                 
                 function createAttributeSelectors(field_list){
@@ -308,6 +301,7 @@
                 }
             });
 
+            // get domain edges in physical uynits
             socket.on('domain_edges', function(data){
                 if(!edges){
                     console.log(data.left_edge);
@@ -324,104 +318,111 @@
                 
             });
 
+
+            // I don't think this does anything useful
             socket.on('my_response', function(msg, cb) {
                 console.log('Received #' + msg.count + ': ' + msg.data);
                 if (cb)
                     cb();
             });
 
-            socket.on('positionData',function(msg){
-                ptype = msg.particle_type
-                if(ptype == 'PartType0'){
-                    gasCoordLookup.push(msg.data)
-                    let gas = document.getElementById("gas_progress")
-                    gas.value = msg.i
-                    if(msg.i == 100){plotPoints()}
-                }
-                if(ptype == 'PartType1'){
-                    dmCoordLookup.push(msg.data)
-                    let dm = document.getElementById("dm_progress")
-                    dm.value = msg.i
-                    if(msg.i == 100){plotPoints()}
-                }
-                if(ptype == 'PartType4'){
-                    starCoordLookup.push(msg.data)
-                    starParticles.push(msg)
-                    let star = document.getElementById("star_progress")
-                    star.value = msg.i*10
-                }
-                if(ptype == 'PartType5'){
-                    bhCoordLookup.push(msg.data)
-                    let bh = document.getElementById("bh_progress")
-                    bh.value = msg.i*10
-                }
 
-            });
+            // socket.on('positionData',function(msg){
+            //     ptype = msg.particle_type
+            //     if(ptype == 'PartType0'){
+            //         gasCoordLookup.push(msg.data)
+            //         let gas = document.getElementById("gas_progress")
+            //         gas.value = msg.i
+            //         if(msg.i == 100){plotPoints()}
+            //     }
+            //     if(ptype == 'PartType1'){
+            //         dmCoordLookup.push(msg.data)
+            //         let dm = document.getElementById("dm_progress")
+            //         dm.value = msg.i
+            //         if(msg.i == 100){plotPoints()}
+            //     }
+            //     if(ptype == 'PartType4'){
+            //         starCoordLookup.push(msg.data)
+            //         starParticles.push(msg)
+            //         let star = document.getElementById("star_progress")
+            //         star.value = msg.i*10
+            //     }
+            //     if(ptype == 'PartType5'){
+            //         bhCoordLookup.push(msg.data)
+            //         let bh = document.getElementById("bh_progress")
+            //         bh.value = msg.i*10
+            //     }
 
-            socket.on('dataSentMsg',function(msg){
-                if(msg.particle_type == "PartType0"){
-                    let gas = document.getElementById("gas_progress_sent")
-                    gas.value = (msg.value/renderCount)*100
-                }
-                if(msg.particle_type == "PartType5"){
-                    let bh = document.getElementById("bh_progress_sent")
-                    bh.value = (msg.value/renderCount)*100
-                }
-            });
+            // });
 
-            socket.on('pointData',function(msg) {
-                console.log(msg);
-                // let found = field_list.find(element => element[0] == msg.particle_type && element[1] == msg.attribute)
-                // let index = field_list.indexOf(found)
-                // if(field_list[index].length == 2){
-                //     field_list[index].push(data=[])
-                // }
+            // socket.on('dataSentMsg',function(msg){
+            //     if(msg.particle_type == "PartType0"){
+            //         let gas = document.getElementById("gas_progress_sent")
+            //         gas.value = (msg.value/renderCount)*100
+            //     }
+            //     if(msg.particle_type == "PartType5"){
+            //         let bh = document.getElementById("bh_progress_sent")
+            //         bh.value = (msg.value/renderCount)*100
+            //     }
+            // });
 
-                // field_list[index][2].push([msg.data])
-                particles.push(msg)
+            // socket.on('pointData',function(msg) {
+            //     console.log(msg);
+            //     // let found = field_list.find(element => element[0] == msg.particle_type && element[1] == msg.attribute)
+            //     // let index = field_list.indexOf(found)
+            //     // if(field_list[index].length == 2){
+            //     //     field_list[index].push(data=[])
+            //     // }
 
-                if(msg.particle_type == "PartType0"){
-                    gasParticles.push(msg)
-                    let gas = document.getElementById("gas_progress")
-                    gas.value = (msg.i/renderCount)*100
-                    // if(msg.i+1 == renderCount){
-                    col = document.getElementById('gas-minval-input')
-                    col.value=msg.min
-                    materialGas.uniforms.min.value = msg.min
-                    col = document.getElementById('gas-maxval-input')
-                    col.value=msg.max
-                    materialGas.uniforms.max.value = msg.max
-                    // }
-                }
-                if(msg.particle_type == "PartType1"){
-                    dmParticles.push(msg)
-                    let dm = document.getElementById("dm_progress")
-                    dm.value = msg.i*renderCount
-                }
-                if(msg.particle_type == "PartType4"){
-                    starParticles.push(msg)
-                    let star = document.getElementById("star_progress")
-                    star.value = msg.i*renderCount
-                }
-                if(msg.particle_type == "PartType5"){
-                    bhParticles.push(msg)
-                    let bh = document.getElementById("bh_progress")
-                    bh.value = (msg.i/renderCount)*100
-                    // if(msg.i == 10){
-                    col = document.getElementById('bh-minval-input')
-                    col.value=msg.min
-                    materialGas.uniforms.min.value = msg.min
-                    col = document.getElementById('bh-maxval-input')
-                    col.value=msg.max
-                    materialBlackHole.uniforms.max.value = msg.max
-                    // }
-                }
-                updateUnits(msg.particle_type, msg.units)
+            //     // field_list[index][2].push([msg.data])
+            //     particles.push(msg)
+
+            //     if(msg.particle_type == "PartType0"){
+            //         gasParticles.push(msg)
+            //         let gas = document.getElementById("gas_progress")
+            //         gas.value = (msg.i/renderCount)*100
+            //         // if(msg.i+1 == renderCount){
+            //         col = document.getElementById('gas-minval-input')
+            //         col.value=msg.min
+            //         materialGas.uniforms.min.value = msg.min
+            //         col = document.getElementById('gas-maxval-input')
+            //         col.value=msg.max
+            //         materialGas.uniforms.max.value = msg.max
+            //         // }
+            //     }
+            //     if(msg.particle_type == "PartType1"){
+            //         dmParticles.push(msg)
+            //         let dm = document.getElementById("dm_progress")
+            //         dm.value = msg.i*renderCount
+            //     }
+            //     if(msg.particle_type == "PartType4"){
+            //         starParticles.push(msg)
+            //         let star = document.getElementById("star_progress")
+            //         star.value = msg.i*renderCount
+            //     }
+            //     if(msg.particle_type == "PartType5"){
+            //         bhParticles.push(msg)
+            //         let bh = document.getElementById("bh_progress")
+            //         bh.value = (msg.i/renderCount)*100
+            //         // if(msg.i == 10){
+            //         col = document.getElementById('bh-minval-input')
+            //         col.value=msg.min
+            //         materialGas.uniforms.min.value = msg.min
+            //         col = document.getElementById('bh-maxval-input')
+            //         col.value=msg.max
+            //         materialBlackHole.uniforms.max.value = msg.max
+            //         // }
+            //     }
+            //     updateUnits(msg.particle_type, msg.units)
                 
-                if(msg.i >= renderCount){
-                    plotPoints()
-                }
-            });
+            //     if(msg.i >= renderCount){
+            //         plotPoints()
+            //     }
+            // });
+
+
+
+            // these listeners wait for spectra data from the backend
 
             socket.on('retrievingLineData',function(msg){
                 idx = msg.idx
@@ -433,12 +434,10 @@
                 console.log(msg)
                 buttonId = 'simple-line-request-button-' + msg.index + ''
                 div = document.getElementById(buttonId)
-                div.innerText = 'column densities recieved'
+                div.innerText = 'attributes received'
 
                 createColumnDensityInfoPanel(msg)
             });
-
-
 
             socket.on('processingRay',function(msg){
                 idx = msg.index
@@ -623,6 +622,7 @@
             }
             updateUniforms()
         }
+
         async function requestPoints(size,type,attr){
             if(attr != 'Select an attribute'){
                 if(type == 'PartType0'){
@@ -934,7 +934,7 @@
 
                     <!-- <div id="alpha" class="alpha-min"></div><div id="alpha" class="alpha-mid">&alpha;</div><div id="alpha" class="alpha-max">&alpha;</div> -->
 
-                    <input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-min-range" id="gasMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="1.0" class="alpha-picker alpha-mid-range" id="gasMidA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="1.0" class="alpha-picker alpha-max-range"  id="gasMaxA" oninput="changeColor()">
+                    <input type="range" min="0" max="1" step="0.0001" value="0.2" class="alpha-picker alpha-min-range" id="gasMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-mid-range" id="gasMidA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="1.0" class="alpha-picker alpha-max-range"  id="gasMaxA" oninput="changeColor()">
                     <!-- <br> -->
                 </div>
 
@@ -988,10 +988,10 @@
                 
                 adjust color & alpha values:
                 <div id=dm-colorscale>
-                    <input type="color" class="color-picker" value="#0b9e00" id="dmMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#186a01" id="dmMaxCol" oninput="changeColor()">
+                    <input type="color" class="color-picker" value="#ff00ff" id="dmMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff00ff" id="dmMaxCol" oninput="changeColor()">
                     <br>
 
-                    <input type="range" min="0" max="1" step="0.0001" value="0.99" class="alpha-picker alpha-min-range" id="dmMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.9" class="alpha-picker alpha-max-range"  id="dmMaxA" oninput="changeColor()">
+                    <input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-min-range" id="dmMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.9" class="alpha-picker alpha-max-range"  id="dmMaxA" oninput="changeColor()">
                     <!-- <br> -->
                 </div> 
                 <br>
@@ -1114,7 +1114,7 @@
                 <div id="density-mod" class="density-mod">
                     
                     <p>density opacity modulation</p>
-                    <p><input type="range" id="density-mod-intensity" min="0.0" max="10.0" step="0.001" value="0.8" oninput="updateUniforms()"> intensity</p>
+                    <p><input type="range" id="density-mod-intensity" min="0.0" max="10.0" step="0.001" value="1.0" oninput="updateUniforms()"> intensity</p>
                     <div id="density-min">
                         min
                         <input type="number" step="0.1" id="density-minval-input" class="number-input minvalinput" name="density-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
@@ -1132,7 +1132,7 @@
                     <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="1.00" oninput="updateUniforms()"> intensity</p>
     
                     <p><input type="checkbox" id="val-mod-check" onclick="updateUniforms()" checked> value opacity modulation</p>
-                    <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.75" oninput="updateUniforms()"> intensity</p>
+                    <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.25" oninput="updateUniforms()"> intensity</p>
     
                     <p><input type="checkbox" id="grayscale-mod-check" onclick="updateUniforms()"> saturation filter</p>
     
@@ -1142,7 +1142,7 @@
                     <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
                     <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p>
     
-                    <p><input type="range" id="exposure" min="1.0" max="10.0" step="0.001" value="5.0" oninput="updateUniforms()"> exposure</p>
+                    <p><input type="range" id="exposure" min="1.0" max="10.0" step="0.001" value="3.5" oninput="updateUniforms()"> exposure</p>
 
     
                     <hr>
