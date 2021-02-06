@@ -375,7 +375,7 @@ THREE.VolumeRenderShader1 = {
 					vec4 tex = texture2D(u_cmDMData, vec2(dm_val, 0.5));
 					
 					if (a > 0.0){
-						a = density_val * u_densityModI + u_valModI * u_valMod * dm_val;
+						a = density_val * u_densityModI + u_valModI * u_valMod;
 						tex.a *= a;
 					}
 					else tex = vec4(0.0,0.0,0.0,0.0);

@@ -70,6 +70,7 @@ var skewers = []
 var drawSkewers = false
 var line
 var lines = []
+var skewer_endpoints = []
 var container_hover //used to determine if the mouse is over a GUI container when drawing skewers
 var edges_scaled = []
 var domainXYZ = [0.0,1.0,0.0,1.0,0.0,1.0]
@@ -174,7 +175,7 @@ async function updateSize(){
         // loadHaloCenters()
         
         createSkewerCube(gridsize)
-        updateSkewerEndpoints(gridsize)
+        updateSkewerEndpoints(gridsize,oldSize)
         toggleXYZGuide()
         updateUniforms()
         toggleGrid()
@@ -224,12 +225,35 @@ function toggleXYZGuide(){
     }
 }
 
-function updateSkewerEndpoints(size){
+function updateSkewerEndpoints(size,oldsize){
     console.log('update skewer endpoints')
     for(i=0;i<lines.length;i++){
-        lines[i].scale.x = size/64
-        lines[i].scale.y = size/64
-        lines[i].scale.z = size/64
+        skewerScene.remove(lines[i])
+
+        point1 = new THREE.Vector3( skewer_endpoints[idx][0][0], skewer_endpoints[idx][0][1], skewer_endpoints[idx][0][2] )
+        point2 = new THREE.Vector3( skewer_endpoints[idx][1][0], skewer_endpoints[idx][1][1], skewer_endpoints[idx][1][2] )
+        skewerGeometry = cylinderMesh(point1.multiplyScalar(size),point2.multiplyScalar(size))
+        skewerGeometry.DefaultUp = new THREE.Vector3(0,0,1);
+
+        skewerGeometry.updateMatrix();
+        skewerGeometry.verticesNeedUpdate = true;
+        skewerGeometry.elementsNeedUpdate = true;
+        skewerGeometry.morphTargetsNeedUpdate = true;
+        skewerGeometry.uvsNeedUpdate = true;
+        skewerGeometry.normalsNeedUpdate = true;
+        skewerGeometry.colorsNeedUpdate = true;
+        skewerGeometry.tangentsNeedUpdate = true;
+
+        // console.log(skewerGeometry)
+        // render()
+
+
+        // lines[idx] = new THREE.Line2( geometry, material );
+        lines[i] = skewerGeometry
+
+        lines[i].layers.set(4)
+        skewerScene.add( lines[i] );
+
     }
 }
 
@@ -377,8 +401,8 @@ function updateUniforms(){
         volMaterial.uniforms["u_screenWidth"].value = window.innerWidth
 
         //check if grayscale depth is enabled
-        g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
-        volMaterial.uniforms[ "u_grayscaleDepthMod" ].value = g_mod;
+        // g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
+        // volMaterial.uniforms[ "u_grayscaleDepthMod" ].value = g_mod;
 
         //step size
         // volMaterial.uniforms[ "u_stepSize" ].value = document.getElementById("step-size").value
@@ -388,7 +412,7 @@ function updateUniforms(){
         volMaterial.uniforms[ "u_xyzMin" ].value = new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])
         volMaterial.uniforms[ "u_xyzMax" ].value = new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])
 
-        volMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
+        // volMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
         volMaterial.uniforms[ "u_valModI" ].value = (document.getElementById("val-mod-intensity")).value
 
 
@@ -419,12 +443,12 @@ function updateUniforms(){
         // }
 
 
-        if((document.getElementById("dist-mod-check")).checked){
-            volMaterial.uniforms[ "u_distMod" ].value = 1.0;
-        }
-        else{
-            volMaterial.uniforms[ "u_distMod" ].value = 0.0;
-        }
+        // if((document.getElementById("dist-mod-check")).checked){
+        //     volMaterial.uniforms[ "u_distMod" ].value = 1.0;
+        // }
+        // else{
+        //     volMaterial.uniforms[ "u_distMod" ].value = 0.0;
+        // }
 
         if((document.getElementById("val-mod-check")).checked){
             volMaterial.uniforms[ "u_valMod" ].value = 1.0;
@@ -513,6 +537,9 @@ function updateUniforms(){
         }
         else if(!document.getElementById("dm-min-check").checked && !document.getElementById("dm-max-check").checked){
             volMaterial.uniforms[ "u_dmClim" ].value.set( document.querySelector('#dm-minval-input').value , document.querySelector('#dm-maxval-input').value );
+        }
+        else {
+
         }
         
         volMaterial.uniforms[ "u_dmClip" ].value = [ document.getElementById("dm-min-clip-check").checked, document.getElementById("dm-max-clip-check").checked ]
@@ -634,7 +661,7 @@ function loadGas(size,attr,resolution_bool){
                 log = false
                 if(attr=="Temperature"){
                     min = 3.745
-                    max = 7
+                    max = 6.5
                 }
             }
             else{
@@ -685,11 +712,31 @@ function loadGas(size,attr,resolution_bool){
             let maxval = document.getElementById('gas-maxval-input')
             maxval.value = round(max,2)
             // if(elements.includes(attr)){
+
+            // set some default values
             if(attr=="Temperature"){
+                let dropdown = document.getElementById("gas_select")
+                dropdown.value = 'Temperature'
                 min = 3.745
                 minval.value = 3.745
-                max = 7
-                maxval.value = 7
+                max = 6.75
+                maxval.value = 6.75
+            }
+            if(attr=="Entropy"){
+                let dropdown = document.getElementById("gas_select")
+                dropdown.value = 'Entropy'
+                min = 2.1
+                minval.value = 2.1
+                max = 4.5
+                maxval.value = 4.5
+            }
+            if(attr=="Metallicity"){
+                let dropdown = document.getElementById("gas_select")
+                dropdown.value = 'Metallicity'
+                min = -4.5
+                minval.value = -4.5
+                max = -1.5
+                maxval.value = -1.5
             }
             // min = 4.5
             // minval.value = 4.5
@@ -710,6 +757,9 @@ function loadGas(size,attr,resolution_bool){
                 }
                 else if(attr == "InternalEnergy"){
                     gasUnits[i].innerHTML = "log(erg/g)"
+                }
+                else if(attr == "Entropy"){
+                    gasUnits[i].innerHTML = "log(cm<sup>2</sup>keV)"
                 }
                 else{
                     gasUnits[i].innerHTML = 'dimensionless'
@@ -758,17 +808,17 @@ function loadDarkMatter(size){
                     }
                 }
 
-                if(min==-Infinity){min = -999999999999}
+                if(min==-Infinity){min = -999999999999.9}
                 var x = document.getElementById("dm-eye-open");
                 x.style.display = "inline-block";
                 var y = document.getElementById("dm-eye-closed");
                 y.style.display = "none";
-                if(localStorage.getItem('dmMinVal') != ""){
-                    min = localStorage.getItem('dmMinVal')
-                }
-                if(localStorage.getItem('dmMaxVal') != ""){
-                    max = localStorage.getItem('dmMaxVal')
-                }
+                // if(localStorage.getItem('dmMinVal') != ""){
+                //     min = localStorage.getItem('dmMinVal')
+                // }
+                // if(localStorage.getItem('dmMaxVal') != ""){
+                //     max = localStorage.getItem('dmMaxVal')
+                // }
                 climDMLimits = [min, max]
                 let minval = document.getElementById('dm-minval-input')
                 minval.value = round(min,2)
@@ -860,6 +910,7 @@ function loadDensity(size,type,attr){
 
             dm = document.querySelector('#density-minval-input')
             dm.addEventListener('input', updateUniforms);
+            dm.value = -8;
             dmx = document.querySelector('#density-maxval-input')
             dmx.addEventListener('input', updateUniforms);
 
@@ -896,7 +947,7 @@ function loadStars(){
                     vertex.toArray( starPositions, i * 3 )
                     // console.log(vertex)
                 }
-                console.log(starPositions)
+                // console.log(starPositions)
                 
                 starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
                 // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
@@ -1481,7 +1532,7 @@ function requestSimpleLineData(idx){
     div.disabled = true
     console.log(pt1,pt2)
     sendLine(idx,pt1,pt2)
-    div.innerText = 'requesting simple ray info . . . '
+    div.innerText = 'requesting skewer data . . . '
 
     function scalePointCoords(pt){
         x_scale = (edges_scaled.right_edge[0]-edges_scaled.left_edge[0])/(edges.right_edge[0] - edges.left_edge[0])
@@ -1505,7 +1556,7 @@ function createColumnDensityInfoPanel(msg){
     divID = 'simple-line-status-skewer-coords-' + idx + ''
     div = document.getElementById(divID)
     
-    dropdown_elements = ['H_I', 'H_II', 'C_I', 'C_II', 'C_III', 'C_IV', 'C_V', 'C_VI', 'He_III', 'Mg_I', 'Mg_II', 'N_II', 'N_III', 'N_IV', 'N_V', 'N_VI', 'N_VII', 'O_I', 'O_VI', 'O_VII', 'O_VIII', 'El', 'density', 'entropy', 'optical_depth', 'temperature']
+    dropdown_elements = ['N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(O I)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'density', 'entropy', 'temperature']
     var select = document.createElement("select")
     select.name = 'simple-line-results-' + idx + ''
     select.id = 'simple-line-results-' + idx + ''
@@ -1526,6 +1577,41 @@ function createColumnDensityInfoPanel(msg){
         width = 300 - margin.left - margin.right,
         height = 200 - margin.top - margin.bottom;
     
+
+    function createSkewerDataTexture(skewer_index, attr_data){
+        // console.log(attr_data)
+        size = attr_data.length
+        d = new Uint8Array( 3 * size )
+
+        for (i = 0; i < size; i++){
+            band_col = attr_data[i].c*255
+            stride = i*3
+
+            d[ stride ]     = 1.0*band_col; // stores length along skewer (to be used as texture UV lookup)
+            d[ stride + 1 ] = 0.0*band_col; // stores attribute value at distance x
+            d[ stride + 2 ] = 0.0*band_col; // empty
+            // color will be programmed in the shader based on these values since delta_x is not uniform
+        }
+        console.log(d)
+
+        skewerTexture[skewer_index] = new THREE.DataTexture( d, 1, size, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter )
+        console.log(skewer_index)
+        skewerTexture[skewer_index].needsUpdate = true
+        lines[skewer_index].material.uniforms.skewer_tex.value = skewerTexture[skewer_index]
+        lines[skewer_index].material.uniformsNeedUpdate = true
+        lines[skewer_index].material.uniforms.skewer_tex.needsUpdate = true
+        lines[skewer_index].updateMatrix();
+        lines[skewer_index].verticesNeedUpdate = true;
+        lines[skewer_index].elementsNeedUpdate = true;
+        lines[skewer_index].morphTargetsNeedUpdate = true;
+        lines[skewer_index].uvsNeedUpdate = true;
+        lines[skewer_index].normalsNeedUpdate = true;
+        lines[skewer_index].colorsNeedUpdate = true;
+        lines[skewer_index].tangentsNeedUpdate = true;
+        lines[skewer_index].material.needsUpdate = true
+    }
+
     s = document.getElementById('simple-line-results-' + idx + '')
     s.onchange = function(){                    
         // remove old plot
@@ -1554,39 +1640,7 @@ function createColumnDensityInfoPanel(msg){
 
         createSkewerDataTexture(msg.index, scaled_data)
 
-        function createSkewerDataTexture(skewer_index, attr_data){
-            // console.log(attr_data)
-            size = attr_data.length
-            d = new Uint8Array( 3 * size )
-
-            for (i = 0; i < size; i++){
-                band_col = attr_data[i].c*255
-                stride = i*3
-
-                d[ stride ]     = 1.0*band_col; // stores length along skewer (to be used as texture UV lookup)
-                d[ stride + 1 ] = 0.0*band_col; // stores attribute value at distance x
-                d[ stride + 2 ] = 0.0*band_col; // empty
-                // color will be programmed in the shader based on these values since delta_x is not uniform
-            }
-            console.log(d)
-
-            skewerTexture[skewer_index] = new THREE.DataTexture( d, 1, size, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
-				THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter )
-            console.log(skewer_index)
-            skewerTexture[skewer_index].needsUpdate = true
-            lines[skewer_index].material.uniforms.skewer_tex.value = skewerTexture[skewer_index]
-            lines[skewer_index].material.uniformsNeedUpdate = true
-            lines[skewer_index].material.uniforms.skewer_tex.needsUpdate = true
-            lines[skewer_index].updateMatrix();
-            lines[skewer_index].verticesNeedUpdate = true;
-            lines[skewer_index].elementsNeedUpdate = true;
-            lines[skewer_index].morphTargetsNeedUpdate = true;
-            lines[skewer_index].uvsNeedUpdate = true;
-            lines[skewer_index].normalsNeedUpdate = true;
-            lines[skewer_index].colorsNeedUpdate = true;
-            lines[skewer_index].tangentsNeedUpdate = true;
-            lines[skewer_index].material.needsUpdate = true
-        }
+        
 
         // console.log(scaled_data)
         var svg = d3.select('#' + divID)
@@ -1608,21 +1662,21 @@ function createColumnDensityInfoPanel(msg){
         svg.append("text")             
             .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 30) + ")")
             .style("text-anchor", "middle")
-            .text("Distance (Kpc)")
+            .text("Distance (kpc)")
 
         var yScale = d3.scaleLinear()
             .range([height, 0])
-            .domain([min_val,max_val]);
+            .domain([0,max_val]);
         svg.append("g")
             .call(d3.axisLeft(yScale)
-            .tickFormat(d3.format(".1e")));
+            .tickFormat(d3.format("1")));
         svg.append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", 0 - margin.left-5)
             .attr("x", 0 - (height / 2))
             .attr("dy", "0.9em")
             .style("text-anchor", "middle")
-            .text("log("+s.value+"+1)");
+            .text("log("+s.value+")");
 
         var line = d3.line()
             .x(d => xScale(d.l))
@@ -1635,16 +1689,24 @@ function createColumnDensityInfoPanel(msg){
         
     }
 
-
+    s.value = 'temperature'
+    min_l = d3.min(msg.l)
+    max_l = d3.max(msg.l)
+    min_val = Math.log10(d3.min(msg[s.value])+1)
+    max_val = Math.log10(d3.max(msg[s.value])+1)
     //by defualt plot dist vs temp
     data = []
+    scaled_data = []
     // var margin = {top: 10, right: 40, bottom: 30, left: 50},
     //     width = 300 - margin.left - margin.right,
     //     height = 200 - margin.top - margin.bottom;
 
     for(i=0;i<msg.l.length;i++){
-        data[i] = { 'l': msg.l[i], 'c': msg.temperature[i] }
+        data[i] = { 'l': msg.l[i], 'c': Math.log10(msg.temperature[i]+1) }
+        scaled_data[i] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i]+1)-min_val)/(max_val-min_val) }    
     }
+
+    createSkewerDataTexture(msg.index, scaled_data)
     
     var svg = d3.select('#' + divID)
         .append("svg")
@@ -1665,11 +1727,11 @@ function createColumnDensityInfoPanel(msg){
     svg.append("text")             
         .attr("transform", "translate(" + (width/2) + " ," + (height + margin.top + 30) + ")")
         .style("text-anchor", "middle")
-        .text("Distance (Kpc)")
+        .text("Distance (kpc)")
 
     var yScale = d3.scaleLinear()
         .range([height, 0])
-        .domain(d3.extent(msg.temperature));
+        .domain([min_val,max_val]);
     svg.append("g")
         .call(d3.axisLeft(yScale));
     svg.append("text")
@@ -1678,7 +1740,7 @@ function createColumnDensityInfoPanel(msg){
         .attr("x", 0 - (height / 2))
         .attr("dy", "0.9em")
         .style("text-anchor", "middle")
-        .text("Temperature (K)");
+        .text("log( Temperature (K) )");
 
     var line = d3.line()
         .x(d => xScale(d.l))
@@ -2469,74 +2531,11 @@ function onMouseClick( event ) {
          * * printLine() draws the skewer in the scene
          */
 
-        // positions = []
-        // geometry = new THREE.LineGeometry();
-        // console.log(point1,point2)
-        // positions.push(point1.x,point1.y,point1.z);
-        // positions.push(point2.x,point2.y,point2.z);
-        // geometry.setPositions(positions)
+
         skewerScene.remove(lines[idx])
-        // var material = new THREE.LineMaterial( { 
-        //     color: 0xffff00,//0xff5522,
-        //     linewidth: 0.0025,
-        //     transparent: true,
-        //     opacity: 1.0,
-        //     blending: THREE.AdditiveBlending
-        // } );
-        
-        function cylinderMesh(pointX, pointY) {
-            // edge from X to Y
-            console.log(pointY)
-            let direction = new THREE.Vector3().subVectors(pointY, pointX);
-            // let skewerMaterial = new THREE.MeshBasicMaterial({ color: 0x5B5B5B });
-            
-            emptyData = new Uint8Array( 3 * 1000 )
-            emptyData.fill(255)
-            emptyTexture = new THREE.DataTexture(emptyData.fill(1), 1, 100, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
-            emptyTexture.needsUpdate = true
-            skewerMaterial1[idx] = new THREE.ShaderMaterial( {
-                uniforms: {
-                    Col: { value: new THREE.Vector4(1.0,1.0,0.0,1.0) },
-                    u_xyzMin: {value: new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])},
-                    u_xyzMax: {value: new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])},
-                    u_gridsize: {value: gridsize},
-                    skewer_tex: {value: emptyTexture},
-                },
-                vertexShader:   document.getElementById('vertexshader-skewer').textContent,
-                fragmentShader: document.getElementById('fragmentshader-skewer').textContent,
-                // blending:       THREE.CustomBlending,
-                // // blendEquation:  THREE.AddEquation, //default
-                // blendSrc:       THREE.OneFactor,
-                // blendDst:       THREE.ZeroFactor,
-                depthTest:      true,
-                depthWrite:     true,
-                transparent:    false,
-                dithering: true,
-                vertexColors: false,
-                morphTargets: true,
-                morphNormals: true,
-            });
-            // Make the geometry (of "direction" length)
-            let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 1000, false, 0, 2*Math.PI);
-            skewerGeometry.setDrawRange(0,Infinity)
-            // shift it so one end rests on the origin
-            skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
-            // rotate it the right way for lookAt to work
-            skewerGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
-            // Make a mesh with the geometry
-            let skewerMesh = new THREE.Mesh(skewerGeometry, skewerMaterial1[idx]);
-            // Position it where we want
-            skewerMesh.position.copy(pointX);
-            // And make it point to where we want
-            skewerMesh.lookAt(pointY.x,pointY.y,pointY.z);
-        
-            return skewerMesh;
-        }
 
         skewerGeometry = cylinderMesh(point1,point2)
         skewerGeometry.DefaultUp = new THREE.Vector3(0,0,1);
-
 
         skewerGeometry.updateMatrix();
         skewerGeometry.verticesNeedUpdate = true;
@@ -2557,6 +2556,8 @@ function onMouseClick( event ) {
         lines[idx].layers.set(4)
         skewerScene.add( lines[idx] );
     }
+
+    
 
     function updateSkewerList(dir,idx,point1,point2){
 
@@ -2669,7 +2670,59 @@ function onMouseClick( event ) {
             point1: point1,
             point2: point2
         }
+        skewer_endpoints[idx] = [ [skewers[idx].point1.x/gridsize, skewers[idx].point1.y/gridsize, skewers[idx].point1.z/gridsize],
+                                  [skewers[idx].point2.x/gridsize, skewers[idx].point2.y/gridsize, skewers[idx].point2.z/gridsize] ]
     }
+}
+
+function cylinderMesh(pointX, pointY) {
+    // edge from X to Y
+
+    let direction = new THREE.Vector3().subVectors(pointY, pointX);
+    // let skewerMaterial = new THREE.MeshBasicMaterial({ color: 0x5B5B5B });
+    
+    emptyData = new Uint8Array( 3 * 1000 )
+    emptyData.fill(255)
+    emptyTexture = new THREE.DataTexture(emptyData.fill(1), 1, 100, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
+    THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
+    emptyTexture.needsUpdate = true
+    skewerMaterial1[idx] = new THREE.ShaderMaterial( {
+        uniforms: {
+            Col: { value: new THREE.Vector4(1.0,1.0,0.0,1.0) },
+            u_xyzMin: {value: new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])},
+            u_xyzMax: {value: new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])},
+            u_gridsize: {value: gridsize},
+            skewer_tex: {value: emptyTexture},
+        },
+        vertexShader:   document.getElementById('vertexshader-skewer').textContent,
+        fragmentShader: document.getElementById('fragmentshader-skewer').textContent,
+        // blending:       THREE.CustomBlending,
+        // // blendEquation:  THREE.AddEquation, //default
+        // blendSrc:       THREE.OneFactor,
+        // blendDst:       THREE.ZeroFactor,
+        depthTest:      true,
+        depthWrite:     true,
+        transparent:    false,
+        dithering: true,
+        vertexColors: false,
+        morphTargets: true,
+        morphNormals: true,
+    });
+    // Make the geometry (of "direction" length)
+    let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 1000, false, 0, 2*Math.PI);
+    skewerGeometry.setDrawRange(0,Infinity)
+    // shift it so one end rests on the origin
+    skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
+    // rotate it the right way for lookAt to work
+    skewerGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
+    // Make a mesh with the geometry
+    let skewerMesh = new THREE.Mesh(skewerGeometry, skewerMaterial1[idx]);
+    // Position it where we want
+    skewerMesh.position.copy(pointX);
+    // And make it point to where we want
+    skewerMesh.lookAt(pointY.x,pointY.y,pointY.z);
+
+    return skewerMesh;
 }
 
 function onMouseWheel( event ) {

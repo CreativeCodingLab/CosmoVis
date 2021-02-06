@@ -968,3 +968,9 @@ th,td {
     }
   }
   
+label[for="bh_select"]{
+    display:none;
+}
+#galaxy_list{
+    display: none;
+}
