@@ -234,7 +234,25 @@ THREE.VolumeRenderShader1 = {
 						// if t.y is + there is something to render, if t.y is - then the integral is behind the camera...		
 						// convert current position and ray direction to voxel distance
 					rp = rp + t.x * rd;
-					rd = rd * (t.y - t.x); // not normalized, in voxel distance
+					rd = rd * (t.y - t.x); // rd is as long as interval within the box; not normalized, in voxel distance
+
+					// fetch depth of stars and skewers
+					// float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
+					// float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+					// float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+
+					// float fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;
+					// float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+					// float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+							
+					// determine number of steps based on A) back of cube B) depth of star, or C) depth of skewer
+					// if(starDepth > t.y){
+					//		
+					//}
+					// vec3 col = vec3(t.x,t.x,t.x)*0.1/u_size.x;
+					// gl_FragColor = vec4(col,1.0);
+					// return;
+
 					int iSteps = int(length(rd)); // iSteps = number of steps in the ray; determine step size, length, direction
 					vec3 dd = rd / float(iSteps); // dd = distance differential (one step forward in world size units), should end up being ~1 (voxel units)
 					rd = normalize(rd); // direction is normalized to use as multiplier
@@ -244,6 +262,7 @@ THREE.VolumeRenderShader1 = {
 					float tau = 0.0; // accumulated optical thickness through the volume 
 					vec3 gas_darkmatter_density0 = sampleData(u_dataTexture3D, rp); // normally called 'rho'
 					float rho0 = max(0.0,((gas_darkmatter_density0.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp), rho1; // rho ~ density; rho0 ~ first point in the volume; rho1 ~ not initialized yet
+					float transmittance = 0.0;
 					for (int i = 0; i < iSteps; i++) {
 						rp += dd; // move position along the ray by 1 step forward (dd), ~1 voxel unit
 						vec3 gas_darkmatter_density1 = sampleData(u_dataTexture3D, rp); //get texture values at each step
@@ -251,7 +270,7 @@ THREE.VolumeRenderShader1 = {
 						float rho = 0.5 * (rho0 + rho1); // actual density (rho) is the average between the two (assume piecewise linear density function)
 						vec3 gas_darkmatter_density = 0.5 * (gas_darkmatter_density0 + gas_darkmatter_density1);
 						vec3 emission = vec3(0.0, 0.0, 0.0);
-						float transmittance = 0.0;
+						
 						float scaling_factor = 100.0/u_size.x;
 					// gas + dark matter contribute to optical density
 						if( u_gasVisibility == true ){
@@ -267,7 +286,7 @@ THREE.VolumeRenderShader1 = {
 						}
 
 					//star color will get added to emission, star detection
-						transmittance = exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature)
+						transmittance = exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature), always ends up between (0,1)
 
 						if(u_starVisibility == true) {
 							float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
@@ -275,20 +294,25 @@ THREE.VolumeRenderShader1 = {
 							float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
 							
 							vec3 star_emission = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-							// tau += length(dd)*(1.0/exp(starDepth));
-							// transmittance += exp(-u_sigma_t * tau);
-							emission += 0.05*star_emission / (starDepth * starDepth);
+							emission += 0.1*star_emission / (starDepth * starDepth);
+
 						}
 						
 						if(u_skewerVisibility == true){
+							float fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;
+							float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+							float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+							
 							vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-							emission += 1000.0*c_skewers/u_size.x;
-
+							emission +=  800.0 * c_skewers / (u_size.x * skewerDepth * skewerDepth);
 						}
+
 						path_L += transmittance * u_sigma_e * emission; // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
 						gas_darkmatter_density0 = gas_darkmatter_density1;
 						rho0 = rho1; // move the integration one step forward
 					}
+					// if star || skewer is visible, multiply color by transmittance (0,1)
+					// pathL += skewerColor or starColor * transmittance
 					vec4 c = vec4(vec3(1.0,1.0,1.0) - exp(-u_exposure*path_L),1.0);
 					gl_FragColor = c;
 				}

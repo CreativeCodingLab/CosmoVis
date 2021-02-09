@@ -22,6 +22,7 @@ var gui //used to hold dat.GUI object
 // var material
 var cmtexture = []
 var gasTexture, dmTexture
+var gasAttr = "Temperature"
 var uniforms
 var densityTexture, densityMin, densityMax
 var gasMesh, dmMesh, starMesh, bhMesh
@@ -167,7 +168,7 @@ async function updateSize(){
     if(gridsize != s){
         gridsize = s
         var init = init3dDataTexture(gridsize)
-        asyncCall()
+        asyncCall(true)
         //check to see which variables are visible and update those immediately
         checkSelectedSimID()
         // loadGasDMAttributes(gridsize,'Temperature',true)
@@ -179,7 +180,10 @@ async function updateSize(){
         toggleXYZGuide()
         updateUniforms()
         toggleGrid()
-        
+        // camera.position.set(oldPos.x*gridsize/oldsize,oldPos.y*gridsize/oldsize,oldPos.z*gridsize/oldsize)
+        // controls
+        controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
+        controls.update()
     }
 }
 
@@ -381,8 +385,8 @@ function updateUniforms(){
         h = 1
         size = w * h
         
-        controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
-        controls.update()
+        // controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
+        // controls.update()
         // camera.lookAt(controls.target.set( ((domainXYZ[1]-domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]-domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]-domainXYZ[4])*gridsize)/2 ))
         // camera.updateProjectionMatrix();
 
@@ -580,8 +584,11 @@ function init3dDataTexture(size){
         dataTexture3D = new THREE.DataTexture3D(dataArray3D,size,size,size)
         dataTexture3D.format = THREE.RGBAFormat
         dataTexture3D.type = THREE.FloatType
-        dataTexture3D.minFilter = dataTexture3D.magFilter = THREE.LinearFilter
+        dataTexture3D.minFilter = THREE.LinearMipmapLinearFilter
+        dataTexture3D.magFilter = THREE.LinearFilter
         dataTexture3D.unpackAlignment = 4
+        dataTexture3D.encoding = THREE.sRGBEncoding
+        dataTexture3D.anisotropy = 16
         
         volumeShader = THREE.VolumeRenderShader1;
         volumeUniforms = THREE.UniformsUtils.clone( volumeShader.uniforms );
@@ -632,13 +639,13 @@ function update3dDataTexture(){
         volGeometry = new THREE.BoxBufferGeometry( gridsize, gridsize, gridsize );
         volGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
         
-        if(oldPos && oldSize){
-            camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
-            // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-            // camera.zoom = 6
-            camera.updateProjectionMatrix()
-            controls.target.set( gridsize/2,  gridsize/2,  gridsize/2 );
-        }
+        // if(oldPos && oldSize){
+        //     camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+        //     // camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
+        //     // camera.zoom = 6
+        //     camera.updateProjectionMatrix()
+        //     controls.target.set( gridsize/2,  gridsize/2,  gridsize/2 );
+        // }
         var mesh = new THREE.Mesh( volGeometry, volMaterial );
         mesh.layers.set(0)
         mesh.renderOrder = 1
@@ -653,6 +660,7 @@ function update3dDataTexture(){
 
 function loadGas(size,attr,resolution_bool){
     // startLoadingAnimation()
+    gasAttr = attr
     console.log('loading gas')
     return new Promise(resolve => {
         d3.json('static/data/'+simID+'/PartType0/' + size + '_PartType0_' + attr +'.json').then(function(d){
@@ -677,6 +685,9 @@ function loadGas(size,attr,resolution_bool){
                         if(simID=="TNG100" && attr =="GFM_Metallicity"){
                             dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
                         }
+                        else if(attr=="Metallicity"){
+                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]*77.22015
+                        }
                         else if(log){
                             dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z])
                         }
@@ -699,45 +710,56 @@ function loadGas(size,attr,resolution_bool){
             x.style.display = "inline-block";
             var y = document.getElementById("gas-eye-closed");
             y.style.display = "none";
-            if(resolution_bool && localStorage.getItem('gasMinVal') != ""){
-                min = localStorage.getItem('gasMinVal')
-            }
-            if(resolution_bool && localStorage.getItem('gasMaxVal') != ""){
-                max = localStorage.getItem('gasMaxVal')
-            }
             
-            climGasLimits = [min, max]
             let minval = document.getElementById('gas-minval-input')
             minval.value = round(min,2)
             let maxval = document.getElementById('gas-maxval-input')
             maxval.value = round(max,2)
+
+            if(resolution_bool){
+                if(localStorage.getItem('gasMinVal') != ""){
+                    min = localStorage.getItem('gasMinVal')
+                    minval.value = min
+                }
+                if(localStorage.getItem('gasMaxVal') != ""){
+                    max = localStorage.getItem('gasMaxVal')
+                    maxval.value = max
+                }
+            }
+            else{
+                // set some default values
+                if(attr=="Temperature"){
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Temperature'
+                    min = 3.745
+                    minval.value = 3.745
+                    max = 6.75
+                    maxval.value = 6.75
+                }
+                if(attr=="Entropy"){
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Entropy'
+                    min = 2.1
+                    minval.value = 2.1
+                    max = 4.5
+                    maxval.value = 4.5
+                }
+                if(attr=="Metallicity"){
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Metallicity'
+                    // min = -4.5
+                    // minval.value = -4.5
+                    // max = -1.5
+                    // maxval.value = -1.5
+                }
+            }
+
+            climGasLimits = [min, max]
+            
+            
             // if(elements.includes(attr)){
 
-            // set some default values
-            if(attr=="Temperature"){
-                let dropdown = document.getElementById("gas_select")
-                dropdown.value = 'Temperature'
-                min = 3.745
-                minval.value = 3.745
-                max = 6.75
-                maxval.value = 6.75
-            }
-            if(attr=="Entropy"){
-                let dropdown = document.getElementById("gas_select")
-                dropdown.value = 'Entropy'
-                min = 2.1
-                minval.value = 2.1
-                max = 4.5
-                maxval.value = 4.5
-            }
-            if(attr=="Metallicity"){
-                let dropdown = document.getElementById("gas_select")
-                dropdown.value = 'Metallicity'
-                min = -4.5
-                minval.value = -4.5
-                max = -1.5
-                maxval.value = -1.5
-            }
+            
             // min = 4.5
             // minval.value = 4.5
             // }
@@ -760,6 +782,9 @@ function loadGas(size,attr,resolution_bool){
                 }
                 else if(attr == "Entropy"){
                     gasUnits[i].innerHTML = "log(cm<sup>2</sup>keV)"
+                }
+                else if(attr == "Metallicity"){
+                    gasUnits[i].innerHTML = "Zsun"
                 }
                 else{
                     gasUnits[i].innerHTML = 'dimensionless'
@@ -824,8 +849,8 @@ function loadDarkMatter(size){
                 minval.value = round(min,2)
                 let maxval = document.getElementById('dm-maxval-input')
                 maxval.value = round(max,2)
-                min = -30
-                minval.value = -30 
+                min = -28
+                minval.value = -28
                 max = -25
                 maxval.value = -25 
                 let dmUnits = document.getElementsByClassName('dm-attr-units')
@@ -848,7 +873,7 @@ function setTwoNumberDecimal(el) {
     updateUniforms()
     // el.value = el.value.toFixed(2);
 };
-async function asyncCall() {
+async function asyncCall(resolution_bool) {
     startLoadingAnimation()
     
     let init = await init3dDataTexture(gridsize)
@@ -857,7 +882,7 @@ async function asyncCall() {
     densityMin = dens[0]
     densityMax = dens[1]
     var stars = await loadStars()
-    var gas = await loadGas(gridsize,'Temperature',false)
+    var gas = await loadGas(gridsize,gasAttr,resolution_bool)
     var darkmatter = await loadDarkMatter(gridsize)
     // volMaterial.uniforms["u_dmVisibility"].value = false;
     // }
@@ -2113,7 +2138,8 @@ function createXYZBrush(xyz){
 }
 
 function updateXYZDomain(xyz, min, max){
-
+    controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
+    controls.update()
     if(xyz == 'x'){
         domainXYZ[0] = min
         domainXYZ[1] = max
@@ -2261,7 +2287,7 @@ function checkSelectedSimID(){
             simSize = (edges.right_edge[0]-edges.left_edge[0])/0.6776999078
             toggleGrid()
             updateUniforms()
-            asyncCall()
+            asyncCall(false)
             
         })
         clearDropDowns()
@@ -2295,10 +2321,20 @@ function checkSelectedSimID(){
 
         for(i = 0; i < field_list.length; i++){
             if(field_list[i][0] == 'PartType0'){
-                var select = document.getElementById("gas_select"); 
-                var option = document.createElement("option");
-                option.text = field_list[i][1];
-                select.add(option);
+                if(field_list[i][0] == 'PartType0'){
+                    console.log(field_list[i])
+                    if( (field_list[i][1] == 'Temperature') ||
+                        (field_list[i][1] == 'Entropy') || 
+                        (field_list[i][1] == 'Metallicity') ||
+                        (field_list[i][1] == 'Density') ||
+                        (field_list[i][1] == 'Carbon') ||
+                        (field_list[i][1] == 'Oxygen') ){
+                        var select = document.getElementById("gas_select"); 
+                        var option = document.createElement("option");
+                        option.text = field_list[i][1];
+                        select.add(option);
+                    }
+                }
             }
             // if(field_list[i][0] == 'PartType1'){
             //     var select = document.getElementById("dm_select"); 
@@ -2709,7 +2745,7 @@ function cylinderMesh(pointX, pointY) {
         morphNormals: true,
     });
     // Make the geometry (of "direction" length)
-    let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 1000, false, 0, 2*Math.PI);
+    let skewerGeometry = new THREE.CylinderBufferGeometry(100*0.1/gridsize, 100*0.1/gridsize, direction.length(), 10, 1000, false, 0, 2*Math.PI);
     skewerGeometry.setDrawRange(0,Infinity)
     // shift it so one end rests on the origin
     skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
@@ -2767,7 +2803,7 @@ function initColor(){
         document.querySelector("#dmMinCol").value = localStorage.getItem('dmMinCol');
     }
     else{
-        let col = new THREE.Color('rgb(11,158,0)')
+        let col = new THREE.Color('rgb(51,0,40)')
         document.querySelector("#dmMinCol").value = '#'+col.getHexString();
     }
     document.querySelector("#dmMinCol").style.backgroundColor = document.querySelector("#dmMinCol").value
@@ -2776,7 +2812,7 @@ function initColor(){
         document.querySelector("#dmMaxCol").value = localStorage.getItem('dmMaxCol');
     }
     else{
-        let col = new THREE.Color('rgb(24,106,1)')
+        let col = new THREE.Color('rgb(255,0,212)')
         document.querySelector("#dmMaxCol").value = '#'+col.getHexString();
     }
     document.querySelector("#dmMaxCol").style.backgroundColor = document.querySelector("#dmMaxCol").value
@@ -2922,7 +2958,7 @@ $(document).ready(function(){
     init()
     animate()
     render()
-    asyncCall()
+    asyncCall(false)
     
     
     
