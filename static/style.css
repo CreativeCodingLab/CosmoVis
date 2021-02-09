@@ -974,3 +974,7 @@ label[for="bh_select"]{
 #galaxy_list{
     display: none;
 }
+
+.col-density-sum{
+    display: block;
+}

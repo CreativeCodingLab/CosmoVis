@@ -58,6 +58,7 @@ THREE.VolumeRenderShader1 = {
 		"		varying vec3 v_cameraPosition;",
 		"		out vec3 v_Origin;",
 		"		out vec3 v_Direction;",
+		"		out vec2 vUv;",
 
 		"		mat4 inversemat(mat4 m) {",
 		// Taken from https://github.com/stackgl/glsl-inverse/blob/master/index.glsl
@@ -130,6 +131,7 @@ THREE.VolumeRenderShader1 = {
 
 		"				v_Origin = vec3( inverse( modelMatrix ) * vec4( cameraPosition, 1.0 ) ).xyz;",
 		"				v_Direction = position - v_Origin;",
+		"				vUv = uv;",
 		"				gl_Position = projectionMatrix * viewMatrix * modelMatrix * position4;",
 		"		}",
 	].join( "\n" ),
@@ -200,6 +202,7 @@ THREE.VolumeRenderShader1 = {
 	
 		"		in vec3 v_Origin;",
 		"		in vec3 v_Direction;",
+		"		in vec2 vUv;",
 
 		"		vec2 ray_AABB_intersection(vec3 rp, vec3 rd, vec3 c_lo, vec3 c_hi);",
 		"		void cast_raymarching();",
@@ -234,22 +237,35 @@ THREE.VolumeRenderShader1 = {
 						// if t.y is + there is something to render, if t.y is - then the integral is behind the camera...		
 						// convert current position and ray direction to voxel distance
 					rp = rp + t.x * rd;
-					rd = rd * (t.y - t.x); // rd is as long as interval within the box; not normalized, in voxel distance
 
 					// fetch depth of stars and skewers
-					// float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
-					// float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
-					// float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+					float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).x;
+					float viewZ = perspectiveDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+					float starDepth = viewZToPerspectiveDepth( viewZ, u_cameraNear, u_cameraFar );
 
-					// float fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;
-					// float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
-					// float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+					fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).x;
+					viewZ = perspectiveDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+					float skewerDepth = perspectiveDepthToViewZ( viewZ, u_cameraNear, u_cameraFar );
 							
 					// determine number of steps based on A) back of cube B) depth of star, or C) depth of skewer
-					// if(starDepth > t.y){
-					//		
-					//}
-					// vec3 col = vec3(t.x,t.x,t.x)*0.1/u_size.x;
+					
+					float integration_limit = 0.0;
+					if(starDepth > t.y && starDepth > skewerDepth){
+						integration_limit = starDepth;
+					}
+
+					else if(skewerDepth > t.y && starDepth < skewerDepth){
+						integration_limit = skewerDepth;
+					}
+					else integration_limit = t.y;
+
+					rd = rd * (integration_limit - t.x); // rd is as long as interval within the box; not normalized, in voxel distance
+
+					// if(starCol.r > 0.3 && starCol.g > 0.3){
+						
+					// }
+					// else gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+					// vec3 col = starCol / (starDepth*starDepth);
 					// gl_FragColor = vec4(col,1.0);
 					// return;
 
@@ -288,33 +304,42 @@ THREE.VolumeRenderShader1 = {
 					//star color will get added to emission, star detection
 						transmittance = exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature), always ends up between (0,1)
 
-						if(u_starVisibility == true) {
-							float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
-							float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
-							float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+						// if(u_starVisibility == true) {
+						// 	float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
+						// 	float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+						// 	float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
 							
-							vec3 star_emission = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-							emission += 0.1*star_emission / (starDepth * starDepth);
+						// 	vec3 star_emission = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
+						// 	emission += 0.1*star_emission / (starDepth * starDepth);
 
-						}
+						// }
 						
-						if(u_skewerVisibility == true){
-							float fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;
-							float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
-							float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
+						// if(u_skewerVisibility == true){
+						// 	float fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;
+						// 	float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+						// 	float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
 							
-							vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-							emission +=  800.0 * c_skewers / (u_size.x * skewerDepth * skewerDepth);
-						}
+						// 	vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
+						// 	emission +=  800.0 * c_skewers / (u_size.x * skewerDepth * skewerDepth);
+						// }
 
 						path_L += transmittance * u_sigma_e * emission; // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
 						gas_darkmatter_density0 = gas_darkmatter_density1;
 						rho0 = rho1; // move the integration one step forward
 					}
 					// if star || skewer is visible, multiply color by transmittance (0,1)
+					if(u_starVisibility == true) {
+						vec3 starCol = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
+						if( starCol.r > 0.1) path_L += transmittance * ((starCol)/(starDepth*starDepth));
+					}
+					if(u_skewerVisibility == true) {
+						vec3 skewerCol = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
+						if(skewerCol.r != 0.0) path_L += 100.0 * transmittance * ((skewerCol));
+					}
 					// pathL += skewerColor or starColor * transmittance
 					vec4 c = vec4(vec3(1.0,1.0,1.0) - exp(-u_exposure*path_L),1.0);
 					gl_FragColor = c;
+					
 				}
 		`,
 

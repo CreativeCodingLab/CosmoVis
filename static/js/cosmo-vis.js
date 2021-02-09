@@ -686,7 +686,7 @@ function loadGas(size,attr,resolution_bool){
                             dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
                         }
                         else if(attr=="Metallicity"){
-                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]*77.22015
+                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z]*77.22015)
                         }
                         else if(log){
                             dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z])
@@ -747,10 +747,10 @@ function loadGas(size,attr,resolution_bool){
                 if(attr=="Metallicity"){
                     let dropdown = document.getElementById("gas_select")
                     dropdown.value = 'Metallicity'
-                    // min = -4.5
-                    // minval.value = -4.5
-                    // max = -1.5
-                    // maxval.value = -1.5
+                    min = -3
+                    minval.value = -3
+                    max = 1
+                    maxval.value = 1
                 }
             }
 
@@ -784,7 +784,7 @@ function loadGas(size,attr,resolution_bool){
                     gasUnits[i].innerHTML = "log(cm<sup>2</sup>keV)"
                 }
                 else if(attr == "Metallicity"){
-                    gasUnits[i].innerHTML = "Zsun"
+                    gasUnits[i].innerHTML = "log(Zsun)"
                 }
                 else{
                     gasUnits[i].innerHTML = 'dimensionless'
@@ -1025,13 +1025,13 @@ function setupStarScene(){
         vertexShader:   document.getElementById( 'vertexshader-star' ).textContent,
         fragmentShader: document.getElementById( 'fragmentshader-star' ).textContent,
 
-        // // blending:       THREE.AdditiveBlending,
+        // blending:       THREE.AdditiveBlending,
         blending:       THREE.CustomBlending,
         // blendEquation:  THREE.AddEquation, //default
         blendSrc:       THREE.OneFactor,
         blendDst:       THREE.ZeroFactor,
         depthTest:      true,
-        depthWrite:     false,
+        depthWrite:     true,
         transparent:    false,
         // alphaTest:      0.3
 
@@ -1089,12 +1089,12 @@ function setupRenderTarget(){
 
     target = new THREE.WebGLRenderTarget( size.x, size.y );
     target.texture.format = THREE.RGBAFormat;
-    target.texture.minFilter = THREE.NearestFilter;
-    target.texture.magFilter = THREE.NearestFilter;
+    target.texture.minFilter = THREE.LinearFilter;
+    target.texture.magFilter = THREE.LinearFilter;
     target.texture.generateMipMaps = false
     target.stencilBuffer = ( format === THREE.DepthStencilFormat ) ? true : false;
     target.depthBuffer = true;
-    target.depthTexture = new THREE.DepthTexture();
+    target.depthTexture = new THREE.DepthTexture(size.x, size.y);
     target.depthTexture.format = format
     target.depthTexture.type = type;
     target.scissorTest = true;
@@ -1106,12 +1106,12 @@ function setupRenderTarget(){
 
     skewerTarget = new THREE.WebGLRenderTarget( size.x, size.y );
     skewerTarget.texture.format = THREE.RGBAFormat;
-    skewerTarget.texture.minFilter = THREE.NearestFilter;
-    skewerTarget.texture.magFilter = THREE.NearestFilter;
+    skewerTarget.texture.minFilter = THREE.LinearFilter;
+    skewerTarget.texture.magFilter = THREE.LinearFilter;
     skewerTarget.texture.generateMipMaps = false
     skewerTarget.stencilBuffer = ( format === THREE.DepthStencilFormat ) ? true : false;
     skewerTarget.depthBuffer = true;
-    skewerTarget.depthTexture = new THREE.DepthTexture();
+    skewerTarget.depthTexture = new THREE.DepthTexture(size.x, size.y);
     skewerTarget.depthTexture.format = format
     skewerTarget.depthTexture.type = type;
     skewerTarget.scissorTest = true;
@@ -1574,6 +1574,8 @@ function requestSimpleLineData(idx){
     }
 }
 
+skewer_attribute_matrix = []
+
 function createColumnDensityInfoPanel(msg){
     // this function creates the dropdown menu containing column density information along with accompanying graph
 
@@ -1581,7 +1583,7 @@ function createColumnDensityInfoPanel(msg){
     divID = 'simple-line-status-skewer-coords-' + idx + ''
     div = document.getElementById(divID)
     
-    dropdown_elements = ['N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(O I)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'density', 'entropy', 'temperature']
+    dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity','N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
     var select = document.createElement("select")
     select.name = 'simple-line-results-' + idx + ''
     select.id = 'simple-line-results-' + idx + ''
@@ -1646,26 +1648,99 @@ function createColumnDensityInfoPanel(msg){
         divID = 'simple-line-status-skewer-coords-' + msg.index + ''
         console.log(divID)
         d3.select("#"+divID).selectAll(".graph").remove()
-        
+        d3.select("#"+divID).selectAll(".col-density-sum").remove()
+
         // make new plot
         data = []
         scaled_data = [] //will store scaled data between 0 and 1 for adding the skewer banding pattern
         
-        min_l = d3.min(msg.l)
-        max_l = d3.max(msg.l)
-        min_val = Math.log10(d3.min(msg[s.value])+1)
-        max_val = Math.log10(d3.max(msg[s.value])+1)
+        skewer_attribute_matrix = msg[s.value]
 
+        // print this above graph for just element column density
+        
 
+        if( (s.value).charAt(0) == 'N'){
 
-        for(i=0;i<msg.l.length;i++){
-            data[i] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]+1) }
-            scaled_data[i] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i]+1)-min_val)/(max_val-min_val) }    
+            var predicate = (x) => x > 0;
+            column_sum = round(Math.log10(skewer_attribute_matrix.filter(predicate).reduce((a,b) => a + b, 0)),2)
+            var sum_string = d3.select('#' + divID)
+                .append('text')
+                .attr("id","col-density-sum-" + msg.index + '')
+                .attr("class",'col-density-sum')
+                .text("Cum. log("+s.value+"): " + column_sum);
         }
 
-        createSkewerDataTexture(msg.index, scaled_data)
+        if(s.value == 'metallicity'){
+            min_l = d3.min(msg.l)
+            max_l = d3.max(msg.l)
 
+            var predicate = (x) => x > 0.00003;
+            metal = msg[s.value].filter(predicate)
+            
+            min_val = Math.log10(d3.min(metal))
+            max_val = Math.log10(d3.max(metal))
+
+
+            
+            c = 0
+            for(i=0;i<msg.l.length;i++){
+
+                if(msg[s.value][i] > 0.00003){
+                    data[c] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]) }
+                    scaled_data[c] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i])-min_val)/(max_val-min_val) }        
+                    c++
+                }
+                
+            }
         
+        }
+
+        // ideally this should be more field agnostic... avoids wonky log10 scaling
+        else if(s.value == 'density'){
+            min_l = d3.min(msg.l)
+            max_l = d3.max(msg.l)
+            min_val = Math.log10(d3.min(msg[s.value]))
+            max_val = Math.log10(d3.max(msg[s.value]))
+            
+            console.log(d3.min(msg[s.value]))
+            console.log(min_val)
+            console.log(max_val)
+
+
+            for(i=0;i<msg.l.length;i++){
+                data[i] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]) }
+                scaled_data[i] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i])-min_val)/(max_val-min_val) }    
+            }
+        }
+        else{
+            min_l = d3.min(msg.l)
+            max_l = d3.max(msg.l)
+            
+            console.log(d3.min(msg[s.value]))
+
+            if(d3.min(msg[s.value]) <= 0){
+                min_val = 0
+            }
+            else{
+                min_val = Math.log10(d3.min(msg[s.value])+1)
+            }
+
+            max_val = Math.log10(d3.max(msg[s.value])+1)
+
+            
+            console.log(min_val)
+            console.log(max_val)
+
+            
+
+            for(i=0;i<msg.l.length;i++){
+                data[i] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]+1) }
+                scaled_data[i] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i]+1)-min_val)/(max_val-min_val) }    
+            }
+        }
+
+
+        createSkewerDataTexture(msg.index, scaled_data)
 
         // console.log(scaled_data)
         var svg = d3.select('#' + divID)
@@ -1691,7 +1766,7 @@ function createColumnDensityInfoPanel(msg){
 
         var yScale = d3.scaleLinear()
             .range([height, 0])
-            .domain([0,max_val]);
+            .domain([min_val,max_val]);
         svg.append("g")
             .call(d3.axisLeft(yScale)
             .tickFormat(d3.format("1")));
@@ -2379,7 +2454,7 @@ function init(){
     scene.background = new THREE.Color("rgb(4,6,23)")
 
     // camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.0001, 10000 );
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 10000 );
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000 );
 
     camera.layers.enable(0);
     camera.layers.enable(1);
@@ -2739,13 +2814,14 @@ function cylinderMesh(pointX, pointY) {
         depthTest:      true,
         depthWrite:     true,
         transparent:    false,
-        dithering: true,
-        vertexColors: false,
-        morphTargets: true,
-        morphNormals: true,
+        // dithering: true,
+        // vertexColors: false,
+        // morphTargets: true,
+        // morphNormals: true,
     });
     // Make the geometry (of "direction" length)
-    let skewerGeometry = new THREE.CylinderBufferGeometry(100*0.1/gridsize, 100*0.1/gridsize, direction.length(), 10, 1000, false, 0, 2*Math.PI);
+    console.log(gridsize)
+    let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 1000, false, 0, 2*Math.PI);
     skewerGeometry.setDrawRange(0,Infinity)
     // shift it so one end rests on the origin
     skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
