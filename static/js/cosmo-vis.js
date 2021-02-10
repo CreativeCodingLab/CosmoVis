@@ -229,7 +229,7 @@ function toggleXYZGuide(){
     }
 }
 
-function updateSkewerEndpoints(size,oldsize){
+function updateSkewerEndpoints(size){
     console.log('update skewer endpoints')
     for(i=0;i<lines.length;i++){
         skewerScene.remove(lines[i])
@@ -572,6 +572,10 @@ function updateUniforms(){
     }
     render()
     
+}
+
+function updateSkewerWidths(){
+    updateSkewerEndpoints(gridsize)
 }
 
 function init3dDataTexture(size){
@@ -2879,7 +2883,8 @@ function cylinderMesh(pointX, pointY) {
     });
     // Make the geometry (of "direction" length)
     console.log(gridsize)
-    let skewerGeometry = new THREE.CylinderBufferGeometry(0.5, 0.5, direction.length(), 10, 1000, false, 0, 2*Math.PI);
+    skewer_width = (document.getElementById("skewer-width-slider")).value
+    let skewerGeometry = new THREE.CylinderBufferGeometry(skewer_width, skewer_width, direction.length(), 10, 1000, false, 0, 2*Math.PI);
     skewerGeometry.setDrawRange(0,Infinity)
     // shift it so one end rests on the origin
     skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));

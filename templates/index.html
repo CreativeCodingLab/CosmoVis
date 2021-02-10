@@ -1187,7 +1187,9 @@
                 alt="draw skewer mode"
                 role="button"
                 onclick="toggleDrawSkewerMode()"/></h3>
-            <br>
+            <!-- <br> -->
+            <p><input type="range" id="skewer-width-slider" min="0.0" max="2.0" step="0.001" value="0.25" oninput="updateSkewerWidths()"> skewer width</p>
+
             <hr>
             <div id="skewer-coords">
             </div>
