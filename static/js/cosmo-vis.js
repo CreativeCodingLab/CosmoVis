@@ -1611,7 +1611,7 @@ function createColumnDensityInfoPanel(msg){
         d = new Uint8Array( 3 * size )
 
         for (i = 0; i < size; i++){
-            band_col = attr_data[i].c*255
+            band_col = attr_data[i].c*200
             stride = i*3
 
             d[ stride ]     = 1.0*band_col; // stores length along skewer (to be used as texture UV lookup)
@@ -1671,6 +1671,8 @@ function createColumnDensityInfoPanel(msg){
         }
 
         if(s.value == 'metallicity'){
+            
+            // DATA FOR GRAPH
             min_l = d3.min(msg.l)
             max_l = d3.max(msg.l)
 
@@ -1680,43 +1682,63 @@ function createColumnDensityInfoPanel(msg){
             min_val = Math.log10(d3.min(metal))
             max_val = Math.log10(d3.max(metal))
 
-
-            
             c = 0
-            for(i=0;i<msg.l.length;i++){
-
-                if(msg[s.value][i] > 0.00003){
-                    data[c] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]) }
-                    scaled_data[c] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i])-min_val)/(max_val-min_val) }        
+            for( i=0; i<msg.l.length; i++ ){
+                if( msg[ s.value ][i] > 0.00003 ){
+                    data[c] = { 'l': msg.l[i], 'c': Math.log10( msg[s.value][i] ) }
                     c++
                 }
-                
+            }
+            
+            // INTERPOLATED DATA FOR SKEWERS
+            i_min_l = d3.min(msg.i_l)
+            i_max_l = d3.max(msg.i_l)
+
+            i_metal = msg["i_"+s.value].filter(predicate)
+            
+            i_min_val = Math.log10(d3.min(i_metal))
+            i_max_val = Math.log10(d3.max(i_metal))
+
+            c = 0
+            for( i=0; i < msg.i_l.length; i++ ){
+                if( msg[ "i_" + s.value ][i] > 0.00003 ){
+                    scaled_data[c] = { 'l': (msg.i_l[i]-i_min_l)/(i_max_l-i_min_l), 'c': (Math.log10(msg["i_"+s.value][i])-i_min_val)/(i_max_val-i_min_val) }        
+                    c++
+                }
             }
         
         }
 
         // ideally this should be more field agnostic... avoids wonky log10 scaling
         else if(s.value == 'density'){
+
+            // DATA FOR GRAPH
             min_l = d3.min(msg.l)
             max_l = d3.max(msg.l)
             min_val = Math.log10(d3.min(msg[s.value]))
             max_val = Math.log10(d3.max(msg[s.value]))
-            
-            console.log(d3.min(msg[s.value]))
-            console.log(min_val)
-            console.log(max_val)
-
 
             for(i=0;i<msg.l.length;i++){
                 data[i] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]) }
-                scaled_data[i] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i])-min_val)/(max_val-min_val) }    
+            }
+
+            // INTERPOLATED DATA FOR SKEWERS
+            i_min_l = d3.min(msg.i_l)
+            i_max_l = d3.max(msg.i_l)
+
+            i_min_val = Math.log10(d3.min(msg[ "i_" + s.value ]))
+            i_max_val = Math.log10(d3.max(msg[ "i_" + s.value ]))
+
+            for(i=0;i<msg.i_l.length;i++){
+                scaled_data[i] = { 'l': (msg.i_l[i]-i_min_l)/(i_max_l-i_min_l), 'c': (Math.log10(msg["i_"+s.value][i])-i_min_val)/(i_max_val-i_min_val) }    
             }
         }
+
         else{
+            
+            // DATA FOR GRAPH
             min_l = d3.min(msg.l)
             max_l = d3.max(msg.l)
-            
-            console.log(d3.min(msg[s.value]))
 
             if(d3.min(msg[s.value]) <= 0){
                 min_val = 0
@@ -1727,18 +1749,31 @@ function createColumnDensityInfoPanel(msg){
 
             max_val = Math.log10(d3.max(msg[s.value])+1)
 
-            
-            console.log(min_val)
-            console.log(max_val)
-
-            
-
             for(i=0;i<msg.l.length;i++){
                 data[i] = { 'l': msg.l[i], 'c': Math.log10(msg[s.value][i]+1) }
-                scaled_data[i] = { 'l': (msg.l[i]-min_l)/(max_l-min_l), 'c': (Math.log10(msg[s.value][i]+1)-min_val)/(max_val-min_val) }    
             }
+
+            // INTERPOLATED DATA FOR SKEWERS
+            i_min_l = d3.min(msg.i_l)
+            i_max_l = d3.max(msg.i_l)
+
+            if(d3.min(msg["i_"+s.value]) <= 0){
+                i_min_val = 0
+            }
+            else{
+                i_min_val = Math.log10(d3.min(msg["i_"+s.value])+1)
+            }
+
+            i_max_val = Math.log10(d3.max(msg[s.value])+1)
+
+            for(i=0;i<msg.i_l.length;i++){
+                scaled_data[i] = { 'l': (msg.i_l[i]-i_min_l)/(i_max_l-i_min_l), 'c': (Math.log10(msg["i_"+s.value][i]+1)-i_min_val)/(i_max_val-i_min_val) }    
+            }
+
+
         }
 
+        console.log(min_l)
 
         createSkewerDataTexture(msg.index, scaled_data)
 
@@ -1935,14 +1970,25 @@ function updateGraph(){
                 let idx = skewerData[i][0].index
                 x = Array.from(skewers[idx].lambda)
                 y = Array.from(skewers[idx].flux)
-
-                if(ele == "Angstroms" && document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)"){
+                if(ele == "Angstroms" && (document.getElementById("common-wavelengths").value == "Select a rest wavelength (Å)" || document.getElementById("common-wavelengths").value == "full")){
+                    for(j=0;j<x.length;j++){
+                        data[j] = { 'lambda': x[j], 'flux': y[j] }
+                    }
+                }
+                else if(ele == "Angstroms" && (document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)" && document.getElementById("common-wavelengths").value != "full")){
                     for(j=0;j<x.length;j++){
                         data[j] = { 'lambda': x[j], 'flux': y[j] }
                     }
                 }
                 else if(ele == "Velocity Space" && document.getElementById("common-wavelengths").value != "Select a rest wavelength (Å)"){
-                    let rest_lambda = parseFloat(document.getElementById("common-wavelengths").value)
+                    
+                    if(document.getElementById("common-wavelengths").value == "full"){
+                        rest_lambda = (1450+1150)/2
+                    }
+                    else{
+                        rest_lambda = parseFloat(document.getElementById("common-wavelengths").value)
+                    }
+                    
                     let c = 3e5;
                     for( j = 0; j < x.length; j++ ){
                         delta_lambda = x[j] - rest_lambda;
@@ -2035,6 +2081,132 @@ function updateGraph(){
         }
 
     }
+}
+
+function createBrush() {
+    // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
+    d3.select('#spectrum').selectAll('#depth-brush').remove();
+    let svg = d3.select('#spectrum').append('div').attr('id','depth-brush').append('svg')
+
+    let margin = {top: 10, right: 15, bottom: 30, left: 30};
+    let axis = svg.append('g');
+
+    let brush = svg.append("g")
+        .attr("class", "brush");
+
+    let width = 300, height = 40
+    let x = d3.scaleLinear()
+        .domain(domainLambda)
+        .range([margin.left, width]);
+
+    resize();
+    drawBrush();
+    brushed();
+
+    function resize() {
+        var w = width - margin.right;
+        var h = 40;
+
+        var aspect = w / h;
+        var vw = width;
+        var vh = vw / aspect;
+
+        width = vw;
+        height = vh - margin.bottom;
+
+        svg
+            //.style("font-size", "2px")
+            .attr('width', w).attr('height', h)
+            .attr("viewBox", "0 0 " + vw + " " + vh)
+            //.attr("text", "white")
+
+        x.range([margin.left, width - margin.right]);
+
+        axis.attr('transform', 'translate(0,' + height + ')')
+            .call(d3.axisBottom(x).ticks(6))
+
+    }
+
+    function drawBrush() {
+        if (!x) { return; }
+        brusher = d3.brushX()
+            .extent([[margin.left, 0], [width - margin.right, height]])
+            .on("brush end", brushed);
+
+        brush.call(brusher)
+            .call(brusher.move, x.range());
+    }
+
+    function brushed() {
+        var s = d3.event.selection || x.range();
+        ret = s.map(x.invert, x);
+        // console.log(s)
+        // console.log(ret)
+        if (ret[0] !== ret[1]) {
+            
+            updateLambdaDomain(ret[0],ret[1])
+            updateGraph()
+
+        }
+    }
+}
+
+function updateLambdaDomain(min, max){
+    if(min != undefined){
+        domainLambda[0] = min
+    }
+    if(max != undefined){
+        domainLambda[1] = max
+    }
+    xScale = d3.scaleLinear().domain(domainLambda).range([0, 210])
+}
+
+function commonWavelength(){
+    let element = document.getElementsByName('x-axis-transform')
+    let ele
+    for(i = 0; i < element.length; i++) { 
+        if(element[i].checked) {
+            ele = element[i].value
+        }
+    }
+    if(document.getElementById("common-wavelengths").value == 'full'){
+
+        updateLambdaDomain(1150,1450)
+        
+        if(ele == "Velocity Space"){
+            element[0].checked = true
+        }
+    }
+    else{
+        val = parseFloat(document.getElementById("common-wavelengths").value)
+        
+        if(ele == "Angstroms"){
+            updateLambdaDomain(val-5,val+5)
+            console.log(domainLambda)
+        }
+        else if(ele == "Velocity Space"){
+            updateLambdaDomain(-2000,2000)
+        }
+    }
+    
+    updateGraph()
+    createBrush()
+}
+
+function downloadSpectra(){
+    
+    var c = skewerData[0][0].lambda.map(function(e, i) {
+        return [e, skewerData[0][0].flux[i]];
+      });
+
+    c = JSON.stringify(c)
+
+    name = 'spectra.txt'
+    const a = document.createElement('a');
+	const type = name.split(".").pop();
+	a.href = URL.createObjectURL( new Blob([c], { type: type} )) ;
+	a.download = name;
+	a.click();
 }
 
 function createGalaxyFilteringBrushes(attr){
@@ -2235,118 +2407,7 @@ function updateXYZDomain(xyz, min, max){
     zSliderScale = d3.scaleLinear().domain([domainXYZ[4],domainXYZ[5]]).range([0, 210])
 }
 
-function createBrush() {
-    // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
-    d3.select('#spectrum').selectAll('#depth-brush').remove();
-    let svg = d3.select('#spectrum').append('div').attr('id','depth-brush').append('svg')
 
-    let margin = {top: 10, right: 15, bottom: 30, left: 30};
-    let axis = svg.append('g');
-
-    let brush = svg.append("g")
-        .attr("class", "brush");
-
-    let width = 300, height = 40
-    let x = d3.scaleLinear()
-        .domain(domainLambda)
-        .range([margin.left, width]);
-
-    resize();
-    drawBrush();
-    brushed();
-
-    function resize() {
-        var w = width - margin.right;
-        var h = 40;
-
-        var aspect = w / h;
-        var vw = width;
-        var vh = vw / aspect;
-
-        width = vw;
-        height = vh - margin.bottom;
-
-        svg
-            //.style("font-size", "2px")
-            .attr('width', w).attr('height', h)
-            .attr("viewBox", "0 0 " + vw + " " + vh)
-            //.attr("text", "white")
-
-        x.range([margin.left, width - margin.right]);
-
-        axis.attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(x).ticks(6))
-
-    }
-
-    function drawBrush() {
-        if (!x) { return; }
-        brusher = d3.brushX()
-            .extent([[margin.left, 0], [width - margin.right, height]])
-            .on("brush end", brushed);
-
-        brush.call(brusher)
-            .call(brusher.move, x.range());
-    }
-
-    function brushed() {
-        var s = d3.event.selection || x.range();
-        ret = s.map(x.invert, x);
-        // console.log(s)
-        // console.log(ret)
-        if (ret[0] !== ret[1]) {
-            
-            updateLambdaDomain(ret[0],ret[1])
-            updateGraph()
-
-        }
-    }
-}
-
-function updateLambdaDomain(min, max){
-    if(min != undefined){
-        domainLambda[0] = min
-    }
-    if(max != undefined){
-        domainLambda[1] = max
-    }
-    xScale = d3.scaleLinear().domain(domainLambda).range([0, 210])
-}
-
-function commonWavelength(){
-    val = parseFloat(document.getElementById("common-wavelengths").value)
-    let ele = document.getElementsByName('x-axis-transform')
-    for(i = 0; i < ele.length; i++) { 
-        if(ele[i].checked) {
-            ele = ele[i].value
-        }
-    }
-    if(ele == "Angstroms"){
-        updateLambdaDomain(val-5,val+5)
-        console.log(domainLambda)
-    }
-    else if(ele == "Velocity Space"){
-        updateLambdaDomain(-2000,2000)
-    }
-    updateGraph()
-    createBrush()
-}
-
-function downloadSpectra(){
-    
-    var c = skewerData[0][0].lambda.map(function(e, i) {
-        return [e, skewerData[0][0].flux[i]];
-      });
-
-    c = JSON.stringify(c)
-
-    name = 'spectra.txt'
-    const a = document.createElement('a');
-	const type = name.split(".").pop();
-	a.href = URL.createObjectURL( new Blob([c], { type: type} )) ;
-	a.download = name;
-	a.click();
-}
 
 function checkSelectedSimID(){
     let selection = document.getElementById("sim_size_select")
@@ -2374,9 +2435,6 @@ function checkSelectedSimID(){
             $("#star_select").empty();
             $("#bh_select").empty();
         }
-
-        
-
     }
     
     function createAttributeSelectors(field_list){

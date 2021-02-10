@@ -169,7 +169,7 @@
                 //    gl_FragColor = vec4(0.0,0.0,0.0,0.0);
                 //}
                 //else{
-                gl_FragColor = vec4(1.0*tex.r,1.0*tex.g,0.0,1.0*tex.b);  //rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+                gl_FragColor = vec4(0.9*tex.r,0.9*tex.g,0.0,1.0*tex.b);  //rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
                 //}
             }
     
@@ -1197,6 +1197,7 @@
         <div id="spectrum" class="container">
             <select class="data_select" id="common-wavelengths" onchange="commonWavelength()">
                 <option selected disabled>Select a rest wavelength (Å)</option>
+                <option value="full"        >Full Domain</option>
                 <option value="1215.67"     >HI (1215.67 Å)</option>
                 <option value="1548.195"    >C IV (1548.195 Å)</option>
                 <option value="1550.77"     >C IV (1550.77 Å)</option>
@@ -1206,7 +1207,7 @@
             </select>
 
             <div id="wavelength">
-                <input type="radio" id="Angstroms" name="x-axis-transform" value="Angstroms" onchange="commonWavelength()">
+                <input type="radio" id="Angstroms" name="x-axis-transform" value="Angstroms" onchange="commonWavelength()" checked>
                 <label for="Angstroms">Wavelength (Å)</label>
                 <input type="radio" id="Velocity-Space" name="x-axis-transform" value="Velocity Space" onchange="commonWavelength()">
                 <label for="Velocity Space">Velocity Space (km/s)</label>

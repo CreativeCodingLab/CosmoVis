@@ -114,140 +114,223 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     # ex: For H I, which is neutral hydrogen, which is H (plus zero energy state), it's represented as H_p0
     # multiply number density by path length (dl) to get column density of ions (units cm^-2)
     socketio.sleep(0)
-    dx = 1
+    dx = 4
     # n_density in units of particles/cm^3
     
     dl_cm = ray.r[('gas', 'dl')].to('cm')
 
 
-    H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')]*dl_cm,dx)[1]
-    H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] * dl_cm,dx)[1]
-    
-    C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] * dl_cm,dx)[1]
-    C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] * dl_cm,dx)[1]
-    C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] * dl_cm,dx)[1]
-    C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] * dl_cm,dx)[1]
-    C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] * dl_cm,dx)[1]
-    C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] * dl_cm,dx)[1]
-    
-    He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
-    He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
-    He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
-    
-    Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
-    Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
-    Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
+    ## FULL RANGE VALUES
+    ## used for graphing
 
-    N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] * dl_cm,dx)[1]
-    N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] * dl_cm,dx)[1]
-    N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] * dl_cm,dx)[1]
-    N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] * dl_cm,dx)[1]
-    N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] * dl_cm,dx)[1]
-    N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] * dl_cm,dx)[1]
-    
-    Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
-    Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
+    H_I   = (ray.r[('gas', 'H_p0_number_density')]   * dl_cm).tolist()
+    H_II  = (ray.r[('gas', 'H_p1_number_density')]   * dl_cm).tolist()
+    C_I   = (ray.r[('gas', 'C_p0_number_density')]   * dl_cm).tolist()
+    C_II  = (ray.r[('gas', 'C_p1_number_density')]   * dl_cm).tolist()
+    C_III = (ray.r[('gas', 'C_p2_number_density')]   * dl_cm).tolist()
+    C_IV  = (ray.r[('gas', 'C_p3_number_density')]   * dl_cm).tolist()
+    C_V   = (ray.r[('gas', 'C_p4_number_density')]   * dl_cm).tolist()
+    C_VI  = (ray.r[('gas', 'C_p5_number_density')]   * dl_cm).tolist()
+    He_I  = (ray.r[('gas', 'He_p0_number_density')]  * dl_cm).tolist()
+    He_II = (ray.r[('gas', 'He_p1_number_density')]  * dl_cm).tolist()
+    He_III= (ray.r[('gas', 'He_p2_number_density')]  * dl_cm).tolist()
+    Mg_I  = (ray.r[('gas', 'Mg_p0_number_density')]  * dl_cm).tolist()
+    Mg_II = (ray.r[('gas', 'Mg_p1_number_density')]  * dl_cm).tolist()
+    Mg_X  = (ray.r[('gas', 'Mg_p9_number_density')]  * dl_cm).tolist()
+    N_II  = (ray.r[('gas', 'N_p1_number_density')]   * dl_cm).tolist()
+    N_III = (ray.r[('gas', 'N_p2_number_density')]   * dl_cm).tolist()
+    N_IV  = (ray.r[('gas', 'N_p3_number_density')]   * dl_cm).tolist()
+    N_V   = (ray.r[('gas', 'N_p4_number_density')]   * dl_cm).tolist()
+    N_VI  = (ray.r[('gas', 'N_p5_number_density')]   * dl_cm).tolist()
+    N_VII = (ray.r[('gas', 'N_p6_number_density')]   * dl_cm).tolist()
+    Na_I  = (ray.r[('gas', 'Na_p0_number_density')]  * dl_cm).tolist()
+    Na_IX = (ray.r[('gas', 'Na_p8_number_density')]  * dl_cm).tolist()
+    Ne_III= (ray.r[('gas', 'Ne_p2_number_density')]  * dl_cm).tolist()
+    Ne_IV = (ray.r[('gas', 'Ne_p3_number_density')]  * dl_cm).tolist()
+    Ne_V  = (ray.r[('gas', 'Ne_p4_number_density')]  * dl_cm).tolist()
+    Ne_VI = (ray.r[('gas', 'Ne_p5_number_density')]  * dl_cm).tolist()
+    Ne_VIII=(ray.r[('gas', 'Ne_p7_number_density')]  * dl_cm).tolist()
+    O_I   = (ray.r[('gas', 'O_p0_number_density')]   * dl_cm).tolist()
+    O_II  = (ray.r[('gas', 'O_p1_number_density')]   * dl_cm).tolist()
+    O_III = (ray.r[('gas', 'O_p2_number_density')]   * dl_cm).tolist()
+    O_IV  = (ray.r[('gas', 'O_p3_number_density')]   * dl_cm).tolist()
+    O_V   = (ray.r[('gas', 'O_p4_number_density')]   * dl_cm).tolist()
+    O_VI  = (ray.r[('gas', 'O_p5_number_density')]   * dl_cm).tolist()
+    O_VII = (ray.r[('gas', 'O_p6_number_density')]   * dl_cm).tolist()
+    O_VIII= (ray.r[('gas', 'O_p7_number_density')]   * dl_cm).tolist()
+    S_II  = (ray.r[('gas', 'S_p1_number_density')]   * dl_cm).tolist()
+    S_III = (ray.r[('gas', 'S_p2_number_density')]   * dl_cm).tolist()
+    S_IV  = (ray.r[('gas', 'S_p3_number_density')]   * dl_cm).tolist()
+    S_V   = (ray.r[('gas', 'S_p4_number_density')]   * dl_cm).tolist()
+    S_VI  = (ray.r[('gas', 'S_p5_number_density')]   * dl_cm).tolist()
+    Si_II = (ray.r[('gas', 'Si_p1_number_density')]  * dl_cm).tolist()
+    Si_III= (ray.r[('gas', 'Si_p2_number_density')]  * dl_cm).tolist()
+    Si_IV = (ray.r[('gas', 'Si_p3_number_density')]  * dl_cm).tolist()
+    Si_XII= (ray.r[('gas', 'Si_p11_number_density')] * dl_cm).tolist()
 
-    Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
-    Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
-    Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
-    Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
-    Ne_VIII= interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
-
-    O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] * dl_cm,dx)[1]
-    O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] * dl_cm,dx)[1]
-    O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] * dl_cm,dx)[1]
-    O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] * dl_cm,dx)[1]
-    O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] * dl_cm,dx)[1]
-    O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] * dl_cm,dx)[1]
-    O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] * dl_cm,dx)[1]
-    O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] * dl_cm,dx)[1]
-
-    S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] * dl_cm,dx)[1]
-    S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] * dl_cm,dx)[1]
-    S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] * dl_cm,dx)[1]
-    S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] * dl_cm,dx)[1]
-    S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] * dl_cm,dx)[1]
-
-    Si_II  = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
-    Si_III = interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
-    Si_IV  = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
-    Si_XII = interpol8(l,ray.r[('gas', 'Si_p11_number_density')] * dl_cm,dx)[1]
-
-    # El    = interpol8(l,ray.r[('gas', 'El_number_density')] * ray.r[('gas', 'dl')].to('kpc'),dx)[1]
-
-    print(ray.r[('gas', 'density')])
     log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
-    print(log_density)
-    density       = (10**np.array(interpol8(l, log_density,dx)[1])).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
-    entropy       = interpol8(l,ray.r[('gas', 'entropy')],dx)[1]
-    metallicity   = interpol8(l,ray.r[('gas', 'metallicity')].to('Zsun'),dx)[1]
-    # metal_mass    = ray.r[('gas', 'metal_mass')] * ray.r[('gas', 'dl')]
-    # mass          = ray.r[('gas', 'mass')] * ray.r[('gas', 'dl')]
-    l, T = interpol8(l,ray.r[('gas', 'temperature')],dx)
-    # optical_depth = interpol8(l,ray.r[('gas', 'optical_depth')] * ray.r[('gas', 'dl')].to('kpc'),dx)
+    density     = (10**log_density).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
+    entropy     = (ray.r[('gas', 'entropy')]).tolist()
+    metallicity = (ray.r[('gas', 'metallicity')].to('Zsun')).tolist()
+    temperature = (ray.r[('gas', 'temperature')]).tolist()
 
-    # total gas density, entropy, metal mass, mass, optical depth
-    # import pdb; pdb.set_trace()
+    ## INTERPOLATED VALUES
+    ## used for skewer textures
+    i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')]*dl_cm,dx)[1]
+    i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] * dl_cm,dx)[1]
+    i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] * dl_cm,dx)[1]
+    i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] * dl_cm,dx)[1]
+    i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] * dl_cm,dx)[1]
+    i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] * dl_cm,dx)[1]
+    i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] * dl_cm,dx)[1]
+    i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] * dl_cm,dx)[1]
+    i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
+    i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
+    i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
+    i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
+    i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
+    i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
+    i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] * dl_cm,dx)[1]
+    i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] * dl_cm,dx)[1]
+    i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] * dl_cm,dx)[1]
+    i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] * dl_cm,dx)[1]
+    i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] * dl_cm,dx)[1]
+    i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] * dl_cm,dx)[1]
+    i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
+    i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
+    i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
+    i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
+    i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
+    i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
+    i_Ne_VIII= interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
+    i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] * dl_cm,dx)[1]
+    i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] * dl_cm,dx)[1]
+    i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] * dl_cm,dx)[1]
+    i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] * dl_cm,dx)[1]
+    i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] * dl_cm,dx)[1]
+    i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] * dl_cm,dx)[1]
+    i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] * dl_cm,dx)[1]
+    i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] * dl_cm,dx)[1]
+    i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] * dl_cm,dx)[1]
+    i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] * dl_cm,dx)[1]
+    i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] * dl_cm,dx)[1]
+    i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] * dl_cm,dx)[1]
+    i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] * dl_cm,dx)[1]
+    i_Si_II  = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
+    i_Si_III = interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
+    i_Si_IV  = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
+    i_Si_XII = interpol8(l,ray.r[('gas', 'Si_p11_number_density')] * dl_cm,dx)[1]
+
+    log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
+    i_density       = (10**np.array(interpol8(l, log_density,dx)[1])).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
+    i_entropy       = interpol8(l,ray.r[('gas', 'entropy')],dx)[1]
+    i_metallicity   = interpol8(l,ray.r[('gas', 'metallicity')].to('Zsun'),dx)[1]
+    i_l, i_temperature = interpol8(l,ray.r[('gas', 'temperature')],dx)
+
 
     socketio.sleep(0)
-    socketio.emit('simple_line_data',{'index':   idx,
-                                        'start': start,
-                                        'end':   end,
-                                        'l':     l,
-                                        'N(H I)':   H_I,
-                                        'N(H II)':  H_II,
-                                        'N(C I)':   C_I,
-                                        'N(C II)':  C_II,
-                                        'N(C III)': C_III,
-                                        'N(C IV)':  C_IV,
-                                        'N(C V)':   C_V,
-                                        'N(C VI)':  C_VI,
-                                        'N(He I)':  He_I,
-                                        'N(He II)': He_II,
-                                        'N(He III)':He_III,
-                                        'N(Mg I)':  Mg_I,
-                                        'N(Mg II)': Mg_II,
-                                        'N(Mg X)':  Mg_X,
-                                        'N(N II)':  N_II,
-                                        'N(N III)': N_III,
-                                        'N(N IV)':  N_IV,
-                                        'N(N V)':   N_V,
-                                        'N(N VI)':  N_VI,
-                                        'N(N VII)': N_VII,
-                                        'N(Na I)':  Na_I,
-                                        'N(Na IX)': Na_IX,
-                                        'N(Ne III)':Ne_III,
-                                        'N(Ne IV)': Ne_IV,
-                                        'N(Ne V)':  Ne_V,
-                                        'N(Ne VI)': Ne_VI,
-                                        'N(Ne VIII)':Ne_VIII,
-                                        'N(O I)':   O_I,
-                                        'N(O II)':  O_II,
-                                        'N(O III)': O_III,
-                                        'N(O IV)':  O_IV,
-                                        'N(O V)':   O_V,
-                                        'N(O VI)':  O_VI,
-                                        'N(O VII)': O_VII,
-                                        'N(O VIII)':O_VIII,
-                                        'N(S II)':  S_II,
-                                        'N(S III)': S_III,
-                                        'N(S IV)':  S_IV,
-                                        'N(S V)':   S_V,
-                                        'N(S VI)':  S_VI,
-                                        'N(Si II)': Si_II,
-                                        'N(Si III)':Si_III,
-                                        'N(Si IV)': Si_IV,
-                                        'N(Si XII)':Si_XII,
-                                        # 'El':    El,
-                                        'density': density,
-                                        'entropy': entropy,
-                                        'metallicity': metallicity,
-                                        # 'metal_mass': metal_mass.tolist(),
-                                        # 'mass': mass.tolist(),
-                                        # 'optical_depth': optical_depth,
-                                        'temperature': T
-                                        }, namespace='/test')
+    socketio.emit('simple_line_data',{  'index':         idx,
+                                        'start':         start,
+                                        'end':           end,
+                                        'l':             l.tolist(),
+                                        'N(H I)':        H_I,
+                                        'N(H II)':       H_II,
+                                        'N(C I)':        C_I,
+                                        'N(C II)':       C_II,
+                                        'N(C III)':      C_III,
+                                        'N(C IV)':       C_IV,
+                                        'N(C V)':        C_V,
+                                        'N(C VI)':       C_VI,
+                                        'N(He I)':       He_I,
+                                        'N(He II)':      He_II,
+                                        'N(He III)':     He_III,
+                                        'N(Mg I)':       Mg_I,
+                                        'N(Mg II)':      Mg_II,
+                                        'N(Mg X)':       Mg_X,
+                                        'N(N II)':       N_II,
+                                        'N(N III)':      N_III,
+                                        'N(N IV)':       N_IV,
+                                        'N(N V)':        N_V,
+                                        'N(N VI)':       N_VI,
+                                        'N(N VII)':      N_VII,
+                                        'N(Na I)':       Na_I,
+                                        'N(Na IX)':      Na_IX,
+                                        'N(Ne III)':     Ne_III,
+                                        'N(Ne IV)':      Ne_IV,
+                                        'N(Ne V)':       Ne_V,
+                                        'N(Ne VI)':      Ne_VI,
+                                        'N(Ne VIII)':    Ne_VIII,
+                                        'N(O I)':        O_I,
+                                        'N(O II)':       O_II,
+                                        'N(O III)':      O_III,
+                                        'N(O IV)':       O_IV,
+                                        'N(O V)':        O_V,
+                                        'N(O VI)':       O_VI,
+                                        'N(O VII)':      O_VII,
+                                        'N(O VIII)':     O_VIII,
+                                        'N(S II)':       S_II,
+                                        'N(S III)':      S_III,
+                                        'N(S IV)':       S_IV,
+                                        'N(S V)':        S_V,
+                                        'N(S VI)':       S_VI,
+                                        'N(Si II)':      Si_II,
+                                        'N(Si III)':     Si_III,
+                                        'N(Si IV)':      Si_IV,
+                                        'N(Si XII)':     Si_XII,
+                                        'density':       density,
+                                        'entropy':       entropy,
+                                        'metallicity':   metallicity,
+                                        'temperature':   temperature,
+                                        'i_l':           i_l,
+                                        'i_N(H I)':      i_H_I,
+                                        'i_N(H II)':     i_H_II,
+                                        'i_N(C I)':      i_C_I,
+                                        'i_N(C II)':     i_C_II,
+                                        'i_N(C III)':    i_C_III,
+                                        'i_N(C IV)':     i_C_IV,
+                                        'i_N(C V)':      i_C_V,
+                                        'i_N(C VI)':     i_C_VI,
+                                        'i_N(He I)':     i_He_I,
+                                        'i_N(He II)':    i_He_II,
+                                        'i_N(He III)':   i_He_III,
+                                        'i_N(Mg I)':     i_Mg_I,
+                                        'i_N(Mg II)':    i_Mg_II,
+                                        'i_N(Mg X)':     i_Mg_X,
+                                        'i_N(N II)':     i_N_II,
+                                        'i_N(N III)':    i_N_III,
+                                        'i_N(N IV)':     i_N_IV,
+                                        'i_N(N V)':      i_N_V,
+                                        'i_N(N VI)':     i_N_VI,
+                                        'i_N(N VII)':    i_N_VII,
+                                        'i_N(Na I)':     i_Na_I,
+                                        'i_N(Na IX)':    i_Na_IX,
+                                        'i_N(Ne III)':   i_Ne_III,
+                                        'i_N(Ne IV)':    i_Ne_IV,
+                                        'i_N(Ne V)':     i_Ne_V,
+                                        'i_N(Ne VI)':    i_Ne_VI,
+                                        'i_N(Ne VIII)':  i_Ne_VIII,
+                                        'i_N(O I)':      i_O_I,
+                                        'i_N(O II)':     i_O_II,
+                                        'i_N(O III)':    i_O_III,
+                                        'i_N(O IV)':     i_O_IV,
+                                        'i_N(O V)':      i_O_V,
+                                        'i_N(O VI)':     i_O_VI,
+                                        'i_N(O VII)':    i_O_VII,
+                                        'i_N(O VIII)':   i_O_VIII,
+                                        'i_N(S II)':     i_S_II,
+                                        'i_N(S III)':    i_S_III,
+                                        'i_N(S IV)':     i_S_IV,
+                                        'i_N(S V)':      i_S_V,
+                                        'i_N(S VI)':     i_S_VI,
+                                        'i_N(Si II)':    i_Si_II,
+                                        'i_N(Si III)':   i_Si_III,
+                                        'i_N(Si IV)':    i_Si_IV,
+                                        'i_N(Si XII)':   i_Si_XII,
+                                        'i_density':     i_density,
+                                        'i_entropy':     i_entropy,
+                                        'i_metallicity': i_metallicity,
+                                        'i_temperature': i_temperature
+                                    }, namespace='/test')
     socketio.sleep(0)
 
     print('sent simple ray data')
@@ -336,7 +419,7 @@ def handle_ray_selection_background(simID,idx,start,end):
     print('making spectrum')
     sg.make_spectrum(ray, lines=line_list) #spitting information through std_out, scrape information
     socketio.sleep(0)
-    sg.add_qso_spectrum(emitting_redshift=0.5)
+    # sg.add_qso_spectrum(emitting_redshift=0.5)
     
 
     MW = False
@@ -346,7 +429,7 @@ def handle_ray_selection_background(simID,idx,start,end):
     sg.apply_lsf() #instrumental profile
     socketio.sleep(0)
     noise = True
-    SNR = 30
+    SNR = 50
     if noise == True:
         sg.add_gaussian_noise(SNR)
     socketio.sleep(0)
