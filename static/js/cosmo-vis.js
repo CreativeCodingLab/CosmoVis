@@ -583,17 +583,19 @@ function init3dDataTexture(size){
     console.log('initialize 3d data texture')
     return new Promise(resolve => {
         clearLayer(0)
-        dataArray3D = new Float32Array(size * size * size * 4)
+        
+        dataArray3D = new Float32Array(size * size * size * 3)//Float32Array(size * size * size * 3)
 
         dataTexture3D = new THREE.DataTexture3D(dataArray3D,size,size,size)
-        dataTexture3D.format = THREE.RGBAFormat
-        dataTexture3D.type = THREE.FloatType
-        dataTexture3D.minFilter = THREE.LinearMipmapLinearFilter
+        dataTexture3D.internalformat = 'RGB32F'//'RGB8UI' //
+        dataTexture3D.format = THREE.RGBFormat //RGBFormat//RGBIntegerFormat
+        dataTexture3D.type = THREE.FloatType ////UnsignedByteType 
+        dataTexture3D.minFilter = THREE.LinearFilter//LinearMipmapLinearFilter
         dataTexture3D.magFilter = THREE.LinearFilter
         dataTexture3D.unpackAlignment = 4
         dataTexture3D.encoding = THREE.sRGBEncoding
         dataTexture3D.anisotropy = 16
-        
+        dataTexture3D.needsUpdate = true
         volumeShader = THREE.VolumeRenderShader1;
         volumeUniforms = THREE.UniformsUtils.clone( volumeShader.uniforms );
         volumeUniforms[ "u_dataTexture3D" ].value = dataTexture3D;
@@ -613,6 +615,8 @@ function init3dDataTexture(size){
             blendDst: THREE.OneMinusSrcAlphaFactor,
             depthWrite: false,
         } );
+        volMaterial.extensions.derivatives = true
+        volMaterial.glslVersion = THREE.GLSL3
 
         // stopLoadingAnimation()
         resolve()
@@ -624,11 +628,12 @@ function update3dDataTexture(){
         // startLoadingAnimation()
         console.log("update 3d texture uniforms")
         dataTexture3D = new THREE.DataTexture3D(dataArray3D,gridsize,gridsize,gridsize)
-        dataTexture3D.format = THREE.RGBAFormat
-        dataTexture3D.type = THREE.FloatType
-        dataTexture3D.minFilter = dataTexture3D.magFilter = THREE.LinearFilter
+        dataTexture3D.internalformat ='RGB32F'// 'RGB8UI'
+        dataTexture3D.format = THREE.RGBFormat
+        dataTexture3D.type = THREE.FloatType// UnsignedByteType // 
+        dataTexture3D.minFilter = dataTexture3D.magFilter = THREE.LinearFilter //THREE.NearestFilter//
         dataTexture3D.unpackAlignment = 4
-
+        dataTexture3D.needsUpdate = true
         // uniforms[ "u_gasData" ].value = gasTexture;
         // uniforms[ "u_dmData" ].value = dmTexture;
         volMaterial.uniforms[ "u_dataTexture3D" ].value = dataTexture3D;
@@ -668,17 +673,31 @@ function loadGas(size,attr,resolution_bool){
     console.log('loading gas')
     return new Promise(resolve => {
         d3.json('static/data/'+simID+'/PartType0/' + size + '_PartType0_' + attr +'.json').then(function(d){
-            let log
-            if(elements.includes(attr) || attr=="GFM_Metallicity"){
-                log = false
-                if(attr=="Temperature"){
-                    min = 3.745
-                    max = 6.5
-                }
-            }
-            else{
-                log = true
-            }
+        // d3.text('static/data/'+simID+'/PartType0/' + size + '_PartType0_' + attr +'.json').then(function(textData){
+        //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
+        //     const d = JSON.parse(textData, function(key, value){
+        //         return value === "-Infinity" ? -Infinity : value;
+        //     });
+
+            volMaterial.uniforms["u_gasAttribute"] = attr
+
+            let log = false
+            // if(size == 64){
+
+            //     if(elements.includes(attr) || attr=="GFM_Metallicity"){
+            //         log = false
+            //         if(attr=="Temperature" ){
+            //             min = 3.745
+            //             max = 6.5
+            //         }
+            //     }
+            //     else{
+            //         log = true
+            //     }
+            // }
+            // else{
+            //     log = false
+            // }
             //GAS IS THE RED CHANNEL IN THE 3D DATA TEXTURE
             var min = Infinity
             var max = -Infinity
@@ -687,29 +706,29 @@ function loadGas(size,attr,resolution_bool){
                 for(y=0;y<size;y++){
                     for(z=0;z<size;z++){
                         if(simID=="TNG100" && attr =="GFM_Metallicity"){
-                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
+                            dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
                         }
                         else if(attr=="Metallicity"){
-                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z]*77.22015)
+                            dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z]*77.22015)
                         }
                         else if(log){
-                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z])
+                            dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z])
                         }
                         else{
-                            dataArray3D[ 4 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
+                            dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
                         }
 
-                        if( dataArray3D[ 4 * ( x + y * size + z * size * size ) ] < min ){
-                            min = dataArray3D[ 4 * ( x + y * size + z * size * size ) ]
+                        if( dataArray3D[ 3 * ( x + y * size + z * size * size ) ] < min ){
+                            min = dataArray3D[ 3 * ( x + y * size + z * size * size ) ]
                         }
-                        if( dataArray3D[ 4 * ( x + y * size + z * size * size ) ] > max ){
-                            max = dataArray3D[ 4 * ( x + y * size + z * size * size ) ]
+                        if( dataArray3D[ 3 * ( x + y * size + z * size * size ) ] > max ){
+                            max = dataArray3D[ 3 * ( x + y * size + z * size * size ) ]
                         }
                         
                     }
                 }
             }
-            if(min==-Infinity){min = -999999999999}
+            if(min==-Infinity){min = -323} // -323 is the smallest value log10() can return in javascript... because log10(0)=-Infinity
             var x = document.getElementById("gas-eye-open");
             x.style.display = "inline-block";
             var y = document.getElementById("gas-eye-closed");
@@ -735,32 +754,82 @@ function loadGas(size,attr,resolution_bool){
                 if(attr=="Temperature"){
                     let dropdown = document.getElementById("gas_select")
                     dropdown.value = 'Temperature'
-                    min = 3.745
+                    min = 2
                     minval.value = 3.745
-                    max = 6.75
+                    max = 7
                     maxval.value = 6.75
                 }
-                if(attr=="Entropy"){
-                    let dropdown = document.getElementById("gas_select")
-                    dropdown.value = 'Entropy'
-                    min = 2.1
-                    minval.value = 2.1
-                    max = 4.5
-                    maxval.value = 4.5
+                if(attr == "Carbon"){
+                    min = 0.0
+                    minval.value = 0.0
+                    max = 0.007
+                    maxval.value = 0.007
                 }
-                if(attr=="Metallicity"){
-                    let dropdown = document.getElementById("gas_select")
-                    dropdown.value = 'Metallicity'
-                    min = -3
-                    minval.value = -3
-                    max = 1
-                    maxval.value = 1
+                if(attr == "Density"){
+                    min = -33.0
+                    minval.value = -33.0
+                    max = -27.0
+                    maxval.value = -27.0
                 }
+                if(attr == "Entropy"){
+                    min = 1.0
+                    minval.value = 1.0
+                    max = 6.0
+                    maxval.value = 6.0
+                }
+                if(attr == "Metallicity"){
+                    min = 0.0
+                    minval.value = 0.0
+                    max = 0.05
+                    maxval.value = 0.05
+                }
+                if(attr == "Oxygen"){
+                    min = 0.0
+                    minval.value = 0.0
+                    max = 0.02
+                    maxval.value = 0.02
+                }
+                // if(attr=="Entropy"){
+                //     let dropdown = document.getElementById("gas_select")
+                //     dropdown.value = 'Entropy'
+                //     min = 2.1
+                //     minval.value = 2.1
+                //     max = 4.5
+                //     maxval.value = 4.5
+                // }
+                // if(attr=="Metallicity"){
+                //     let dropdown = document.getElementById("gas_select")
+                //     dropdown.value = 'Metallicity'
+                //     min = -3
+                //     minval.value = -3
+                //     max = 1
+                //     maxval.value = 1
+                // }
             }
-
             climGasLimits = [min, max]
             
-            
+            gasUnpackDomain = []
+
+            if(attr == "Temperature"){
+                gasUnpackDomain = [2.0, 7.5]
+            }
+            if(attr == "Carbon"){
+                gasUnpackDomain = [0.0, 0.007]
+            }
+            if(attr == "Density"){
+                gasUnpackDomain = [-33.0, -27.0]
+            }
+            if(attr == "Entropy"){
+                gasUnpackDomain = [1.0, 6.0]
+            }
+            if(attr == "Metallicity"){
+                gasUnpackDomain = [0.0, 0.05]
+            }
+            if(attr == "Oxygen"){
+                gasUnpackDomain = [0.0, 0.02]
+            }
+
+            volMaterial.uniforms["u_gasUnpackDomain"].value.set( gasUnpackDomain[0], gasUnpackDomain[1] )
             // if(elements.includes(attr)){
 
             
@@ -788,7 +857,7 @@ function loadGas(size,attr,resolution_bool){
                     gasUnits[i].innerHTML = "log(cm<sup>2</sup>keV)"
                 }
                 else if(attr == "Metallicity"){
-                    gasUnits[i].innerHTML = "log(Zsun)"
+                    gasUnits[i].innerHTML = "Zsun"//"log(Zsun)"
                 }
                 else{
                     gasUnits[i].innerHTML = 'dimensionless'
@@ -810,7 +879,13 @@ function loadDarkMatter(size){
     return new Promise(resolve => {
         try{
             d3.json('static/data/'+simID+'/PartType1/' + size + '_PartType1_' + attr +'.json').then(function(d){
-                log = true
+            // d3.text('static/data/'+simID+'/PartType1/' + size + '_PartType1_' + attr +'.json').then(function(textData){
+            //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
+            //     const d = JSON.parse(textData, function(key, value){
+            //         return value === "-Infinity" ? -Infinity : value;
+            //     });
+                // console.log(d)
+                log = false
 
                 // DARK MATTER IS THE GREEN CHANNEL IN THE 3D DATA TEXTURE
                 
@@ -820,24 +895,24 @@ function loadDarkMatter(size){
                     for(y=0;y<size;y++){
                         for(z=0;z<size;z++){
                             if(log){
-                                dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] =  Math.log10(d[x][y][z])
+                                dataArray3D[ 3 * ( x + y * size + z * size * size) + 1 ] =  Math.log10(d[x][y][z])
                             }
                             else{
-                                dataArray3D[ 4 * ( x + y * size + z * size * size)  + 1 ] =  d[x][y][z]
+                                dataArray3D[ 3 * ( x + y * size + z * size * size)  + 1 ] =  d[x][y][z]
                             }
 
-                            if( dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ] < min ){
-                                min = dataArray3D[ 4 * ( x + y * size + z * size * size) + 1 ]
+                            if( dataArray3D[ 3 * ( x + y * size + z * size * size) + 1 ] < min ){
+                                min = dataArray3D[ 3 * ( x + y * size + z * size * size) + 1 ]
                             }
 
-                            if( dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ] > max ){
-                                max = dataArray3D[ 4 * ( x + y * size + z * size * size ) + 1 ]
+                            if( dataArray3D[ 3 * ( x + y * size + z * size * size ) + 1 ] > max ){
+                                max = dataArray3D[ 3 * ( x + y * size + z * size * size ) + 1 ]
                             }
                         }
                     }
                 }
 
-                if(min==-Infinity){min = -999999999999.9}
+                if(min==-Infinity){min = -323} // -323 is the smallest value log10() can return in javascript... because log10(0)=-Infinity
                 var x = document.getElementById("dm-eye-open");
                 x.style.display = "inline-block";
                 var y = document.getElementById("dm-eye-closed");
@@ -848,19 +923,41 @@ function loadDarkMatter(size){
                 // if(localStorage.getItem('dmMaxVal') != ""){
                 //     max = localStorage.getItem('dmMaxVal')
                 // }
-                climDMLimits = [min, max]
+                // climDMLimits = [min, max]
+                if(simID = 'RefL0012N0188'){
+                    gridrestomaxval = { 64: 1.26664915e-26,
+                        128: 6.9301215e-26,
+                        256: 2.1937904e-25,
+                        512: 6.3844367e-25 }
+                }
+                if(simID = 'RefL0012N0188'){
+                    gridrestomaxval = { 64: 7.00784199967097e-27,
+                        128: 2.4839307056953186e-26,
+                        256: 8.163568369617648e-26,
+                        512: 2.2696208635739263e-25 }
+                }
+                
+                darkmatterUnpackDomain = [0.0,gridrestomaxval[size]]
+                climDMLimits = [0.0,gridrestomaxval[size]]
+
                 let minval = document.getElementById('dm-minval-input')
-                minval.value = round(min,2)
+                minval.value = 0.0//round(min,2)
                 let maxval = document.getElementById('dm-maxval-input')
-                maxval.value = round(max,2)
-                min = -28
-                minval.value = -28
-                max = -25
-                maxval.value = -25 
+                maxval.value = gridrestomaxval[size]//round(max,2)
+                // min = -28
+                // minval.value = -28
+                // max = -25
+                // maxval.value = -25 
                 let dmUnits = document.getElementsByClassName('dm-attr-units')
                 for(i=0;i< dmUnits.length;i++){
-                    dmUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+                    dmUnits[i].innerHTML = 'g/cm<sup>3</sup>'//'log(g/cm<sup>3</sup>)'
                 }
+
+
+                
+                volMaterial.uniforms[ "u_darkmatterUnpackDomain" ].value.set(darkmatterUnpackDomain[0],darkmatterUnpackDomain[1])
+                
+
                 initColor('PartType1')
                 // updateUniforms()
                 // update3dDataTexture()
@@ -907,22 +1004,29 @@ function loadDensity(size,type,attr){
     console.log('loading density')
     return new Promise(resolve => {
         d3.json('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(d){
-          
+            // d3.text('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(textData){
+            //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
+            //     const d = JSON.parse(textData, function(key, value){
+            //         return value === "-Infinity" ? -Infinity : value;
+            //     });
             // DENSITY USES BLUE CHANNEL OF 3D DATA TEXTURE
-
+            
             min = Infinity
             max = -Infinity
             for(x=0;x<size;x++){
                 for(y=0;y<size;y++){
                     for(z=0;z<size;z++){
-                        if(size==384 || size==512) dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = d[x][y][z]
-                        else dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = Math.log10(d[x][y][z])
+                        // if(size==64) dataArray3D[ 3 * ( x + y * size + z * size * size ) + 2 ] = Math.log10(d[x][y][z])
+                        dataArray3D[ 3 * ( x + y * size + z * size * size ) + 2 ] = d[x][y][z]
 
-                        if(dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] < min ){
-                            min = dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ]
+                        // if(size==384 || size==512) dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = d[x][y][z]
+                        // else dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = Math.log10(d[x][y][z])
+
+                        if(dataArray3D[ 3 * ( x + y * size + z * size * size ) + 2 ] < min ){
+                            min = dataArray3D[ 3 * ( x + y * size + z * size * size ) + 2 ]
                         }
                         if(dataArray3D[ 3 * ( x + y * size + z * size * size ) + 2 ] > max){
-                            max = dataArray3D[ 4 * ( x + y * size + z * size * size  ) + 2 ]
+                            max = dataArray3D[ 3 * ( x + y * size + z * size * size  ) + 2 ]
                         }
                     }
                 }
@@ -934,8 +1038,11 @@ function loadDensity(size,type,attr){
                 let minval = document.getElementById(type+'-minval-input')
                 minval.value = round(min,2)
                 let maxval = document.getElementById(type+'-maxval-input')
-                maxval.value = round(max,2)
+                maxval.value = -3//round(max,2)
             }
+
+            densityUnpackDomain = [-8.5, -3]
+            volMaterial.uniforms[ "u_densityUnpackDomain" ].value.set(densityUnpackDomain[0],densityUnpackDomain[1])
 
             dm = document.querySelector('#density-minval-input')
             dm.addEventListener('input', updateUniforms);
@@ -974,12 +1081,9 @@ function loadStars(){
                 for ( i = 0; i < n; i++ ){
                     let vertex = new THREE.Vector3( d[i].x*m, d[i].y*m, d[i].z*m )
                     vertex.toArray( starPositions, i * 3 )
-                    // console.log(vertex)
                 }
-                // console.log(starPositions)
-                
+             
                 starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
-                // starGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
                 boxOfStarPoints = new THREE.Points( starGeometry, starMaterial );
                 starScene.add ( boxOfStarPoints );
                 var x = document.getElementById("star-eye-open"); 
@@ -3020,6 +3124,7 @@ function onWindowResize(){
     renderer.setPixelRatio( 1 );
     const size = new THREE.Vector2()
     renderer.getSize( size );
+    console.log(size)
     var pixelRatio = window.devicePixelRatio;
     target.setSize( size.x, size.y )
     updateUniforms()

@@ -1126,7 +1126,7 @@
                 <div id="density-mod" class="density-mod">
                     
                     <p>density opacity modulation</p>
-                    <p><input type="range" id="density-mod-intensity" min="0.0" max="10.0" step="0.001" value="2.0" oninput="updateUniforms()"> intensity</p>
+                    <p><input type="range" id="density-mod-intensity" min="0.0" max="10.0" step="0.1" value="2.0" oninput="updateUniforms()"> intensity</p>
                     <div id="density-min">
                         min
                         <input type="number" step="0.1" id="density-minval-input" class="number-input minvalinput" name="density-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
@@ -1237,7 +1237,7 @@
                     <option value="128">128&sup3;</option>
                     <option value="256">256&sup3;</option>
                     <option disabled value="384">384&sup3;</option>
-                    <option disabled value="512">512&sup3;</option>
+                    <option value="512">512&sup3;</option>
                 </select></p>
                 <p><input type="checkbox" id="grid-check" onclick="toggleGrid()" > grid </p>
                 <div id="grid-radio-btns">

@@ -5,12 +5,15 @@
  */
 
 THREE.VolumeRenderShader1 = {
+	
     uniforms: {
-        
 		"u_size": { value: new THREE.Vector3( 1, 1, 1 ) },
 		"u_renderstyle": { value: 0 },
 		"u_renderthreshold": { value: 0.5 },
 		"u_clim": { value: new THREE.Vector2( 1, 1 ) },
+		"u_gasUnpackDomain": { value: new THREE.Vector2(0.0,1.0) },
+		"u_darkmatterUnpackDomain": { value: new THREE.Vector2(0.0,1.0) },
+		"u_densityUnpackDomain": { value: new THREE.Vector2(0.0,1.0) },
 		"u_gasClim": { value: new THREE.Vector2( 1, 1 ) },
 		"u_dmClim": { value: new THREE.Vector2( 1, 1 ) },
 		"u_climDensity": { value: new THREE.Vector2( 1, 1 ) },
@@ -137,8 +140,10 @@ THREE.VolumeRenderShader1 = {
 	].join( "\n" ),
 	fragmentShader: [
 		"		#include <packing>",
+		"		#include <common>",
+		"		precision highp int;",
 		"		precision highp float;",
-		"		precision highp sampler3D;",
+		"		precision highp usampler3D;",
 		"		precision highp sampler2D;",
 
 		"		uniform vec3 u_size;",
@@ -153,12 +158,16 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_stepSize;",
 		"		uniform float u_exposure;",
 
+		"		uniform vec2 u_gasUnpackDomain;",
+		"		uniform vec2 u_darkmatterUnpackDomain;",
+		"		uniform vec2 u_densityUnpackDomain;",
+
 		" 		uniform bool u_gasVisibility;",
 		" 		uniform bool u_dmVisibility;",
 		" 		uniform bool u_starVisibility;",
 		" 		uniform bool u_skewerVisibility;",
 
-		"		uniform sampler3D u_dataTexture3D;",
+		"		uniform highp sampler3D u_dataTexture3D;",
 
 		"		uniform float u_densityDepthMod;",
 		"		uniform float u_grayscaleDepthMod;",
@@ -174,7 +183,7 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_distModI;",
 		"		uniform float u_valModI;",
 
-		"		uniform sampler3D u_density;",
+		"		uniform usampler3D u_density;",
 
 		"		uniform sampler2D u_cmdata;",
 		"		uniform sampler2D u_cmGasData;",
@@ -199,11 +208,15 @@ THREE.VolumeRenderShader1 = {
 
 		"		uniform float u_sigma_t;",
 		"		uniform float u_sigma_e;",
-	
+		
 		"		in vec3 v_Origin;",
 		"		in vec3 v_Direction;",
 		"		in vec2 vUv;",
 
+		"		uvec3 dataTexture_i;",
+		"		vec3 dataTexture_f;",
+		"		uvec3 dataTexture_i1;",
+		"		vec3 dataTexture_f1;",
 		"		vec2 ray_AABB_intersection(vec3 rp, vec3 rd, vec3 c_lo, vec3 c_hi);",
 		"		void cast_raymarching();",
 		"		float rnd(vec2 x);",
@@ -277,12 +290,19 @@ THREE.VolumeRenderShader1 = {
 					vec3 path_L = vec3(0.0, 0.0, 0.0); // light collected for the ray (path tracer) -- total quantity light coming from the volume
 					float tau = 0.0; // accumulated optical thickness through the volume 
 					vec3 gas_darkmatter_density0 = sampleData(u_dataTexture3D, rp); // normally called 'rho'
-					float rho0 = max(0.0,((gas_darkmatter_density0.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp), rho1; // rho ~ density; rho0 ~ first point in the volume; rho1 ~ not initialized yet
+					
+					float density_val = (u_densityUnpackDomain[1] - u_densityUnpackDomain[0])*(( float(gas_darkmatter_density0.b) - 0.0) / (255.0)) + u_densityUnpackDomain[0];
+					float rho0 = max(0.0,((density_val - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp), rho1; // rho ~ density; rho0 ~ first point in the volume; rho1 ~ not initialized yet
+					
 					float transmittance = 0.0;
+					
 					for (int i = 0; i < iSteps; i++) {
 						rp += dd; // move position along the ray by 1 step forward (dd), ~1 voxel unit
+
 						vec3 gas_darkmatter_density1 = sampleData(u_dataTexture3D, rp); //get texture values at each step
-						float rho1 = max(0.0,((gas_darkmatter_density1.b - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp); // gets rho1 for the position
+						
+						float density_val1 = (u_densityUnpackDomain[1] - u_densityUnpackDomain[0])*(( float(gas_darkmatter_density1.b) - 0.0) / (255.0)) + u_densityUnpackDomain[0];
+						float rho1 = max(0.0,((density_val1 - u_climDensity[0]) / (u_climDensity[1] - u_climDensity[0]))); //get_rho(rp); // gets rho1 for the position
 						float rho = 0.5 * (rho0 + rho1); // actual density (rho) is the average between the two (assume piecewise linear density function)
 						vec3 gas_darkmatter_density = 0.5 * (gas_darkmatter_density0 + gas_darkmatter_density1);
 						vec3 emission = vec3(0.0, 0.0, 0.0);
@@ -290,13 +310,13 @@ THREE.VolumeRenderShader1 = {
 						float scaling_factor = 100.0/u_size.x;
 					// gas + dark matter contribute to optical density
 						if( u_gasVisibility == true ){
-							vec4 gas_emission = get_emitted_L_gas(gas_darkmatter_density.r,rho);
+							vec4 gas_emission = get_emitted_L_gas(float(gas_darkmatter_density.r),rho);
 							tau      += scaling_factor * rho * gas_emission.a; 					  // tau ~ accumulated thickness/density of the volume 
 							emission += scaling_factor * rho * gas_emission.rgb * gas_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
 						}
 
 						if( u_dmVisibility == true ){
-							vec4 darkmatter_emission = get_emitted_L_darkmatter(gas_darkmatter_density.g,rho);
+							vec4 darkmatter_emission = get_emitted_L_darkmatter(float(gas_darkmatter_density.g),rho);
 							tau      += rho * darkmatter_emission.a ; 							// tau ~ accumulated thickness/density of the volume 
 							emission += rho * darkmatter_emission.rgb * darkmatter_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
 						}
@@ -381,19 +401,28 @@ THREE.VolumeRenderShader1 = {
 		"			return 1.0 - float( (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;",
 		"		}",
 
-		"		vec3 sampleData(sampler3D data, vec3 texcoords) {",
-		"				/* Sample float value from a 3D texture. Assumes intensity data. */",
-		"				return texture(data, texcoords.xyz/u_size).rgb;",
-		"		}",
+		`
+				vec3 sampleData(sampler3D data, vec3 texcoords) {
+						/* Sample float value from a 3D texture. Assumes intensity data. */
+						return texture(data, texcoords.xyz/u_size).rgb;
+				}
+		`,
 
 		`		vec4 get_emitted_L_gas(float gas_val, float density_val){
 					float a;
+					float unpack_min;
+					float unpack_max;
+					
+					gas_val = (u_gasUnpackDomain[1] - u_gasUnpackDomain[0])*((gas_val - 0.0) / (255.0)) + u_gasUnpackDomain[0];
 
 					// check if region is clipped based on min/max values in the data
 					// 
 					if( (u_gasClip[0] == true) && (gas_val < u_gasClim[0]) ) a = 0.0;
 					else if( (u_gasClip[1] == true) && (gas_val > u_gasClim[1]) ) a = 0.0;
 					else a = 1.0;
+					
+					
+					//scale gas value back into meaningful numbers
 					
 					// scale gas value between 0 and 1
 					gas_val = (gas_val - u_gasClim[0]) / (u_gasClim[1] - u_gasClim[0]);
@@ -414,11 +443,13 @@ THREE.VolumeRenderShader1 = {
 
 		`		vec4 get_emitted_L_darkmatter(float dm_val, float density_val){
 					float a;
-					
+					dm_val = (u_darkmatterUnpackDomain[1] - u_darkmatterUnpackDomain[0])*((dm_val - 0.0) / (255.0)) + u_darkmatterUnpackDomain[0];
+
 					if( (u_dmClip[0] == true) && (dm_val < u_dmClim[0]) ) a = 0.0;
 					else if( (u_dmClip[1] == true) && (dm_val > u_dmClim[1]) ) a = 0.0;
 					else a = 1.0;
 					
+
 					dm_val = (dm_val - u_dmClim[0]) / (u_dmClim[1] - u_dmClim[0]);
 					
 					vec4 tex = texture2D(u_cmDMData, vec2(dm_val, 0.5));
