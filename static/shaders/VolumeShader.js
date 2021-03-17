@@ -212,7 +212,7 @@ THREE.VolumeRenderShader1 = {
 		"		in vec3 v_Origin;",
 		"		in vec3 v_Direction;",
 		"		in vec2 vUv;",
-
+		"		out vec4 fragColor;",
 		"		uvec3 dataTexture_i;",
 		"		vec3 dataTexture_f;",
 		"		uvec3 dataTexture_i1;",
@@ -358,7 +358,7 @@ THREE.VolumeRenderShader1 = {
 					}
 					// pathL += skewerColor or starColor * transmittance
 					vec4 c = vec4(vec3(1.0,1.0,1.0) - exp(-u_exposure*path_L),1.0);
-					gl_FragColor = c;
+					fragColor = c;
 					
 				}
 		`,

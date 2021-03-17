@@ -45,7 +45,7 @@ def loadData(filename):
 
 def getFieldList(ds):
     fl = sorted(ds.field_list)
-    # print(sorted(fl))
+    print(sorted(fl))
     df = ds.derived_field_list
     # print(sorted(df))
     return fl
@@ -216,17 +216,26 @@ def exportStars(ds,percent):
 #     np.random.default_rng(4)
     for i in range(0,int(len(index)-1)):
         j = index[i]
-        star_particles[i] = {
+        star_particles[i] = (
+                                round(float(ad['PartType4', 'Coordinates'][j][0].in_units('Mpc')),4), #x
+                                round(float(ad['PartType4', 'Coordinates'][j][1].in_units('Mpc')),4),   #y
+                                round(float(ad['PartType4', 'Coordinates'][j][2].in_units('Mpc')),4),   #z
+                                float(ad['PartType4', 'GroupNumber'][j]), # group ID
+                                round(float(np.log10(ad['PartType4', 'Mass'][j].in_units('Msun'))),2) # stellar mass
+                            )
+
     #         'particleID' : int(ad['PartType4', 'ParticleIDs'][i]),
-            'x' : float(ad['PartType4', 'Coordinates'][j][0]),
-            'y' : float(ad['PartType4', 'Coordinates'][j][1]),
-            'z' : float(ad['PartType4', 'Coordinates'][j][2]),
-            # 'sft': float((ad['PartType4', 'GFM_StellarFormationTime'][j])) #unitless
-        }
+            # 'x' : round(float(ad['PartType4', 'Coordinates'][j][0]),2),
+            # 'y' : round(float(ad['PartType4', 'Coordinates'][j][1]),2),
+            # 'z' : round(float(ad['PartType4', 'Coordinates'][j][2]),2),
+            # 'g' : float(ad['PartType4', 'SubGroupNumber'][j]), # group ID
+            # 'm' : round(float(np.log10(ad['PartType4', 'Mass'][j].in_units('Msun'))),2) # stellar mass
+            # 's' : round(float((ad['PartType0', 'StarFormationRate'].ParticleIDs[ad['PartType4','ParticleIDs'][j]]).in_units('Myr')),2), # star formation rate
+        # }
 #             # more star attributes can be defined
 #     #         'mass' : round(float(np.log10(ad['PartType4', 'Mass'][i].in_units('Msun'))),2)
     with open(str(percent)+'_star_particles.json', 'w') as file:
-        json.dump(star_particles, file)
+        json.dump(star_particles, file, separators=(',', ':') )
     print("exported stars")
     
 def exportSimMetadata(ds,field_list):

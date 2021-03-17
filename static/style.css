@@ -928,6 +928,17 @@ th,td {
     padding: 10px 15px;
 }
 
+#star-details{
+    position:absolute;
+    bottom: 1vw;
+    left: 1vw;
+    font-family: mr-eaves-modern, sans-serif;
+    font-weight: 300;
+    font-style: normal;
+    font-size: 1.4em;
+    color:rgba(59, 153, 252, .7);
+}
+
 #loading-animation {
     position:absolute;
     bottom: 1vw;

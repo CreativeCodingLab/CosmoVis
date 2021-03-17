@@ -35,7 +35,8 @@ var climDMLimits = []
 var climStarLimits = []
 var climBHLimits = []
 var gridsize = 64//parseInt(document.getElementById('size_select').value)
-var simID
+var simID = ''
+var oldSimID = ''
 var simSize
 var staticGrid
 var xBrusher, yBrusher, zBrusher, xBrush, yBrush, zBrush
@@ -62,7 +63,11 @@ var elements = ['Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium
  */
 var cube
 const mouse = new THREE.Vector2();
-var raycaster = new THREE.Raycaster();
+var raycaster = new THREE.Raycaster(); // this one is for the skewers
+raycaster.layers.set( 8 )
+var starcaster = new THREE.Raycaster();
+starcaster.params.Points.threshold = 1;
+starcaster.layers.set( 3 );
 var plane = new THREE.Plane();
 var planeNormal = new THREE.Vector3();
 var point = new THREE.Vector3();
@@ -80,6 +85,7 @@ var starScene, skewerScene
 var target //used for rendering star particles to depth texture
 var skewerTarget
 var boxOfStarPoints
+var starData
 
 var galaxy_centers
 /**
@@ -180,7 +186,8 @@ async function updateSize(){
         toggleXYZGuide()
         updateUniforms()
         toggleGrid()
-        // camera.position.set(oldPos.x*gridsize/oldsize,oldPos.y*gridsize/oldsize,oldPos.z*gridsize/oldsize)
+        camera.position.set(oldPos.x*gridsize/oldSize,oldPos.y*gridsize/oldSize,oldPos.z*gridsize/oldSize)
+        camera.updateProjectionMatrix()
         // controls
         controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
         controls.update()
@@ -607,7 +614,7 @@ function init3dDataTexture(size){
             fragmentShader: volumeShader.fragmentShader,
             clipping: false,
             side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
-            transparent: false,
+            transparent: true,
             // opacity: 0.05,
             // blending: THREE.CustomBlending,
             blendEquation: THREE.AddEquation,
@@ -657,7 +664,7 @@ function update3dDataTexture(){
         // }
         var mesh = new THREE.Mesh( volGeometry, volMaterial );
         mesh.layers.set(0)
-        mesh.renderOrder = 1
+        mesh.renderOrder = 2
         volMesh = mesh
         updateUniforms()
         scene.add( mesh );
@@ -754,9 +761,9 @@ function loadGas(size,attr,resolution_bool){
                 if(attr=="Temperature"){
                     let dropdown = document.getElementById("gas_select")
                     dropdown.value = 'Temperature'
-                    min = 2
+                    min = 2.0
                     minval.value = 3.745
-                    max = 7
+                    max = 7.0
                     maxval.value = 6.75
                 }
                 if(attr == "Carbon"){
@@ -924,13 +931,13 @@ function loadDarkMatter(size){
                 //     max = localStorage.getItem('dmMaxVal')
                 // }
                 // climDMLimits = [min, max]
-                if(simID = 'RefL0012N0188'){
+                if(simID == 'RefL0012N0188'){
                     gridrestomaxval = { 64: 1.26664915e-26,
                         128: 6.9301215e-26,
                         256: 2.1937904e-25,
                         512: 6.3844367e-25 }
                 }
-                if(simID = 'RefL0012N0188'){
+                if(simID == 'RefL0025N0376'){
                     gridrestomaxval = { 64: 7.00784199967097e-27,
                         128: 2.4839307056953186e-26,
                         256: 8.163568369617648e-26,
@@ -982,7 +989,9 @@ async function asyncCall(resolution_bool) {
     var dens = await loadDensity(gridsize,'PartType0','H_number_density')
     densityMin = dens[0]
     densityMax = dens[1]
+    // if(!resolution_bool){
     var stars = await loadStars()
+    // }
     var gas = await loadGas(gridsize,gasAttr,resolution_bool)
     var darkmatter = await loadDarkMatter(gridsize)
     // volMaterial.uniforms["u_dmVisibility"].value = false;
@@ -1072,19 +1081,31 @@ function loadStars(){
         }
         d3.json( 'static/data/' + simID + '/PartType4/star_particles.json' ).then( function( d ){
             // console.log( Object.keys(d).length )
+            starData = []
             n = Object.keys(d).length
+            // console.log(d[0])
             console.log(n)
             m = gridsize/(edges.right_edge[0]-edges.left_edge[0])
             var starGeometry = new THREE.BufferGeometry();
             var starPositions = new Float32Array(n * 3)
             if( Object.keys(d).length > 0 ){
                 for ( i = 0; i < n; i++ ){
-                    let vertex = new THREE.Vector3( d[i].x*m, d[i].y*m, d[i].z*m )
+                    let vertex = new THREE.Vector3( d[i][0]*m, d[i][1]*m, d[i][2]*m )
                     vertex.toArray( starPositions, i * 3 )
+                    starData[i] = [ d[i][0], //x
+                                    d[i][1], //y
+                                    d[i][2], //z
+                                    d[i][3], //subhalo ID
+                                    d[i][4] ] //solar mass
+                                            
                 }
-             
-                starGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ).onUpload( disposeArray ) )
+                // console.log(starPositions)
+                starGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( starPositions, 3 ) ) //.onUpload( disposeArray )
+                starGeometry.computeBoundingBox()
                 boxOfStarPoints = new THREE.Points( starGeometry, starMaterial );
+                boxOfStarPoints.layers.enable(3)
+                boxOfStarPoints.layers.set(3)
+                boxOfStarPoints.renderOrder = 0
                 starScene.add ( boxOfStarPoints );
                 var x = document.getElementById("star-eye-open"); 
                 x.style.display = "inline-block";
@@ -1099,6 +1120,22 @@ function loadStars(){
             }
         })
     })
+}
+
+function starCaster(){
+
+    starcaster.setFromCamera( mouse, camera );
+    // starcaster.layers.enableAll()
+    intersects = []
+    // intersects = starcaster.intersectObjects(boxOfStarPoints, true);
+    boxOfStarPoints.raycast(starcaster, intersects);
+    // console.log(intersects)
+            // intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
+    if(intersects.length > 0){
+        star = starData[intersects[0].index]
+        let div = document.getElementById("star-details")
+        div.innerHTML = "<h4>Star Details</h4>\n Group Number: " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
+    }
 }
 
 function disposeArray() {
@@ -1140,11 +1177,16 @@ function setupStarScene(){
         blendDst:       THREE.ZeroFactor,
         depthTest:      true,
         depthWrite:     true,
-        transparent:    false,
+        transparent:    true,
+        opacity:        1.0,
+        precision:      'highp',
+        dithering:      true,
+        side:           THREE.DoubleSide,
+        clipping:       true
         // alphaTest:      0.3
 
     });
-    checkSelectedSimID()
+    
 
 }
 
@@ -1408,12 +1450,17 @@ function createSkewerCube(size){
     max = new THREE.Vector3(domainXYZ[1]*size,domainXYZ[3]*size,domainXYZ[5]*size)
     diff = max.sub(min)
     var geometry = new THREE.BoxBufferGeometry(diff.x,diff.y,diff.z);
-    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true, transparent: true, opacity: 1.0, side: THREE.DoubleSide} );
+    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true, transparent: false, opacity: 1.0, side: THREE.DoubleSide} );
     material.depthWrite = false;
     cube = new THREE.Mesh( geometry, material );
     cube.position.set(diff.x/2+min.x, diff.y/2+min.y, diff.z/2+min.z);
+    cube.layers.enable(8)
     cube.layers.set(8)
+    cube.renderOrder = 1
+    cube.visible = false
     scene.add( cube );
+    
+
 
     edges_scaled = {
         'left_edge' : [0.0,0.0,0.0],
@@ -1452,8 +1499,11 @@ function render() {
         renderer.render( starScene, camera );   
         if( volMaterial ){
             volMaterial.uniforms[ "u_starDiffuse" ].value = target.texture
-            volMaterial.uniforms[ "u_starDepth" ].value = target.depthTexture    
+            volMaterial.uniforms[ "u_starDepth" ].value = target.depthTexture
+            
         }
+        
+        
         renderer.setRenderTarget( null )
     }
 
@@ -2519,16 +2569,18 @@ function updateXYZDomain(xyz, min, max){
 
 function checkSelectedSimID(){
     let selection = document.getElementById("sim_size_select")
-    oldSimID = simID
-    simID = selection.value
     
+    oldSimID = simID
+    
+    simID = selection.value
+
     if(oldSimID != simID){
         d3.json('static/data/'+simID+'/simMetadata.json').then(function(d){
             edges.left_edge = d.left_edge
             edges.right_edge = d.right_edge
             field_list = d.field_list
             createAttributeSelectors(field_list)
-            simSize = (edges.right_edge[0]-edges.left_edge[0])/0.6776999078
+            simSize = (edges.right_edge[0]-edges.left_edge[0])//0.6776999078
             toggleGrid()
             updateUniforms()
             asyncCall(false)
@@ -2607,7 +2659,8 @@ function checkSelectedSimID(){
 }
 
 function init(){
-
+    // simID = 'RefL0012N0188'
+    checkSelectedSimID()
     THREE.Cache.enabled = true
     canvas = document.createElement('canvas')
     canvas.id = 'webglcanvas'
@@ -2620,7 +2673,7 @@ function init(){
     scene.background = new THREE.Color("rgb(4,6,23)")
 
     // camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.0001, 10000 );
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000 );
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 4000 );
 
     camera.layers.enable(0);
     camera.layers.enable(1);
@@ -2658,24 +2711,46 @@ function init(){
     controls = new THREE.TrackballControls(camera, renderer.domElement);
     camera.position.set(gridsize*2, gridsize*2, gridsize*2)
     camera.lookAt(gridsize/2,  gridsize/2,  gridsize/2)
-    camera.zoom = 1
+    camera.zoom = 1.0
     camera.updateProjectionMatrix();
     controls.target.set( gridsize/2, gridsize/2, gridsize/2 );
     controls.noRotate = false
-    controls.rotateSpeed = 2.0;
-    controls.zoomSpeed = 1.0;
-    controls.panSpeed = 2.0;
+    controls.noZoom = true
+    controls.rotateSpeed = 10.0;
+    controls.zoomSpeed = 5.0;
+    controls.panSpeed = 5.0;
     controls.staticMoving = true
-    controls.dynamicDampingFactor = 0.7
+    controls.dynamicDampingFactor = 0.2
     controls.keys = [ 65, 83, 68 ];
     // controls.enableDamping = false
     // controls.rotateSpeed = 0.75;
     // controls.dampingFactor = 0.75;
     controls.addEventListener('change', requestRenderIfNotRequested)
-    // controls.enableKeys = true
+    controls.enableKeys = true
     controls.update()
     initColor();
     
+    window.addEventListener('mousewheel', function(e) {
+        // e.preventDefault();
+        // console.log(e)
+        camera.zoom -= e.deltaY/150
+        if(camera.zoom <= 0){
+            camera.zoom = 0.1
+        }
+        // var x = ( event.clientX / window.innerWidth ) * 2 - 1,
+        // y = - ( event.clientY / window.innerHeight ) * 2 + 1,
+        // vector = new THREE.Vector3(x, y, 1),
+        // factor = 0.5,
+        // func = e.deltaY < 0 ? 'addVectors' : 'subVectors';
+        // vector.unproject(camera);
+        // vector.sub(camera.position);
+        // camera.position[func](camera.position,vector.setLength(factor));
+        // controls.target[func](controls.target,vector.setLength(factor));
+        camera.updateProjectionMatrix();
+    })
+
+    // document.onkeydown = onKeyDown
+    document.addEventListener('keyup', onKeyUp, false)
     document.addEventListener('keydown', onKeyDown, false)
     window.addEventListener( 'resize', onWindowResize, false );
     document.addEventListener( 'mousemove', onMouseMove, false );
@@ -2724,14 +2799,19 @@ function init(){
     y.addEventListener('change',updateUniforms,false)
     z = document.getElementById('x-depth-brush')
     z.addEventListener('change',updateUniforms,false)
+
 }
 
 function onMouseMove( event ) {
     /**
      * * onMouseMove() is an event listener for when the mouse position changes
      */
-    mouse.x = ( event.clientX - windowHalf.x );
-    mouse.y = ( event.clientY - windowHalf.x );
+        // mouse.x = ( event.clientX - windowHalf.x );
+        // mouse.y = ( event.clientY - windowHalf.x );
+    mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+    
+    starCaster()
     
 }
 function onMouseClick( event ) {
@@ -2991,9 +3071,9 @@ function cylinderMesh(pointX, pointY) {
     let skewerGeometry = new THREE.CylinderBufferGeometry(skewer_width, skewer_width, direction.length(), 10, 1000, false, 0, 2*Math.PI);
     skewerGeometry.setDrawRange(0,Infinity)
     // shift it so one end rests on the origin
-    skewerGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
+    skewerGeometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
     // rotate it the right way for lookAt to work
-    skewerGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
+    skewerGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
     // Make a mesh with the geometry
     let skewerMesh = new THREE.Mesh(skewerGeometry, skewerMaterial1[idx]);
     // Position it where we want
@@ -3132,11 +3212,31 @@ function onWindowResize(){
 
 }
 
+function onKeyUp(event){
+    if(event.keyCode){
+        // console.log("shift")
+        setTimeout(function(){
+			controls.rotateSpeed = 10.0;
+            controls.zoomSpeed = 5.0;
+            controls.panSpeed = 5.0;		
+		},5);
+    }
+}
+
 function onKeyDown(event){
     // console.log(event)
     var k = String.fromCharCode(event.keyCode);
     // console.log(k)
 
+    if(event.keyCode){
+        // console.log("shift")
+        setTimeout(function(){
+			controls.rotateSpeed = 4.0;
+            controls.zoomSpeed = 1.0;
+            controls.panSpeed = 1.0;		
+		},5);
+        
+    }
      
     if(k == "S"){
         /*
