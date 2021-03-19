@@ -1134,7 +1134,66 @@ function starCaster(){
     if(intersects.length > 0){
         star = starData[intersects[0].index]
         let div = document.getElementById("star-details")
-        div.innerHTML = "<h4>Star Details</h4>\n Group Number: " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
+        div.innerHTML = `
+        <h3>star particle details</h3>\n
+        <table>
+        <tr>
+            <td class="d1">
+                group id
+            </td>
+            <td class="d2">
+                `+ star[3] +`
+            </td>
+            <td class="d3">
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                mass
+            </td>
+            <td class="d2">
+                `+ star[4] +`
+            </td>
+            <td class="d3">
+                M<sub>&#9737;</sub>              
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                x
+            </td>
+            <td class="d2">
+                `+ star[0] +`
+            </td>
+            <td class="d3">
+                Mpc</sub>              
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                y
+            </td>
+            <td class="d2">
+                `+ star[1] +`
+            </td>
+            <td class="d3">
+                Mpc</sub>              
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                z
+            </td>
+            <td class="d2">
+                `+ star[2] +`
+            </td>
+            <td class="d3">
+                Mpc</sub>              
+            </td>
+        </tr>
+        
+    </table>`
+    //"<h4></h4>\n : " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
     }
 }
 
@@ -1145,11 +1204,13 @@ function disposeArray() {
 function startLoadingAnimation(){
     loading = document.getElementById("loading-animation")
     loading.style.display = "inline-block"
+    document.body.style.cursor = "progress";
 }
 
 function stopLoadingAnimation(){
     loading = document.getElementById("loading-animation")
     loading.style.display = "none"
+    document.body.style.cursor = "default";
 }
 
 function setupStarScene(){

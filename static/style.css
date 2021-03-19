@@ -7,6 +7,7 @@ canvas {
     padding: 0px;
     width: 100vw;
     height: 100vh;
+    cursor: crosshair;
 }
 body {
     margin: 0px;
@@ -919,6 +920,11 @@ h3 {
 
 table {
     border-collapse: collapse;
+    width: 20vw;
+}
+table.center {
+    margin-left: auto;
+    margin-right: auto;
 }
 thead {
     font-weight: 700;
@@ -929,20 +935,38 @@ th,td {
 }
 
 #star-details{
-    position:absolute;
+    position: absolute;
     bottom: 1vw;
     left: 1vw;
     font-family: mr-eaves-modern, sans-serif;
     font-weight: 300;
     font-style: normal;
-    font-size: 1.4em;
-    color:rgba(59, 153, 252, .7);
+    font-size: 1em;
+    color: #ebf8e1;
+    text-shadow: 0 0 black;
+    border-radius: 25px;
+    border: 2px solid #37bf52;
+    padding: 20px;
+    /* width: 200px; */
+    /* height: 150px; */
+    background: rgba(20,150,130,.4);
+    text-align: center;
+    padding: 1%;
+    width: 20vw;
 }
-
+.d1{
+    width: 4vw;
+}
+.d2{
+    width: 10vw;
+}
+.d3{
+    width: 1vw;
+}
 #loading-animation {
     position:absolute;
     bottom: 1vw;
-    left: 1vw;
+    right: 1vw;
     display: none;
 }
 
