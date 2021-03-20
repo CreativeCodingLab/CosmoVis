@@ -12,7 +12,10 @@ import math
 from math import log10, floor
 import sys,os
 
-def extractFeatures(simpath,resolution_list,field_list,percent_stars):
+def extractFeatures(simpath,sim_type,resolution_list,field_list,percent_stars):
+    #simpath : local path to 1st hdf5 sim file
+    #sim_type: 'EAGLE' or 'TNG' (add others as they come)
+
     enableParallelism()
     verifyTrident()
     print('LOADING DATA')
@@ -24,9 +27,9 @@ def extractFeatures(simpath,resolution_list,field_list,percent_stars):
     print('EXTRACTING FIELD LIST')
     fl = getFieldList(ds)
     print('GENERATING VOXEL GRIDS')
-    glist = generateVoxelGrid(ds,resolution_list,field_list)
+    glist = generateVoxelGrid(ds,resolution_list,field_list,sim_type)
     print('EXPORTING STARS')
-    exportStars(ds,percent_stars)
+    exportStars(ds,percent_stars,sim_type)
     return glist
 
 
@@ -49,6 +52,87 @@ def getFieldList(ds):
     df = ds.derived_field_list
     # print(sorted(df))
     return fl
+
+
+
+
+
+# def dark_matter_density(ds,size):
+#     print(ds['Header'].attrs.get('HubbleParam'))
+#     # return
+
+def generateVoxelGrid(ds,resolution_list,field_list,sim_type):
+    # simpath
+    # resolution_list: list of resolutions to create, ex: [64,128,512] or [512]
+    # field_list: list of particle fields to preprocess, ex: [['PartType0','Temperature'],['PartType0','Density'],['PartType1','Density']]
+    fieldgridlist = []
+    for j in range(len(resolution_list)):
+        fieldgrids = []
+        for i in range(len(field_list)):
+            size = resolution_list[j]
+            obj = createGrid(ds,size,field_list[i][1])
+            grid = preprocessAttribute(obj,size,field_list[i][0],field_list[i][1],sim_type)
+            fieldgrids.append(grid)
+        fieldgridlist.append(fieldgrids)
+    return fieldgridlist
+
+def createGrid(ds,size,attr):
+    print("create grid")
+    if attr is 'PartType1_density':
+        obj = ds.smoothed_covering_grid(2, left_edge=[0.0, 0.0, 0.0], dims=[size,size,size])
+    else:
+        obj = ds.arbitrary_grid(ds.domain_left_edge, ds.domain_right_edge,
+                            dims=[size, size, size])
+    return obj
+
+def preprocessAttribute(obj,size,particle_type,attribute,sim_type):
+    print(size)
+    elements = ['PartType1_count', 'PartType1_density', 'PartType1_mass', 'Metallicity','Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium','Silicon','Iron']
+    try:
+        print('EXTRACTING: ' + particle_type + ', ' + attribute)
+        f = obj[particle_type, attribute]
+        if str(f.units) == 'code_mass':
+            attr = np.float32(np.array(f.in_units('Msun')))
+            units = 'Msun'
+        elif str(f.units) == 'K':
+            attr = np.float32(np.array(f))
+            units = 'K'
+        elif str(f.units) == 'code_mass/code_length**3':
+            attr = np.float32(np.array(f.in_cgs()))
+            units = f.in_cgs().units
+        elif str(f.units) == '(dimensionless)':
+            attr = np.float32(np.array(f))
+            units = 'dimensionless'
+        else:
+            attr = np.float32(np.array(f.in_cgs()))
+            units = f.in_cgs().units
+        print(attribute,units)
+
+        if attribute in elements:
+            out = compressVoxelData(attr.tolist(),size,particle_type,attribute)
+
+        else:
+            out = transformVoxelData(attr)
+            out = compressVoxelData(out,size,particle_type,attribute)
+
+
+
+        with open( str( size ) + '_' + particle_type + '_' + attribute + '.json', 'w' ) as file:
+            json.dump( out, file, separators=(',', ':') ) 
+
+    
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+    return attr   
+    # def preprocessAttributes(ds,size,particle_type):
+    #     for i in range(len(fl)):
+    #         obj = createGrid(ds,size)
+    #         if fl[i][0] == particle_type:
+    #             attribute = fl[i][1]
+    #             preprocessAttribute(obj,size,particle_type,attribute)
 
 def transformVoxelData(voxelized_data):
     out = np.log10(voxelized_data.tolist())
@@ -126,89 +210,10 @@ def compressVoxelData(voxelized_data,size,particle_type,attribute):
         print(exc_type, fname, exc_tb.tb_lineno) 
     return out
 
-def createGrid(ds,size):
-    print("create grid")
-    obj = ds.arbitrary_grid(ds.domain_left_edge, ds.domain_right_edge,
-                        dims=[size, size, size])
-    return obj
-
-# def dark_matter_density(ds,size):
-#     print(ds['Header'].attrs.get('HubbleParam'))
-#     # return
-
-def preprocessAttribute(obj,size,particle_type,attribute):
-    print(size)
-    elements = ['PartType1_count', 'PartType1_density', 'PartType1_mass', 'Metallicity','Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium','Silicon','Iron']
-    try:
-        if particle_type is 'PartType1':
-            
-            print('bleh')
-
-        else:    
-            print('EXTRACTING: ' + particle_type + ', ' + attribute)
-            f = obj[particle_type, attribute]
-            if str(f.units) == 'code_mass':
-                attr = np.float32(np.array(f.in_units('Msun')))
-                units = 'Msun'
-            elif str(f.units) == 'K':
-                attr = np.float32(np.array(f))
-                units = 'K'
-            elif str(f.units) == 'code_mass/code_length**3':
-                attr = np.float32(np.array(f.in_cgs()))
-                units = f.in_cgs().units
-            elif str(f.units) == '(dimensionless)':
-                attr = np.float32(np.array(f))
-                units = 'dimensionless'
-            else:
-                attr = np.float32(np.array(f.in_cgs()))
-                units = f.in_cgs().units
-            print(attribute,units)
-
-        if attribute in elements:
-            # out = np.around(attr.tolist(),decimals=2)
-            out = compressVoxelData(attr.tolist(),size,particle_type,attribute)
-            # out = ["%.2f" % x for x in out]
-        else:
-            out = transformVoxelData(attr)
-            out = compressVoxelData(out,size,particle_type,attribute)
-            # out = np.around(np.log10(attr.tolist()),decimals=2)
-        # print(out.tolist()) ##
 
 
-        with open( str( size ) + '_' + particle_type + '_' + attribute + '.json', 'w' ) as file:
-            json.dump( out, file, separators=(',', ':') ) 
 
-    
-    except Exception as e:
-        print('error: '+ str( e ))
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
-    return attr   
-    # def preprocessAttributes(ds,size,particle_type):
-    #     for i in range(len(fl)):
-    #         obj = createGrid(ds,size)
-    #         if fl[i][0] == particle_type:
-    #             attribute = fl[i][1]
-    #             preprocessAttribute(obj,size,particle_type,attribute)
-
-def generateVoxelGrid(ds,resolution_list,field_list):
-    # simpath
-    # resolution_list: list of resolutions to create, ex: [64,128,512] or [512]
-    # field_list: list of particle fields to preprocess, ex: [['PartType0','Temperature'],['PartType0','Density'],['PartType1','Density']]
-    fieldgridlist = []
-    for j in range(len(resolution_list)):
-        fieldgrids = []
-        for i in range(len(field_list)):
-            size = resolution_list[j]
-            obj = createGrid(ds,size)
-            grid = preprocessAttribute(obj,size,field_list[i][0],field_list[i][1])
-            fieldgrids.append(grid)
-        fieldgridlist.append(fieldgrids)
-    return fieldgridlist
-
-
-def exportStars(ds,percent):
+def exportStars(ds,percent,sim_type):
     # percent: % of number of particles to export between (0,100)
     ad=ds.all_data()
     index = np.random.randint(0,len(ad['PartType4', 'Coordinates']),size=int(len(ad['PartType4', 'Coordinates'])*(percent/100)))
