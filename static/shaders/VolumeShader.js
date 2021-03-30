@@ -52,6 +52,7 @@ THREE.VolumeRenderShader1 = {
 		"u_screenHeight": {value : null},
 		"u_sigma_t": {value : 0.5},
 		"u_sigma_e": {value : 0.5},
+		"u_skewerBrightness": {value: 10.0},
     },
 	vertexShader: [
 		
@@ -208,6 +209,8 @@ THREE.VolumeRenderShader1 = {
 
 		"		uniform float u_sigma_t;",
 		"		uniform float u_sigma_e;",
+
+		"		uniform float u_skewerBrightness;",
 		
 		"		in vec3 v_Origin;",
 		"		in vec3 v_Direction;",
@@ -354,7 +357,9 @@ THREE.VolumeRenderShader1 = {
 					}
 					if(u_skewerVisibility == true) {
 						vec3 skewerCol = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-						if(skewerCol.r != 0.0) path_L += 100.0 * transmittance * ((skewerCol));
+						if(skewerCol.r != 0.0) path_L += u_skewerBrightness * transmittance * skewerCol; ((0.4*path_L) + (0.6*(skewerCol))); //50.0 * sqrt(transmittance) * skewerCol; //
+						
+						// else path_L += 100.0 * transmittance * skewerCol;
 					}
 					// pathL += skewerColor or starColor * transmittance
 					vec4 c = vec4(vec3(1.0,1.0,1.0) - exp(-u_exposure*path_L),1.0);

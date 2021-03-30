@@ -585,6 +585,11 @@ function updateSkewerWidths(){
     updateSkewerEndpoints(gridsize)
 }
 
+function updateSkewerBrightness(){
+    volMaterial.uniforms["u_skewerBrightness"].value = document.getElementById("skewer-brightness-slider").value
+    volMaterial.uniformsNeedUpdate = true
+}
+
 function init3dDataTexture(size){
     // startLoadingAnimation()
     console.log('initialize 3d data texture')
@@ -892,6 +897,7 @@ function loadDarkMatter(size){
             //         return value === "-Infinity" ? -Infinity : value;
             //     });
                 // console.log(d)
+                // DM_file_exists = true
                 log = false
 
                 // DARK MATTER IS THE GREEN CHANNEL IN THE 3D DATA TEXTURE
@@ -973,6 +979,8 @@ function loadDarkMatter(size){
             })
         }
         catch{
+            // DM_file_exists = false
+            volMaterial.uniforms["u_dmVisibility"].value = false;
             resolve()
         }
     })
@@ -1498,6 +1506,24 @@ function changeColor(){
 
 }
 
+function changeSkewerColor(){
+    skewerMinCol = new THREE.Color(document.getElementById("skewerMinCol").value)
+    skewerMaxCol = new THREE.Color(document.getElementById("skewerMaxCol").value)
+    
+    col = document.getElementById('skewer-colorscale')
+    col.style.background = 'linear-gradient( 0.25turn, #' + skewerMinCol.getHexString() +', #' + skewerMaxCol.getHexString() + ')'
+
+    document.querySelector("#skewerMinCol").style.backgroundColor = document.querySelector("#skewerMinCol").value
+    document.querySelector("#skewerMaxCol").style.backgroundColor = document.querySelector("#skewerMaxCol").value
+
+
+    for(i=0;i<lines.length;i++){
+        lines[i].material.uniforms["u_low_col"].value = new THREE.Vector4(skewerMinCol.r,skewerMinCol.g,skewerMinCol.b,1.0)
+        lines[i].material.uniforms["u_high_col"].value = new THREE.Vector4(skewerMaxCol.r,skewerMaxCol.g,skewerMaxCol.b,1.0)
+        lines[i].material.uniformsNeedUpdate = true
+    }
+}
+
 function createSkewerCube(size){
     /**
      * * createSkewerCube() creates an invisible cube that is scaled to the extents of the domain of the data
@@ -1830,12 +1856,17 @@ function createColumnDensityInfoPanel(msg){
         d = new Uint8Array( 3 * size )
 
         for (i = 0; i < size; i++){
-            band_col = attr_data[i].c*200
+            band_col = attr_data[i].c
             stride = i*3
 
-            d[ stride ]     = 1.0*band_col; // stores length along skewer (to be used as texture UV lookup)
-            d[ stride + 1 ] = 0.0*band_col; // stores attribute value at distance x
-            d[ stride + 2 ] = 0.0*band_col; // empty
+            // low_col = new THREE.Color("rgb(18, 0, 153)")
+            // high_col = new THREE.Color("rgb(200,200,200)")
+
+            // band_col = low_col.lerp(high_col,attr_data[i].c)
+            // console.log(band_col)
+            d[ stride ]     = band_col*255; // stores length along skewer (to be used as texture UV lookup)
+            d[ stride + 1 ] = band_col*255; // stores attribute value at distance x
+            d[ stride + 2 ] = band_col*255; // empty
             // color will be programmed in the shader based on these values since delta_x is not uniform
         }
         console.log(d)
@@ -2861,6 +2892,8 @@ function init(){
     z = document.getElementById('x-depth-brush')
     z.addEventListener('change',updateUniforms,false)
 
+    changeSkewerColor()
+
 }
 
 function onMouseMove( event ) {
@@ -2989,13 +3022,13 @@ function onMouseClick( event ) {
         id = 'skewer-coords-' + idx
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords" id="' + id + '"></div>');
         
-        $("#" + id).hover(function(){
-            lines[idx].material.color = new THREE.Color(1,0,1)
-            lines[idx].material.needsUpdate = true
-            }, function(){
-                lines[idx].material.color = new THREE.Color(0xffff00)
-                lines[idx].material.needsUpdate = true
-        });
+        // $("#" + id).hover(function(){
+        //     lines[idx].material.color = new THREE.Color(1,0,1)
+        //     lines[idx].material.needsUpdate = true
+        //     }, function(){
+        //         lines[idx].material.color = new THREE.Color(0xffff00)
+        //         lines[idx].material.needsUpdate = true
+        // });
         
         //create div to show the line idx
         div = document.getElementById(id)
@@ -3104,12 +3137,16 @@ function cylinderMesh(pointX, pointY) {
     emptyTexture = new THREE.DataTexture(emptyData.fill(1), 1, 100, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
     THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
     emptyTexture.needsUpdate = true
+    low_col = new THREE.Color(document.getElementById("skewerMinCol").value)
+    high_col= new THREE.Color(document.getElementById("skewerMaxCol").value)
     skewerMaterial1[idx] = new THREE.ShaderMaterial( {
         uniforms: {
             Col: { value: new THREE.Vector4(1.0,1.0,0.0,1.0) },
             u_xyzMin: {value: new THREE.Vector3(domainXYZ[0],domainXYZ[2],domainXYZ[4])},
             u_xyzMax: {value: new THREE.Vector3(domainXYZ[1],domainXYZ[3],domainXYZ[5])},
             u_gridsize: {value: gridsize},
+            u_low_col: {value: new THREE.Vector4(low_col.r,low_col.g,low_col.b,1.0)},
+            u_high_col:{value: new THREE.Vector4(high_col.r,high_col.g,high_col.b,1.0)},
             skewer_tex: {value: emptyTexture},
         },
         vertexShader:   document.getElementById('vertexshader-skewer').textContent,
@@ -3129,7 +3166,7 @@ function cylinderMesh(pointX, pointY) {
     // Make the geometry (of "direction" length)
     console.log(gridsize)
     skewer_width = (document.getElementById("skewer-width-slider")).value
-    let skewerGeometry = new THREE.CylinderBufferGeometry(skewer_width, skewer_width, direction.length(), 10, 1000, false, 0, 2*Math.PI);
+    let skewerGeometry = new THREE.CylinderBufferGeometry(skewer_width, skewer_width, direction.length(), 100, 1000, true, 0, 2*Math.PI);
     skewerGeometry.setDrawRange(0,Infinity)
     // shift it so one end rests on the origin
     skewerGeometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));

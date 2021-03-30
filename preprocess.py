@@ -50,7 +50,7 @@ def getFieldList(ds):
     fl = sorted(ds.field_list)
     print(sorted(fl))
     df = ds.derived_field_list
-    # print(sorted(df))
+    print(sorted(df))
     return fl
 
 
@@ -87,7 +87,7 @@ def createGrid(ds,size,attr):
 
 def preprocessAttribute(obj,size,particle_type,attribute,sim_type):
     print(size)
-    elements = ['PartType1_count', 'PartType1_density', 'PartType1_mass', 'Metallicity','Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium','Silicon','Iron']
+    elements = ['PartType1_count', 'PartType1_density', 'PartType1_mass', 'Metallicity','Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium','Silicon','Iron', 'C_metallicity', ]
     try:
         print('EXTRACTING: ' + particle_type + ', ' + attribute)
         f = obj[particle_type, attribute]
