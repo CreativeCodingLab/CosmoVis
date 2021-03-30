@@ -174,6 +174,7 @@ async function updateSize(){
     if(gridsize != s){
         gridsize = s
         var init = init3dDataTexture(gridsize)
+
         asyncCall(true)
         //check to see which variables are visible and update those immediately
         checkSelectedSimID()
@@ -434,7 +435,7 @@ function updateUniforms(){
         densityMax = document.getElementById('density-maxval-input').value
         if(d_mod == 1.0){
             volMaterial.uniforms[ "u_density" ].value = densityTexture;
-            volMaterial.uniforms[ " u_grayscaleDepthMod" ]
+            // volMaterial.uniforms[ " u_grayscaleDepthMod" ]
             // console.log(densityMin,densityMax)
             volMaterial.uniforms[ "u_climDensity" ].value.set( densityMin, densityMax );
         }
@@ -651,12 +652,12 @@ function update3dDataTexture(){
         volMaterial.uniforms[ "u_dataTexture3D" ].value = dataTexture3D;
         volMaterial.uniforms[ "u_size" ].value.set( gridsize, gridsize, gridsize );
         volMaterial.uniforms[ "u_gasClim" ].value.set( climGasLimits[0], climGasLimits[1] );
-        volMaterial.uniforms[ "u_dmClim" ].value.set( null,null);//climDMLimits[0], climDMLimits[1] );
+        volMaterial.uniforms[ "u_dmClim" ].value.set( climDMLimits[0], climDMLimits[1] );
         volMaterial.uniforms[ "u_renderstyle" ].value = 'mip' == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
         volMaterial.uniforms[ "u_renderthreshold" ].value = 1.0; // For ISO renderstyle
         volMaterial.uniforms[ "u_cmGasData" ].value = cmtexture['PartType0'];
         volMaterial.uniforms[ "u_cmDMData" ].value = cmtexture['PartType1'];
-
+        volMaterial.needsUpdate = true
         volGeometry = new THREE.BoxBufferGeometry( gridsize, gridsize, gridsize );
         volGeometry.translate( gridsize / 2, gridsize / 2, gridsize / 2 );
         
@@ -713,16 +714,16 @@ function loadGas(size,attr,resolution_bool){
             //GAS IS THE RED CHANNEL IN THE 3D DATA TEXTURE
             var min = Infinity
             var max = -Infinity
-            console.log(log)
+            // console.log(log)
             for(x=0;x<size;x++){
                 for(y=0;y<size;y++){
                     for(z=0;z<size;z++){
                         if(simID=="TNG100" && attr =="GFM_Metallicity"){
                             dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  d[x][y][z]
                         }
-                        else if(attr=="Metallicity"){
-                            dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z]*77.22015)
-                        }
+                        // else if(attr=="Metallicity"){
+                        //     dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z]*77.22015)
+                        // }
                         else if(log){
                             dataArray3D[ 3 * ( x + y * size + z * size * size ) ] =  Math.log10(d[x][y][z])
                         }
@@ -750,7 +751,7 @@ function loadGas(size,attr,resolution_bool){
             minval.value = round(min,2)
             let maxval = document.getElementById('gas-maxval-input')
             maxval.value = round(max,2)
-
+            gasUnpackDomain = []
             if(resolution_bool){
                 if(localStorage.getItem('gasMinVal') != ""){
                     min = localStorage.getItem('gasMinVal')
@@ -761,7 +762,7 @@ function loadGas(size,attr,resolution_bool){
                     maxval.value = max
                 }
             }
-            else{
+            if(simID != 'TNG100_z2.3'){
                 // set some default values
                 if(attr=="Temperature"){
                     let dropdown = document.getElementById("gas_select")
@@ -770,76 +771,83 @@ function loadGas(size,attr,resolution_bool){
                     minval.value = 3.745
                     max = 7.0
                     maxval.value = 6.75
+                    gasUnpackDomain = [2.0, 7.5]
                 }
                 if(attr == "Carbon"){
                     min = 0.0
                     minval.value = 0.0
                     max = 0.007
                     maxval.value = 0.007
+                    gasUnpackDomain = [0.0, 0.007]
                 }
                 if(attr == "Density"){
                     min = -33.0
                     minval.value = -33.0
                     max = -27.0
                     maxval.value = -27.0
+                    gasUnpackDomain = [-33.0, -27.0]
                 }
                 if(attr == "Entropy"){
                     min = 1.0
                     minval.value = 1.0
                     max = 6.0
                     maxval.value = 6.0
+                    gasUnpackDomain = [1.0, 6.0]
                 }
                 if(attr == "Metallicity"){
-                    min = 0.0
-                    minval.value = 0.0
-                    max = 0.05
-                    maxval.value = 0.05
+                    min = -15.0
+                    minval.value = -15.0
+                    max = 1.0
+                    maxval.value = 1.0
+                    gasUnpackDomain = [-15.0, 1.0]
                 }
                 if(attr == "Oxygen"){
                     min = 0.0
                     minval.value = 0.0
                     max = 0.02
                     maxval.value = 0.02
+                    gasUnpackDomain = [0.0, 0.02]
                 }
-                // if(attr=="Entropy"){
-                //     let dropdown = document.getElementById("gas_select")
-                //     dropdown.value = 'Entropy'
-                //     min = 2.1
-                //     minval.value = 2.1
-                //     max = 4.5
-                //     maxval.value = 4.5
-                // }
-                // if(attr=="Metallicity"){
-                //     let dropdown = document.getElementById("gas_select")
-                //     dropdown.value = 'Metallicity'
-                //     min = -3
-                //     minval.value = -3
-                //     max = 1
-                //     maxval.value = 1
-                // }
+
+            }
+            else if(simID == 'TNG100_z2.3'){
+                // set some default values
+                if(attr=="Temperature"){
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Temperature'
+                    min = Math.log10(1433.90826193)
+                    minval.value = 3.745
+                    max = Math.log10(7.6024808e8)
+                    maxval.value = 6.75
+                    gasUnpackDomain = [min, max]
+                }
+                if(attr == "Density"){
+                    min = Math.log10(3.22215222e-31)
+                    minval.value = Math.log10(3.22215222e-31)
+                    max = Math.log10(4.31157793e-19)
+                    maxval.value = Math.log10(4.31157793e-19)
+                    gasUnpackDomain = [min, max]
+                }
+                if(attr == "GFM_Metallicity"){
+                    min = Math.log10(4.06559314e-10)
+                    minval.value = Math.log10(4.06559314e-10)
+                    max = Math.log10(0.16250114)
+                    maxval.value = Math.log10(0.16250114)
+                    gasUnpackDomain = [min, max]
+                }
+                if(attr == "Masses"){
+                    min = Math.log10(3.11659301e-06)
+                    minval.value = Math.log10(3.11659301e-06)
+                    max = Math.log10(0.00150664)
+                    maxval.value = Math.log10(0.00150664)
+                    gasUnpackDomain = [min, max]
+                }
             }
             climGasLimits = [min, max]
             
-            gasUnpackDomain = []
+            
 
-            if(attr == "Temperature"){
-                gasUnpackDomain = [2.0, 7.5]
-            }
-            if(attr == "Carbon"){
-                gasUnpackDomain = [0.0, 0.007]
-            }
-            if(attr == "Density"){
-                gasUnpackDomain = [-33.0, -27.0]
-            }
-            if(attr == "Entropy"){
-                gasUnpackDomain = [1.0, 6.0]
-            }
-            if(attr == "Metallicity"){
-                gasUnpackDomain = [0.0, 0.05]
-            }
-            if(attr == "Oxygen"){
-                gasUnpackDomain = [0.0, 0.02]
-            }
+            
 
             volMaterial.uniforms["u_gasUnpackDomain"].value.set( gasUnpackDomain[0], gasUnpackDomain[1] )
             // if(elements.includes(attr)){
@@ -869,7 +877,7 @@ function loadGas(size,attr,resolution_bool){
                     gasUnits[i].innerHTML = "log(cm<sup>2</sup>keV)"
                 }
                 else if(attr == "Metallicity"){
-                    gasUnits[i].innerHTML = "Zsun"//"log(Zsun)"
+                    gasUnits[i].innerHTML = "log(Zsun)"
                 }
                 else{
                     gasUnits[i].innerHTML = 'dimensionless'
@@ -930,6 +938,7 @@ function loadDarkMatter(size){
                 x.style.display = "inline-block";
                 var y = document.getElementById("dm-eye-closed");
                 y.style.display = "none";
+                volMaterial.uniforms["u_dmVisibility"].value = true
                 // if(localStorage.getItem('dmMinVal') != ""){
                 //     min = localStorage.getItem('dmMinVal')
                 // }
@@ -965,11 +974,10 @@ function loadDarkMatter(size){
                 for(i=0;i< dmUnits.length;i++){
                     dmUnits[i].innerHTML = 'g/cm<sup>3</sup>'//'log(g/cm<sup>3</sup>)'
                 }
-
-
                 
                 volMaterial.uniforms[ "u_darkmatterUnpackDomain" ].value.set(darkmatterUnpackDomain[0],darkmatterUnpackDomain[1])
-                
+                volMaterial.uniforms["u_dmVisibility"].value = true
+                volMaterial.needsUpdate = true
 
                 initColor('PartType1')
                 // updateUniforms()
@@ -978,11 +986,12 @@ function loadDarkMatter(size){
                 resolve()
             })
         }
-        catch{
-            // DM_file_exists = false
-            volMaterial.uniforms["u_dmVisibility"].value = false;
+        catch(err){
+
+            
             resolve()
         }
+        resolve()
     })
 }
 function setTwoNumberDecimal(el) {
@@ -1001,9 +1010,36 @@ async function asyncCall(resolution_bool) {
     var stars = await loadStars()
     // }
     var gas = await loadGas(gridsize,gasAttr,resolution_bool)
-    var darkmatter = await loadDarkMatter(gridsize)
-    // volMaterial.uniforms["u_dmVisibility"].value = false;
-    // }
+    try{
+        var darkmatter = await loadDarkMatter(gridsize)
+        // volMaterial.uniforms["u_dmVisibility"].value = true
+        // volMaterial.needsUpdate = true
+    } catch(err){
+        // toggleLayer(1)
+        // // volMaterial.uniforms["u_dmVisibility"].value = false
+        // // var x = document.getElementById("dm-eye-open");
+        // // x.style.display = "none";
+        // // var y = document.getElementById("dm-eye-closed");
+        // // y.style.display = "inline-block";
+        // volMaterial.needsUpdate = true
+        
+    } finally{
+        // toggleLayer(1)
+        for(x=0;x<gridsize;x++){
+            for(y=0;y<gridsize;y++){
+                for(z=0;z<gridsize;z++){
+                    dataArray3D[ 3 * ( x + y * gridsize + z * gridsize * gridsize) + 1 ] = 0
+                }
+            }
+        }
+        volMaterial.uniforms["u_dmVisibility"].value = false
+        // volMaterial.needsUpdate = true
+        var x = document.getElementById("dm-eye-open");
+        x.style.display = "none";
+        var y = document.getElementById("dm-eye-closed");
+        y.style.display = "inline-block";
+        
+    }
     // catch(err){
     //     console.log(err)
     // }
@@ -1049,21 +1085,33 @@ function loadDensity(size,type,attr){
                 }
             }
 
-            setDensityMinMaxInputValues('density',min,max)
+            // setDensityMinMaxInputValues('density',min,max)
 
             function setDensityMinMaxInputValues(type,min,max){
                 let minval = document.getElementById(type+'-minval-input')
                 minval.value = round(min,2)
                 let maxval = document.getElementById(type+'-maxval-input')
-                maxval.value = -3//round(max,2)
+                maxval.value = round(max,2)
             }
-
-            densityUnpackDomain = [-8.5, -3]
-            volMaterial.uniforms[ "u_densityUnpackDomain" ].value.set(densityUnpackDomain[0],densityUnpackDomain[1])
+            if(simID != "TNG100_z2.3"){
+                densityUnpackDomain = [-8.5, -3]
+                setDensityMinMaxInputValues('density',-8.5,-3)
+                volMaterial.uniforms[ "u_densityUnpackDomain" ].value.set(densityUnpackDomain[0],densityUnpackDomain[1])
+            }
+            
+            if(simID == "TNG100_z2.3"){
+                
+                min = Math.log10(3.22215222e-31)
+                max = Math.log10(4.31157793e-19)
+                densityUnpackDomain = [min,max]
+                console.log(densityUnpackDomain)
+                setDensityMinMaxInputValues('density',min,max)
+                volMaterial.uniforms[ "u_densityUnpackDomain" ].value.set(densityUnpackDomain[0],densityUnpackDomain[1])
+            }
 
             dm = document.querySelector('#density-minval-input')
             dm.addEventListener('input', updateUniforms);
-            dm.value = -8;
+            // dm.value = -8;
             dmx = document.querySelector('#density-maxval-input')
             dmx.addEventListener('input', updateUniforms);
 
@@ -2719,6 +2767,12 @@ function checkSelectedSimID(){
                         option.text = field_list[i][1];
                         select.add(option);
                     }
+                    else if(simID == "TNG100_z2.3"){
+                        var select = document.getElementById("gas_select"); 
+                        var option = document.createElement("option");
+                        option.text = field_list[i][1];
+                        select.add(option);
+                    }
                 }
             }
             // if(field_list[i][0] == 'PartType1'){
@@ -2825,7 +2879,8 @@ function init(){
     window.addEventListener('mousewheel', function(e) {
         // e.preventDefault();
         // console.log(e)
-        camera.zoom -= e.deltaY/150
+        //scrolling
+        camera.zoom -= e.deltaY/300
         if(camera.zoom <= 0){
             camera.zoom = 0.1
         }
@@ -3400,8 +3455,8 @@ $(document).ready(function(){
     init()
     animate()
     render()
-    asyncCall(false)
-    
+    // asyncCall(false)
+    // 
     
     
 })
