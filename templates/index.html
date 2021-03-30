@@ -290,6 +290,12 @@
                                 option.text = field_list[i][1];
                                 select.add(option);
                             }
+                            else if(simID == "TNG100_z2.3"){
+                                var select = document.getElementById("gas_select"); 
+                                var option = document.createElement("option");
+                                option.text = field_list[i][1];
+                                select.add(option);
+                            }
                         }
                         // if(field_list[i][0] == 'PartType1'){
                         //     var select = document.getElementById("dm_select"); 
@@ -1225,8 +1231,8 @@
                 <option disabled="disabled">select simulation (n&sup3;)</option>
                 <option selected="selected" value="RefL0012N0188">12 Mpc box (EAGLE)</option>
                 <option value="RefL0025N0376">25 Mpc box (EAGLE)</option>
-                <option disabled value="RefL0100N1504">100 Mpc box (EAGLE)</option>
-                <option disabled value="TNG100">100 Mpc box (TNG)</option>
+                <option value="RefL0100N1504">100 Mpc box (EAGLE)</option>
+                <option value="TNG100_z2.3">100 Mpc box, z = 2.3 (TNG)</option>
             </select></p>
 
             <div id="grid-options">

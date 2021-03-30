@@ -87,7 +87,7 @@ def createGrid(ds,size,attr):
 
 def preprocessAttribute(obj,size,particle_type,attribute,sim_type):
     print(size)
-    elements = ['PartType1_count', 'PartType1_density', 'PartType1_mass', 'Metallicity','Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium','Silicon','Iron']
+    elements = ['PartType1_count', 'PartType1_density', 'PartType1_mass','Hydrogen','Helium','Carbon','Nickel','Oxygen','Neon','Magnesium','Silicon','Iron']
     try:
         print('EXTRACTING: ' + particle_type + ', ' + attribute)
         f = obj[particle_type, attribute]
@@ -106,6 +106,9 @@ def preprocessAttribute(obj,size,particle_type,attribute,sim_type):
         else:
             attr = np.float32(np.array(f.in_cgs()))
             units = f.in_cgs().units
+        if attribute is "Metallicity" or attribute is "GFM_Metallicity":
+            attr = np.float32(np.array(f.in_units("Zsun")))
+            units = 'Zsun'
         print(attribute,units)
 
         if attribute in elements:
@@ -165,6 +168,8 @@ def compressVoxelData(voxelized_data,size,particle_type,attribute):
             min_val = minv
         print(max_val)
         print(min_val)
+        print(maxv)
+        print(minv)
 
         if particle_type is 'PartType0':
             if attribute is 'Temperature':
@@ -180,8 +185,8 @@ def compressVoxelData(voxelized_data,size,particle_type,attribute):
                 min_val = 1.0
                 max_val = 6.0
             if attribute is 'Metallicity':
-                min_val = 0.0
-                max_val = 0.05
+                min_val = -15.0
+                max_val = 1.0
             if attribute is 'Oxygen':
                 min_val = 0.0
                 max_val = 0.02
@@ -189,18 +194,19 @@ def compressVoxelData(voxelized_data,size,particle_type,attribute):
                 min_val = -8.5
                 max_val = -3.0
 
-
         out = voxelized_data.copy()
         for i in range(size):
             for j in range(size):
                 for k in range(size):
 
                     # if voxel > -Infinity
-                    if not math.isinf(voxelized_data[i][j][k]):
+                    if (not math.isinf(voxelized_data[i][j][k])) and (int(voxelized_data[i][j][k]) is not 0):
                         # scale data between [a,b]
                         # multiply by 1000 to capture decimal precision into UInt8
                         # convert from float to int
                         out[i][j][k] = int( ( ( b - a ) * ( (voxelized_data[i][j][k] - min_val ) / ( max_val - min_val ) ) ) + a )
+                        if float(out[i][j][k]) < 1.0:
+                            out[i][j][k] = int(0)
                     else: # reserve val=0 when voxel=-Infinity (artefact from taking log10(0))
                         out[i][j][k] = int(0)
     except Exception as e:
@@ -221,14 +227,22 @@ def exportStars(ds,percent,sim_type):
 #     np.random.default_rng(4)
     for i in range(0,int(len(index)-1)):
         j = index[i]
-        star_particles[i] = (
-                                round(float(ad['PartType4', 'Coordinates'][j][0].in_units('Mpc')),4), #x
-                                round(float(ad['PartType4', 'Coordinates'][j][1].in_units('Mpc')),4),   #y
-                                round(float(ad['PartType4', 'Coordinates'][j][2].in_units('Mpc')),4),   #z
-                                float(ad['PartType4', 'GroupNumber'][j]), # group ID
-                                round(float(np.log10(ad['PartType4', 'Mass'][j].in_units('Msun'))),2) # stellar mass
-                            )
-
+        if sim_type is 'EAGLE':
+            star_particles[i] = (
+                                    round(float(ad['PartType4', 'Coordinates'][j][0].in_units('Mpc')),4), #x
+                                    round(float(ad['PartType4', 'Coordinates'][j][1].in_units('Mpc')),4),   #y
+                                    round(float(ad['PartType4', 'Coordinates'][j][2].in_units('Mpc')),4),   #z
+                                    float(ad['PartType4', 'GroupNumber'][j]), # group ID
+                                    round(float(np.log10(ad['PartType4', 'Mass'][j].in_units('Msun'))),2) # stellar mass
+                                )
+        if sim_type is 'TNG':
+            star_particles[i] = (
+                                    round(float(ad['PartType4', 'Coordinates'][j][0].in_units('Mpc')),4), #x
+                                    round(float(ad['PartType4', 'Coordinates'][j][1].in_units('Mpc')),4),   #y
+                                    round(float(ad['PartType4', 'Coordinates'][j][2].in_units('Mpc')),4),   #z
+                                    float(ad['PartType4', 'ParticleIDs'][j]), # group ID
+                                    round(float(np.log10(ad['PartType4', 'Masses'][j].in_units('Msun'))),2) # stellar mass
+                                )
     #         'particleID' : int(ad['PartType4', 'ParticleIDs'][i]),
             # 'x' : round(float(ad['PartType4', 'Coordinates'][j][0]),2),
             # 'y' : round(float(ad['PartType4', 'Coordinates'][j][1]),2),
