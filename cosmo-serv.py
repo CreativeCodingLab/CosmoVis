@@ -363,11 +363,13 @@ def handle_ray_selection_background(simID,idx,start,end):
     # ad = ds.all_data()
 
     print('received args: ' + str(start) + str(end))
-
     ray_start = list(np.float_(start))
     ray_end = list(np.float_(end))
-    print(ds.domain_left_edge)
-    print(ds.domain_right_edge)
+    ray_start = ds.arr(ray_start, 'Mpc') #list(np.float_(start))
+    ray_end   = ds.arr(ray_end, 'Mpc')
+
+    print(ray_start)
+    print(ray_end)
     line_list = ['H', 'C', 'N', 'O', 'Mg']
 
     instrument = 'COS'

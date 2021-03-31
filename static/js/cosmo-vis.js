@@ -2212,6 +2212,7 @@ function requestSpectrum(idx){
     }
 
     function sendLine(idx,point1,point2){
+        console.log(point1, point2)
         socket.emit('selectRay',simID,idx, [point1.x,point1.y,point1.z],[point2.x,point2.y,point2.z])
     }
 }
