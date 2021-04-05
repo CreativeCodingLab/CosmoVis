@@ -86,7 +86,7 @@ var target //used for rendering star particles to depth texture
 var skewerTarget
 var boxOfStarPoints
 var starData
-
+var width_Mpc
 var galaxy_centers
 /**
  * * used with refreshLoop() to get fps
@@ -392,7 +392,7 @@ function updateUniforms(){
         w = 256
         h = 1
         size = w * h
-        
+    
         // controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
         // controls.update()
         // camera.lookAt(controls.target.set( ((domainXYZ[1]-domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]-domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]-domainXYZ[4])*gridsize)/2 ))
@@ -1403,15 +1403,39 @@ function loadHaloCenters(){
         div.innerHTML = str
     }) 
 }
+
+function zoomIn(){
+    let ix = document.getElementById("input-coord-x").value
+    let iy = document.getElementById("input-coord-y").value
+    let iz = document.getElementById("input-coord-z").value
+
+    goToPoint(ix,iy,iz)
+}
+
 function goToPoint(x,y,z){
+    console.log(x,y,z)
     console.log('click click')
     // x*=0.6776999078
     // y*=0.6776999078
     // z*=0.6776999078
     
-    
-    m = (edges.right_edge[0]-edges.left_edge[0]) / gridsize
-    
+    width_Mpc = (edges.right_edge[0]-edges.left_edge[0])
+
+    delta = 0.1
+    domainXYZ[0] = (x / width_Mpc) - delta
+    domainXYZ[1] = (x / width_Mpc) + delta
+    domainXYZ[2] = (y / width_Mpc) - delta
+    domainXYZ[3] = (y / width_Mpc) + delta
+    domainXYZ[4] = (z / width_Mpc) - delta
+    domainXYZ[5] = (z / width_Mpc) + delta
+    updateXYZDomain('x', domainXYZ[0], domainXYZ[1])
+    updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
+    updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
+
+
+
+    m = gridsize / width_Mpc
+    console.log(m)
     x*=m
     y*=m
     z*=m
@@ -1419,16 +1443,7 @@ function goToPoint(x,y,z){
     camera.lookAt( x/m, y/m, z/m)
     controls.target.set( x/m, y/m, z/m );
 
-    delta = 0.1
-    domainXYZ[0] = (x / m) - delta
-    domainXYZ[1] = (x / m) + delta
-    domainXYZ[2] = (y / m) - delta
-    domainXYZ[3] = (y / m) + delta
-    domainXYZ[4] = (z / m) - delta
-    domainXYZ[5] = (z / m) + delta
-    updateXYZDomain('x', domainXYZ[0], domainXYZ[1])
-    updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
-    updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
+    
     
     let margin = {top: 20, right: 15, bottom: 30, left: 20};
     let width = 300, height = 40
@@ -1448,7 +1463,7 @@ function goToPoint(x,y,z){
     zBrush.call(zBrusher).call(zBrusher.move,z.range())
     updateUniforms()
     camera.updateProjectionMatrix()
-    camera.zoom = 15;
+    // camera.zoom = 15;
     
 }
 
@@ -1594,8 +1609,6 @@ function createSkewerCube(size){
     cube.renderOrder = 1
     cube.visible = false
     scene.add( cube );
-    
-
 
     edges_scaled = {
         'left_edge' : [0.0,0.0,0.0],
@@ -2701,7 +2714,6 @@ function updateXYZDomain(xyz, min, max){
     }
     createSkewerCube(gridsize)
     updateUniforms();
-    
     xSliderScale = d3.scaleLinear().domain([domainXYZ[0],domainXYZ[1]]).range([0, 210])
     ySliderScale = d3.scaleLinear().domain([domainXYZ[2],domainXYZ[3]]).range([0, 210])
     zSliderScale = d3.scaleLinear().domain([domainXYZ[4],domainXYZ[5]]).range([0, 210])
@@ -2720,6 +2732,7 @@ function checkSelectedSimID(){
         d3.json('static/data/'+simID+'/simMetadata.json').then(function(d){
             edges.left_edge = d.left_edge
             edges.right_edge = d.right_edge
+            width_Mpc = (edges.right_edge[0]-edges.left_edge[0])
             field_list = d.field_list
             createAttributeSelectors(field_list)
             simSize = (edges.right_edge[0]-edges.left_edge[0])//0.6776999078
