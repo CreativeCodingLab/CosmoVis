@@ -83,8 +83,11 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     print('recieved simple ray request')
     socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
     socketio.sleep(0)
-
-    fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    fn = ''
+    if 'RefL' in simID:
+        fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    if 'TNG' in simID:
+        fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
     ds = yt.load(fn)
     socketio.sleep(0)
 
@@ -356,8 +359,11 @@ def handle_ray_selection_background(simID,idx,start,end):
     socketio.emit( 'processingRay', {'index': idx}, namespace = '/test' )
     eventlet.sleep()
     socketio.sleep(0)
-
-    fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    fn = ''
+    if 'RefL' in simID:
+        fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    if 'TNG' in simID:
+        fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
     ds = yt.load(fn)
     socketio.sleep(0)
     # ad = ds.all_data()

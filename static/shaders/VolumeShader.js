@@ -320,31 +320,12 @@ THREE.VolumeRenderShader1 = {
 
 						if( u_dmVisibility == true ){
 							vec4 darkmatter_emission = get_emitted_L_darkmatter(float(gas_darkmatter_density.g),rho);
-							tau      += rho * darkmatter_emission.a ; 							// tau ~ accumulated thickness/density of the volume 
-							emission += rho * darkmatter_emission.rgb * darkmatter_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
+							tau      += scaling_factor * rho * darkmatter_emission.a ; 							// tau ~ accumulated thickness/density of the volume 
+							emission += scaling_factor * rho * darkmatter_emission.rgb * darkmatter_emission.a; // rho is the main determinant in how much light the volume should emit. this function also gets transfer function color. add because there can be multiple sources of emission (gas, dm, stars)
 						}
 
 					//star color will get added to emission, star detection
 						transmittance = exp(-u_sigma_t * tau); // sigma_t is constant (overall optical thickness of volume) --> derived from sliders, weights (i.e. function of temperature), always ends up between (0,1)
-
-						// if(u_starVisibility == true) {
-						// 	float fragCoordZ = texture2D(u_starDepth, gl_FragCoord.xy).x;
-						// 	float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
-						// 	float starDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
-							
-						// 	vec3 star_emission = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-						// 	emission += 0.1*star_emission / (starDepth * starDepth);
-
-						// }
-						
-						// if(u_skewerVisibility == true){
-						// 	float fragCoordZ = texture2D(u_skewerDepth, gl_FragCoord.xy).x;
-						// 	float viewZ = orthographicDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
-						// 	float skewerDepth = viewZToOrthographicDepth( viewZ, u_cameraNear, u_cameraFar );
-							
-						// 	vec3 c_skewers = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-						// 	emission +=  800.0 * c_skewers / (u_size.x * skewerDepth * skewerDepth);
-						// }
 
 						path_L += transmittance * u_sigma_e * emission; // slap them together. transmittance [0,1], rho ~ local density, sigma_e ~ global multiplier for emitted energy of the medium
 						gas_darkmatter_density0 = gas_darkmatter_density1;
@@ -415,10 +396,8 @@ THREE.VolumeRenderShader1 = {
 
 		`		vec4 get_emitted_L_gas(float gas_val, float density_val){
 					float a;
-					float unpack_min;
-					float unpack_max;
 					
-					gas_val = (u_gasUnpackDomain[1] - u_gasUnpackDomain[0])*((gas_val - 0.0) / (255.0)) + u_gasUnpackDomain[0];
+					gas_val = (u_gasUnpackDomain[1] - u_gasUnpackDomain[0])*((gas_val - 1.0) / (255.0)) + u_gasUnpackDomain[0];
 
 					// check if region is clipped based on min/max values in the data
 					// 
@@ -448,19 +427,19 @@ THREE.VolumeRenderShader1 = {
 
 		`		vec4 get_emitted_L_darkmatter(float dm_val, float density_val){
 					float a;
-					dm_val = (u_darkmatterUnpackDomain[1] - u_darkmatterUnpackDomain[0])*((dm_val - 0.0) / (255.0)) + u_darkmatterUnpackDomain[0];
 
-					if( (u_dmClip[0] == true) && (dm_val < u_dmClim[0]) ) a = 0.0;
-					else if( (u_dmClip[1] == true) && (dm_val > u_dmClim[1]) ) a = 0.0;
+					float new_dm_val = ((u_darkmatterUnpackDomain[1] - u_darkmatterUnpackDomain[0])*((dm_val - 0.0) / (255.0))) + u_darkmatterUnpackDomain[0];
+
+					if( 	 (u_dmClip[0] == true) && (new_dm_val < u_dmClim[0]) ) a = 0.0;
+					else if( (u_dmClip[1] == true) && (new_dm_val > u_dmClim[1]) ) a = 0.0;
 					else a = 1.0;
-					
 
-					dm_val = (dm_val - u_dmClim[0]) / (u_dmClim[1] - u_dmClim[0]);
+					new_dm_val = min(1.0, (new_dm_val - u_dmClim[0]) / (u_dmClim[1] - u_dmClim[0]));
+
+					vec4 tex = texture2D(u_cmDMData, vec2(new_dm_val, 0.0));
 					
-					vec4 tex = texture2D(u_cmDMData, vec2(dm_val, 0.5));
-					
-					if (a > 0.0){
-						a = density_val * u_densityModI + u_valModI * u_valMod;
+					if (a > 0.01){
+						a = density_val * u_densityModI + u_valModI * u_valMod * new_dm_val;
 						tex.a *= a;
 					}
 					else tex = vec4(0.0,0.0,0.0,0.0);
