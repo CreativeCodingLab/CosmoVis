@@ -24,7 +24,8 @@ import os.path
 from os import path
 from trident.config import trident_path
 from scipy import interpolate
-
+import sys,os
+import copy
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
 # access to low latency bi-directional communications
@@ -45,9 +46,45 @@ rpts = {}
 
 spectrum_hdul = fits.HDUList()
 
-# simID = 'RefL0012N0188'
-# fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-# ds = yt.load(fn)
+try:
+    EAGLE_12Mpc = yt.load('static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+except Exception as e:
+    print('error: '+ str( e ))
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno) 
+
+try:
+    EAGLE_25Mpc = yt.load('static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+except Exception as e:
+    print('error: '+ str( e ))
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno) 
+
+try:
+    EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+except Exception as e:
+    print('error: '+ str( e ))
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno)
+
+try:
+    TNG100_snap030 = yt.load('static/data/TNG100_z2.3/snapshot/snap_030.0.hdf5')
+except Exception as e:
+    print('error: '+ str( e ))
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno) 
+
+try:
+    TNG100_snap099 = yt.load('static/data/TNG100_z0.0/snapshot/snap_099.0.hdf5')
+except Exception as e:
+    print('error: '+ str( e ))
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno) 
 
 def truncate(f, n):
     '''Truncates/pads a float f to n decimal places without rounding'''
@@ -84,17 +121,34 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
     socketio.sleep(0)
     fn = ''
-    if 'RefL' in simID:
-        fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-    if 'TNG' in simID:
-        fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
-    ds = yt.load(fn)
+    # ds = []
+    
+    if simID == 'RefL0012N0188':
+        ds = EAGLE_12Mpc
+        print(simID)
+    elif simID == 'RefL0025N0376':
+        ds = EAGLE_25Mpc
+        print(simID)
+    elif simID == 'RefL0100N1504':
+        ds = EAGLE_100Mpc
+        print(simID)
+    else:
+        # if 'RefL' in simID:
+        #     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+        # if 'TNG' in simID:
+        #     fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
+        # print("loading" + str(fn))
+        print(fn)
+        ds = yt.load(fn)
+    ad = ds.all_data()
+    print(ad.right_edge)
+
     socketio.sleep(0)
 
     ray_start = np.float_(start)
     ray_end   = np.float_(end)
-    print(ray_start)
-    print(ray_end)
+    print('ray start: ' + str(ray_start))
+    print('ray end  : ' + str(ray_end))
     ray_start = ds.arr(ray_start, 'Mpc') #list(np.float_(start))
     ray_end   = ds.arr(ray_end, 'Mpc')  #list(np.float_(end))
     print(ray_start.in_units('Mpc'))
@@ -364,7 +418,7 @@ def handle_ray_selection_background(simID,idx,start,end):
         fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
     if 'TNG' in simID:
         fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
-    ds = yt.load(fn)
+    # ds = yt.load(fn)
     socketio.sleep(0)
     # ad = ds.all_data()
 
@@ -535,7 +589,7 @@ def updateSimID(simID):
     if simID == 'RefL0012N0188':
         if fn != 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5':
             fn = 'static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-            ds = yt.load(fn)
+            # ds = yt.load(fn)
             fl = sorted(ds.field_list) # contains list of fields in the dataset
             ad = ds.all_data()
             right_edge = [float(ad.right_edge[0]),float(ad.right_edge[1]),float(ad.right_edge[2])]
@@ -545,7 +599,7 @@ def updateSimID(simID):
     elif simID == 'RefL0025N0376':
         if fn != 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5':
             fn = 'static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-            ds = yt.load(fn)
+            # ds = yt.load(fn)
             fl = sorted(ds.field_list) # contains list of fields in the dataset
             ad = ds.all_data()
             right_edge = [float(ad.right_edge[0]),float(ad.right_edge[1]),float(ad.right_edge[2])]
@@ -569,4 +623,4 @@ def test_connect():
 if __name__ == '__main__':
     # socketio.run(app, debug=False)
     socketio.run(app, host='0.0.0.0', debug=True)
-    # socketio.run(app, host='0.0.0.0', port=80, threaded=False, debug=False)
+    # socketio.run(app, host='0.0.0.0', port=8080, threaded=False, debug=True)

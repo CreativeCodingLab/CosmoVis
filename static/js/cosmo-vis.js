@@ -541,7 +541,7 @@ function updateUniforms() {
         } else {
 
         }
-        console.log(volMaterial.uniforms["u_dmClim"].value)
+        // console.log(volMaterial.uniforms["u_dmClim"].value)
         volMaterial.uniforms["u_dmClip"].value = [document.getElementById("dm-min-clip-check").checked, document.getElementById("dm-max-clip-check").checked]
 
         dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
@@ -754,7 +754,7 @@ function loadGas(size, attr, resolution_bool) {
                     maxval.value = max
                 }
             }
-            if (simID != 'TNG100_z2.3') {
+            if (simID.substr(0, 3) != 'TNG') {
                 // set some default values
                 if (attr == "Temperature") {
                     let dropdown = document.getElementById("gas_select")
@@ -801,6 +801,38 @@ function loadGas(size, attr, resolution_bool) {
                     gasUnpackDomain = [0.0, 0.02]
                 }
 
+            } else if (simID == 'TNG100_z0.0') {
+                // set some default values
+                if (attr == "Temperature") {
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Temperature'
+                    min = Math.log10(1433.90826193)
+                    minval.value = 3.745
+                    max = Math.log10(7.6024808e8)
+                    maxval.value = 6.75
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Density") {
+                    min = Math.log10(3.22215222e-31)
+                    minval.value = Math.log10(3.22215222e-31)
+                    max = Math.log10(4.31157793e-19)
+                    maxval.value = Math.log10(4.31157793e-19)
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Metallicity") {
+                    min = Math.log10(4.06559314e-10)
+                    minval.value = Math.log10(4.06559314e-10)
+                    max = Math.log10(0.16250114)
+                    maxval.value = Math.log10(0.16250114)
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Masses") {
+                    min = Math.log10(3.11659301e-06)
+                    minval.value = Math.log10(3.11659301e-06)
+                    max = Math.log10(0.00150664)
+                    maxval.value = Math.log10(0.00150664)
+                    gasUnpackDomain = [min, max]
+                }
             } else if (simID == 'TNG100_z2.3') {
                 // set some default values
                 if (attr == "Temperature") {
@@ -819,7 +851,7 @@ function loadGas(size, attr, resolution_bool) {
                     maxval.value = Math.log10(4.31157793e-19)
                     gasUnpackDomain = [min, max]
                 }
-                if (attr == "GFM_Metallicity") {
+                if (attr == "Metallicity") {
                     min = Math.log10(4.06559314e-10)
                     minval.value = Math.log10(4.06559314e-10)
                     max = Math.log10(0.16250114)
@@ -849,7 +881,7 @@ function loadGas(size, attr, resolution_bool) {
             // }
             let gasUnits = document.getElementsByClassName('gas-attr-units')
             for (i = 0; i < gasUnits.length; i++) {
-                if ((attr == 'Temperature') || (attr == 'MaximumTemperature')) {
+                if ((attr == 'Temperature') || (attr == 'Temperature_Test') || (attr == 'Temperature_Test1')) {
                     gasUnits[i].innerHTML = 'log(K)'
                 } else if (elements.includes(attr)) {
                     gasUnits[i].innerHTML = 'unitless'
@@ -3259,7 +3291,7 @@ function cylinderMesh(pointX, pointY) {
         // morphNormals: true,
     });
     // Make the geometry (of "direction" length)
-    console.log(gridsize)
+    // console.log(gridsize)
     skewer_width = (document.getElementById("skewer-width-slider")).value
     let skewerGeometry = new THREE.CylinderBufferGeometry(skewer_width, skewer_width, direction.length(), 100, 1000, true, 0, 2 * Math.PI);
     skewerGeometry.setDrawRange(0, Infinity)
@@ -3388,7 +3420,7 @@ function onWindowResize() {
     renderer.setPixelRatio(1);
     const size = new THREE.Vector2()
     renderer.getSize(size);
-    console.log(size)
+    // console.log(size)
     var pixelRatio = window.devicePixelRatio;
     target.setSize(size.x, size.y)
     updateUniforms()
