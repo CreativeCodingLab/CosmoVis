@@ -190,6 +190,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        H_I = []   
+        i_H_I = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -200,6 +202,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        H_II  = []
+        i_H_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -210,6 +214,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        C_I    = []
+        i_C_I  = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -220,6 +226,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        C_II  = []
+        i_C_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -230,6 +238,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        C_III  = []
+        i_C_III= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -240,6 +250,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        C_IV  = []
+        i_C_IV= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -250,6 +262,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        C_V   = []
+        i_C_V = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -260,6 +274,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        C_VI   = []
+        i_C_VI = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -270,6 +286,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        He_I   = []
+        i_He_I = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -280,6 +298,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        He_II  = []
+        i_He_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -290,6 +310,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        He_III = []
+        i_He_III= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -300,6 +322,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        Mg_I  = []
+        i_Mg_I= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -310,6 +334,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        Mg_II  = []
+        i_Mg_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -320,6 +346,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        Mg_X  = []
+        i_Mg_X= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -330,6 +358,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] *  dl_cm,dx)[1]
         
     except Exception as e:
+        N_II  = []
+        i_N_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -340,6 +370,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        N_III  = []
+        i_N_III= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -350,6 +382,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        N_IV  = []
+        i_N_IV= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -360,6 +394,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        N_V   = []
+        i_N_V = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -369,6 +405,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         N_VI   = (ray.r[('gas', 'N_p5_number_density')]   * dl_cm).tolist()
         i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        N_VI   = []
+        i_N_VI = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -379,6 +417,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
+        N_VII  = []
+        i_N_VII= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -389,6 +429,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        Na_I  = []
+        i_Na_I= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -399,6 +441,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        Na_IX  = []
+        i_Na_IX= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -409,6 +453,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
 
     except Exception as e:
+        Ne_III = []
+        i_Ne_III= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -418,6 +464,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Ne_IV  = (ray.r[('gas', 'Ne_p3_number_density')]  * dl_cm).tolist()
         i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
     except Exception as e:
+        Ne_IV  = []
+        i_Ne_IV= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -427,6 +475,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Ne_V   = (ray.r[('gas', 'Ne_p4_number_density')]  * dl_cm).tolist()
         i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
     except Exception as e:
+        Ne_V  = []
+        i_Ne_V= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -436,6 +486,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Ne_VI  = (ray.r[('gas', 'Ne_p5_number_density')]  * dl_cm).tolist()
         i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
     except Exception as e:
+        Ne_VI  = []
+        i_Ne_VI= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -445,6 +497,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Ne_VIII= (ray.r[('gas', 'Ne_p7_number_density')]  * dl_cm).tolist()
         i_Ne_VIII=interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
     except Exception as e:
+        Ne_VIII = []
+        i_Ne_VIII= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -454,6 +508,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_I    = (ray.r[('gas', 'O_p0_number_density')]   * dl_cm).tolist()
         i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_I   = []
+        i_O_I = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -463,6 +519,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_II   = (ray.r[('gas', 'O_p1_number_density')]   * dl_cm).tolist()
         i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_II  = []
+        i_O_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -472,6 +530,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_III  = (ray.r[('gas', 'O_p2_number_density')]   * dl_cm).tolist()
         i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_III  = []
+        i_O_III= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -481,6 +541,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_IV   = (ray.r[('gas', 'O_p3_number_density')]   * dl_cm).tolist()
         i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_IV  = []
+        i_O_IV= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -490,6 +552,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_V    = (ray.r[('gas', 'O_p4_number_density')]   * dl_cm).tolist()
         i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_V  = []
+        i_O_V= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -499,6 +563,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_VI   = (ray.r[('gas', 'O_p5_number_density')]   * dl_cm).tolist()
         i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_VI  = []
+        i_O_VI= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -508,6 +574,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_VII  = (ray.r[('gas', 'O_p6_number_density')]   * dl_cm).tolist()
         i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_VII  = []
+        i_O_VII= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -517,6 +585,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         O_VIII = (ray.r[('gas', 'O_p7_number_density')]   * dl_cm).tolist()
         i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        O_VIII = []
+        i_O_VIII= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -526,6 +596,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         S_II   = (ray.r[('gas', 'S_p1_number_density')]   * dl_cm).tolist()
         i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        S_II  = []
+        i_S_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -535,6 +607,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         S_III  = (ray.r[('gas', 'S_p2_number_density')]   * dl_cm).tolist()
         i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        S_III  = []
+        i_S_III= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -544,6 +618,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         S_IV   = (ray.r[('gas', 'S_p3_number_density')]   * dl_cm).tolist()
         i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        S_IV  = []
+        i_S_IV= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -553,6 +629,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         S_V    = (ray.r[('gas', 'S_p4_number_density')]   * dl_cm).tolist()
         i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        S_V  = []
+        i_S_V= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -562,6 +640,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         S_VI   = (ray.r[('gas', 'S_p5_number_density')]   * dl_cm).tolist()
         i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] *  dl_cm,dx)[1]
     except Exception as e:
+        S_VI  = []
+        i_S_VI= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -571,6 +651,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Si_II  = (ray.r[('gas', 'Si_p1_number_density')]  * dl_cm).tolist()
         i_Si_II = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
     except Exception as e:
+        Si_II  = []
+        i_Si_II= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -580,6 +662,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Si_III = (ray.r[('gas', 'Si_p2_number_density')]  * dl_cm).tolist()
         i_Si_III= interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
     except Exception as e:
+        Si_III = []
+        i_Si_III= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -589,6 +673,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Si_IV  = (ray.r[('gas', 'Si_p3_number_density')]  * dl_cm).tolist()
         i_Si_IV = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
     except Exception as e:
+        Si_IV  = []
+        i_Si_IV= []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -598,6 +684,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         Si_XII = (ray.r[('gas', 'Si_p11_number_density')] * dl_cm).tolist()
         i_Si_XII= interpol8(l,ray.r[('gas', 'Si_p11_number_density')] *dl_cm,dx)[1]
     except Exception as e:
+        Si_XII   = []
+        i_Si_XII = []
         print('error: '+ str( e ))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

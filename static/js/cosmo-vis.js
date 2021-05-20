@@ -2947,9 +2947,11 @@ function init() {
         // e.preventDefault();
         // console.log(e)
         //scrolling
-        camera.zoom -= e.deltaY / 300
-        if (camera.zoom <= 0) {
-            camera.zoom = 0.1
+        if (!container_hover) {
+            camera.zoom -= e.deltaY / 300
+            if (camera.zoom <= 0) {
+                camera.zoom = 0.1
+            }
         }
         // var x = ( event.clientX / window.innerWidth ) * 2 - 1,
         // y = - ( event.clientY / window.innerHeight ) * 2 + 1,
