@@ -691,169 +691,123 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
 
-    log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
-    density     = (10**log_density).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
-    entropy     = (ray.r[('gas', 'entropy')]).tolist()
-    metallicity = (ray.r[('gas', 'metallicity')].to('Zsun')).tolist()
-    temperature = (ray.r[('gas', 'temperature')]).tolist()
+    finally:
+        log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
+        density     = (10**log_density).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
+        entropy     = (ray.r[('gas', 'entropy')]).tolist()
+        metallicity = (ray.r[('gas', 'metallicity')].to('Zsun')).tolist()
+        temperature = (ray.r[('gas', 'temperature')]).tolist()
 
-    ## INTERPOLATED VALUES
-    ## used for skewer textures
-    # i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
-    # i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] *  dl_cm,dx)[1]
-    # i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] *  dl_cm,dx)[1]
-    # i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] *  dl_cm,dx)[1]
-    # i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] *  dl_cm,dx)[1]
-    # i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] *  dl_cm,dx)[1]
-    # i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] *  dl_cm,dx)[1]
-    # i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] *  dl_cm,dx)[1]
-    # i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
-    # i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
-    # i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
-    # i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
-    # i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
-    # i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
-    # i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] *  dl_cm,dx)[1]
-    # i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] *  dl_cm,dx)[1]
-    # i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] *  dl_cm,dx)[1]
-    # i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] *  dl_cm,dx)[1]
-    # i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] *  dl_cm,dx)[1]
-    # i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] *  dl_cm,dx)[1]
-    # i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
-    # i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
-    # i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
-    # i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
-    # i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
-    # i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
-    # i_Ne_VIII=interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
-    # i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] *  dl_cm,dx)[1]
-    # i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] *  dl_cm,dx)[1]
-    # i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] *  dl_cm,dx)[1]
-    # i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] *  dl_cm,dx)[1]
-    # i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] *  dl_cm,dx)[1]
-    # i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] *  dl_cm,dx)[1]
-    # i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] *  dl_cm,dx)[1]
-    # i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] *  dl_cm,dx)[1]
-    # i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] *  dl_cm,dx)[1]
-    # i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] *  dl_cm,dx)[1]
-    # i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] *  dl_cm,dx)[1]
-    # i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] *  dl_cm,dx)[1]
-    # i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] *  dl_cm,dx)[1]
-    # i_Si_II = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
-    # i_Si_III= interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
-    # i_Si_IV = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
-    # i_Si_XII= interpol8(l,ray.r[('gas', 'Si_p11_number_density')] *dl_cm,dx)[1]
-
-    log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
-    i_density       = (10**np.array(interpol8(l, log_density,dx)[1])).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
-    i_entropy       = interpol8(l,ray.r[('gas', 'entropy')],dx)[1]
-    i_metallicity   = interpol8(l,ray.r[('gas', 'metallicity')].to('Zsun'),dx)[1]
-    i_l, i_temperature = interpol8(l,ray.r[('gas', 'temperature')],dx)
+        log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
+        i_density       = (10**np.array(interpol8(l, log_density,dx)[1])).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
+        i_entropy       = interpol8(l,ray.r[('gas', 'entropy')],dx)[1]
+        i_metallicity   = interpol8(l,ray.r[('gas', 'metallicity')].to('Zsun'),dx)[1]
+        i_l, i_temperature = interpol8(l,ray.r[('gas', 'temperature')],dx)
 
 
-    socketio.sleep(0)
-    socketio.emit('simple_line_data',{  'index':         idx,
-                                        'start':         start,
-                                        'end':           end,
-                                        'l':             l.tolist(),
-                                        'N(H I)':        H_I,
-                                        'N(H II)':       H_II,
-                                        'N(C I)':        C_I,
-                                        'N(C II)':       C_II,
-                                        'N(C III)':      C_III,
-                                        'N(C IV)':       C_IV,
-                                        'N(C V)':        C_V,
-                                        'N(C VI)':       C_VI,
-                                        'N(He I)':       He_I,
-                                        'N(He II)':      He_II,
-                                        'N(He III)':     He_III,
-                                        'N(Mg I)':       Mg_I,
-                                        'N(Mg II)':      Mg_II,
-                                        'N(Mg X)':       Mg_X,
-                                        'N(N II)':       N_II,
-                                        'N(N III)':      N_III,
-                                        'N(N IV)':       N_IV,
-                                        'N(N V)':        N_V,
-                                        'N(N VI)':       N_VI,
-                                        'N(N VII)':      N_VII,
-                                        'N(Na I)':       Na_I,
-                                        'N(Na IX)':      Na_IX,
-                                        'N(Ne III)':     Ne_III,
-                                        'N(Ne IV)':      Ne_IV,
-                                        'N(Ne V)':       Ne_V,
-                                        'N(Ne VI)':      Ne_VI,
-                                        'N(Ne VIII)':    Ne_VIII,
-                                        'N(O I)':        O_I,
-                                        'N(O II)':       O_II,
-                                        'N(O III)':      O_III,
-                                        'N(O IV)':       O_IV,
-                                        'N(O V)':        O_V,
-                                        'N(O VI)':       O_VI,
-                                        'N(O VII)':      O_VII,
-                                        'N(O VIII)':     O_VIII,
-                                        'N(S II)':       S_II,
-                                        'N(S III)':      S_III,
-                                        'N(S IV)':       S_IV,
-                                        'N(S V)':        S_V,
-                                        'N(S VI)':       S_VI,
-                                        'N(Si II)':      Si_II,
-                                        'N(Si III)':     Si_III,
-                                        'N(Si IV)':      Si_IV,
-                                        'N(Si XII)':     Si_XII,
-                                        'density':       density,
-                                        'entropy':       entropy,
-                                        'metallicity':   metallicity,
-                                        'temperature':   temperature,
-                                        'i_l':           i_l,
-                                        'i_N(H I)':      i_H_I,
-                                        'i_N(H II)':     i_H_II,
-                                        'i_N(C I)':      i_C_I,
-                                        'i_N(C II)':     i_C_II,
-                                        'i_N(C III)':    i_C_III,
-                                        'i_N(C IV)':     i_C_IV,
-                                        'i_N(C V)':      i_C_V,
-                                        'i_N(C VI)':     i_C_VI,
-                                        'i_N(He I)':     i_He_I,
-                                        'i_N(He II)':    i_He_II,
-                                        'i_N(He III)':   i_He_III,
-                                        'i_N(Mg I)':     i_Mg_I,
-                                        'i_N(Mg II)':    i_Mg_II,
-                                        'i_N(Mg X)':     i_Mg_X,
-                                        'i_N(N II)':     i_N_II,
-                                        'i_N(N III)':    i_N_III,
-                                        'i_N(N IV)':     i_N_IV,
-                                        'i_N(N V)':      i_N_V,
-                                        'i_N(N VI)':     i_N_VI,
-                                        'i_N(N VII)':    i_N_VII,
-                                        'i_N(Na I)':     i_Na_I,
-                                        'i_N(Na IX)':    i_Na_IX,
-                                        'i_N(Ne III)':   i_Ne_III,
-                                        'i_N(Ne IV)':    i_Ne_IV,
-                                        'i_N(Ne V)':     i_Ne_V,
-                                        'i_N(Ne VI)':    i_Ne_VI,
-                                        'i_N(Ne VIII)':  i_Ne_VIII,
-                                        'i_N(O I)':      i_O_I,
-                                        'i_N(O II)':     i_O_II,
-                                        'i_N(O III)':    i_O_III,
-                                        'i_N(O IV)':     i_O_IV,
-                                        'i_N(O V)':      i_O_V,
-                                        'i_N(O VI)':     i_O_VI,
-                                        'i_N(O VII)':    i_O_VII,
-                                        'i_N(O VIII)':   i_O_VIII,
-                                        'i_N(S II)':     i_S_II,
-                                        'i_N(S III)':    i_S_III,
-                                        'i_N(S IV)':     i_S_IV,
-                                        'i_N(S V)':      i_S_V,
-                                        'i_N(S VI)':     i_S_VI,
-                                        'i_N(Si II)':    i_Si_II,
-                                        'i_N(Si III)':   i_Si_III,
-                                        'i_N(Si IV)':    i_Si_IV,
-                                        'i_N(Si XII)':   i_Si_XII,
-                                        'i_density':     i_density,
-                                        'i_entropy':     i_entropy,
-                                        'i_metallicity': i_metallicity,
-                                        'i_temperature': i_temperature
-                                    }, namespace='/test')
+        socketio.sleep(0)
+        socketio.emit('simple_line_data',{  'index':         idx,
+                                         'start':         start,
+                                         'end':           end,
+                                         'l':             l.tolist(),
+                                         'N(H I)':        H_I,
+                                         'N(H II)':       H_II,
+                                         'N(C I)':        C_I,
+                                         'N(C II)':       C_II,
+                                         'N(C III)':      C_III,
+                                         'N(C IV)':       C_IV,
+                                         'N(C V)':        C_V,
+                                         'N(C VI)':       C_VI,
+                                         'N(He I)':       He_I,
+                                         'N(He II)':      He_II,
+                                         'N(He III)':     He_III,
+                                         'N(Mg I)':       Mg_I,
+                                         'N(Mg II)':      Mg_II,
+                                         'N(Mg X)':       Mg_X,
+                                         'N(N II)':       N_II,
+                                         'N(N III)':      N_III,
+                                         'N(N IV)':       N_IV,
+                                         'N(N V)':        N_V,
+                                         'N(N VI)':       N_VI,
+                                         'N(N VII)':      N_VII,
+                                         'N(Na I)':       Na_I,
+                                         'N(Na IX)':      Na_IX,
+                                         'N(Ne III)':     Ne_III,
+                                         'N(Ne IV)':      Ne_IV,
+                                         'N(Ne V)':       Ne_V,
+                                         'N(Ne VI)':      Ne_VI,
+                                         'N(Ne VIII)':    Ne_VIII,
+                                         'N(O I)':        O_I,
+                                         'N(O II)':       O_II,
+                                         'N(O III)':      O_III,
+                                         'N(O IV)':       O_IV,
+                                         'N(O V)':        O_V,
+                                         'N(O VI)':       O_VI,
+                                         'N(O VII)':      O_VII,
+                                         'N(O VIII)':     O_VIII,
+                                         'N(S II)':       S_II,
+                                         'N(S III)':      S_III,
+                                         'N(S IV)':       S_IV,
+                                         'N(S V)':        S_V,
+                                         'N(S VI)':       S_VI,
+                                         'N(Si II)':      Si_II,
+                                         'N(Si III)':     Si_III,
+                                         'N(Si IV)':      Si_IV,
+                                         'N(Si XII)':     Si_XII,
+                                         'density':       density,
+                                         'entropy':       entropy,
+                                         'metallicity':   metallicity,
+                                         'temperature':   temperature,
+                                         'i_l':           i_l,
+                                         'i_N(H I)':      i_H_I,
+                                         'i_N(H II)':     i_H_II,
+                                         'i_N(C I)':      i_C_I,
+                                         'i_N(C II)':     i_C_II,
+                                         'i_N(C III)':    i_C_III,
+                                         'i_N(C IV)':     i_C_IV,
+                                         'i_N(C V)':      i_C_V,
+                                         'i_N(C VI)':     i_C_VI,
+                                         'i_N(He I)':     i_He_I,
+                                         'i_N(He II)':    i_He_II,
+                                         'i_N(He III)':   i_He_III,
+                                         'i_N(Mg I)':     i_Mg_I,
+                                         'i_N(Mg II)':    i_Mg_II,
+                                         'i_N(Mg X)':     i_Mg_X,
+                                         'i_N(N II)':     i_N_II,
+                                         'i_N(N III)':    i_N_III,
+                                         'i_N(N IV)':     i_N_IV,
+                                         'i_N(N V)':      i_N_V,
+                                         'i_N(N VI)':     i_N_VI,
+                                         'i_N(N VII)':    i_N_VII,
+                                         'i_N(Na I)':     i_Na_I,
+                                         'i_N(Na IX)':    i_Na_IX,
+                                         'i_N(Ne III)':   i_Ne_III,
+                                         'i_N(Ne IV)':    i_Ne_IV,
+                                         'i_N(Ne V)':     i_Ne_V,
+                                         'i_N(Ne VI)':    i_Ne_VI,
+                                         'i_N(Ne VIII)':  i_Ne_VIII,
+                                         'i_N(O I)':      i_O_I,
+                                         'i_N(O II)':     i_O_II,
+                                         'i_N(O III)':    i_O_III,
+                                         'i_N(O IV)':     i_O_IV,
+                                         'i_N(O V)':      i_O_V,
+                                         'i_N(O VI)':     i_O_VI,
+                                         'i_N(O VII)':    i_O_VII,
+                                         'i_N(O VIII)':   i_O_VIII,
+                                         'i_N(S II)':     i_S_II,
+                                         'i_N(S III)':    i_S_III,
+                                         'i_N(S IV)':     i_S_IV,
+                                         'i_N(S V)':      i_S_V,
+                                         'i_N(S VI)':     i_S_VI,
+                                         'i_N(Si II)':    i_Si_II,
+                                         'i_N(Si III)':   i_Si_III,
+                                         'i_N(Si IV)':    i_Si_IV,
+                                         'i_N(Si XII)':   i_Si_XII,
+                                         'i_density':     i_density,
+                                         'i_entropy':     i_entropy,
+                                         'i_metallicity': i_metallicity,
+                                         'i_temperature': i_temperature
+                                        }, namespace='/test')
     socketio.sleep(0)
 
     print('sent simple ray data')
