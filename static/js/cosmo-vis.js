@@ -385,7 +385,7 @@ function toggleXYZGuide() {
 
 function updateUniforms() {
     if (volMaterial) {
-        console.log("update uniforms")
+        // console.log("update uniforms")
 
 
         // controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );

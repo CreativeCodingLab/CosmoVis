@@ -26,6 +26,7 @@ from trident.config import trident_path
 from scipy import interpolate
 import sys,os
 import copy
+import pprint
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
 # access to low latency bi-directional communications
@@ -125,13 +126,14 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     
     if simID == 'RefL0012N0188':
         ds = EAGLE_12Mpc
-        print(simID)
     elif simID == 'RefL0025N0376':
         ds = EAGLE_25Mpc
-        print(simID)
     elif simID == 'RefL0100N1504':
         ds = EAGLE_100Mpc
-        print(simID)
+    elif simID == 'TNG100_z2.3':
+        ds = TNG100_snap030
+    elif simID == 'TNG100_z0.0':
+        ds = TNG100_snap099
     else:
         # if 'RefL' in simID:
         #     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
@@ -141,7 +143,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(fn)
         ds = yt.load(fn)
     ad = ds.all_data()
-    print(ad.right_edge)
+    print(simID)
 
     socketio.sleep(0)
 
@@ -163,7 +165,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     socketio.sleep(0)
     trident.add_ion_fields(ray, ions=['O VI', 'C IV', 'N', 'He I', 'He II', 'O II', 'O III', 'O V', 'Ne III', 'Ne IV', 'Ne V', 'Ne VI', 'Ne VIII', 'Na I', 'Na IX', 'Mg X', 'Si II', 'Si III', 'Si IV', 'Si XII', 'S II', 'S III', 'S IV', 'S V', 'S VI', 'O IV'])
 
-
+    for field in ray.derived_field_list: print(field)
     # ('gas', 'l') -- the 1D location of the gas going from nearby (0) to faraway along the LightRay
     # convert to kpc
     l = ray.r[('gas', 'l')].to('kpc')
@@ -183,51 +185,423 @@ def handle_skewer_simple_ray(simID,idx,start,end):
 
     ## FULL RANGE VALUES
     ## used for graphing
+    try:
+        H_I    = (ray.r[('gas', 'H_p0_number_density')]   * dl_cm).tolist()
+        i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
 
-    H_I    = (ray.r[('gas', 'H_p0_number_density')]   * dl_cm).tolist()
-    H_II   = (ray.r[('gas', 'H_p1_number_density')]   * dl_cm).tolist()
-    C_I    = (ray.r[('gas', 'C_p0_number_density')]   * dl_cm).tolist()
-    C_II   = (ray.r[('gas', 'C_p1_number_density')]   * dl_cm).tolist()
-    C_III  = (ray.r[('gas', 'C_p2_number_density')]   * dl_cm).tolist()
-    C_IV   = (ray.r[('gas', 'C_p3_number_density')]   * dl_cm).tolist()
-    C_V    = (ray.r[('gas', 'C_p4_number_density')]   * dl_cm).tolist()
-    C_VI   = (ray.r[('gas', 'C_p5_number_density')]   * dl_cm).tolist()
-    He_I   = (ray.r[('gas', 'He_p0_number_density')]  * dl_cm).tolist()
-    He_II  = (ray.r[('gas', 'He_p1_number_density')]  * dl_cm).tolist()
-    He_III = (ray.r[('gas', 'He_p2_number_density')]  * dl_cm).tolist()
-    Mg_I   = (ray.r[('gas', 'Mg_p0_number_density')]  * dl_cm).tolist()
-    Mg_II  = (ray.r[('gas', 'Mg_p1_number_density')]  * dl_cm).tolist()
-    Mg_X   = (ray.r[('gas', 'Mg_p9_number_density')]  * dl_cm).tolist()
-    N_II   = (ray.r[('gas', 'N_p1_number_density')]   * dl_cm).tolist()
-    N_III  = (ray.r[('gas', 'N_p2_number_density')]   * dl_cm).tolist()
-    N_IV   = (ray.r[('gas', 'N_p3_number_density')]   * dl_cm).tolist()
-    N_V    = (ray.r[('gas', 'N_p4_number_density')]   * dl_cm).tolist()
-    N_VI   = (ray.r[('gas', 'N_p5_number_density')]   * dl_cm).tolist()
-    N_VII  = (ray.r[('gas', 'N_p6_number_density')]   * dl_cm).tolist()
-    Na_I   = (ray.r[('gas', 'Na_p0_number_density')]  * dl_cm).tolist()
-    Na_IX  = (ray.r[('gas', 'Na_p8_number_density')]  * dl_cm).tolist()
-    Ne_III = (ray.r[('gas', 'Ne_p2_number_density')]  * dl_cm).tolist()
-    Ne_IV  = (ray.r[('gas', 'Ne_p3_number_density')]  * dl_cm).tolist()
-    Ne_V   = (ray.r[('gas', 'Ne_p4_number_density')]  * dl_cm).tolist()
-    Ne_VI  = (ray.r[('gas', 'Ne_p5_number_density')]  * dl_cm).tolist()
-    Ne_VIII=(ray.r[('gas', 'Ne_p7_number_density')]  * dl_cm).tolist()
-    O_I    = (ray.r[('gas', 'O_p0_number_density')]   * dl_cm).tolist()
-    O_II   = (ray.r[('gas', 'O_p1_number_density')]   * dl_cm).tolist()
-    O_III  = (ray.r[('gas', 'O_p2_number_density')]   * dl_cm).tolist()
-    O_IV   = (ray.r[('gas', 'O_p3_number_density')]   * dl_cm).tolist()
-    O_V    = (ray.r[('gas', 'O_p4_number_density')]   * dl_cm).tolist()
-    O_VI   = (ray.r[('gas', 'O_p5_number_density')]   * dl_cm).tolist()
-    O_VII  = (ray.r[('gas', 'O_p6_number_density')]   * dl_cm).tolist()
-    O_VIII = (ray.r[('gas', 'O_p7_number_density')]   * dl_cm).tolist()
-    S_II   = (ray.r[('gas', 'S_p1_number_density')]   * dl_cm).tolist()
-    S_III  = (ray.r[('gas', 'S_p2_number_density')]   * dl_cm).tolist()
-    S_IV   = (ray.r[('gas', 'S_p3_number_density')]   * dl_cm).tolist()
-    S_V    = (ray.r[('gas', 'S_p4_number_density')]   * dl_cm).tolist()
-    S_VI   = (ray.r[('gas', 'S_p5_number_density')]   * dl_cm).tolist()
-    Si_II  = (ray.r[('gas', 'Si_p1_number_density')]  * dl_cm).tolist()
-    Si_III = (ray.r[('gas', 'Si_p2_number_density')]  * dl_cm).tolist()
-    Si_IV  = (ray.r[('gas', 'Si_p3_number_density')]  * dl_cm).tolist()
-    Si_XII = (ray.r[('gas', 'Si_p11_number_density')] * dl_cm).tolist()
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        H_II   = (ray.r[('gas', 'H_p1_number_density')]   * dl_cm).tolist()
+        i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        C_I    = (ray.r[('gas', 'C_p0_number_density')]   * dl_cm).tolist()
+        i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        C_II   = (ray.r[('gas', 'C_p1_number_density')]   * dl_cm).tolist()
+        i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        C_III  = (ray.r[('gas', 'C_p2_number_density')]   * dl_cm).tolist()
+        i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        C_IV   = (ray.r[('gas', 'C_p3_number_density')]   * dl_cm).tolist()
+        i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        C_V    = (ray.r[('gas', 'C_p4_number_density')]   * dl_cm).tolist()
+        i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        C_VI   = (ray.r[('gas', 'C_p5_number_density')]   * dl_cm).tolist()
+        i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        He_I   = (ray.r[('gas', 'He_p0_number_density')]  * dl_cm).tolist()
+        i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        He_II  = (ray.r[('gas', 'He_p1_number_density')]  * dl_cm).tolist()
+        i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        He_III = (ray.r[('gas', 'He_p2_number_density')]  * dl_cm).tolist()
+        i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Mg_I   = (ray.r[('gas', 'Mg_p0_number_density')]  * dl_cm).tolist()
+        i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Mg_II  = (ray.r[('gas', 'Mg_p1_number_density')]  * dl_cm).tolist()
+        i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Mg_X   = (ray.r[('gas', 'Mg_p9_number_density')]  * dl_cm).tolist()
+        i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        N_II   = (ray.r[('gas', 'N_p1_number_density')]   * dl_cm).tolist()
+        i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] *  dl_cm,dx)[1]
+        
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        N_III  = (ray.r[('gas', 'N_p2_number_density')]   * dl_cm).tolist()
+        i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        N_IV   = (ray.r[('gas', 'N_p3_number_density')]   * dl_cm).tolist()
+        i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        N_V    = (ray.r[('gas', 'N_p4_number_density')]   * dl_cm).tolist()
+        i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        N_VI   = (ray.r[('gas', 'N_p5_number_density')]   * dl_cm).tolist()
+        i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        N_VII  = (ray.r[('gas', 'N_p6_number_density')]   * dl_cm).tolist()
+        i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] *  dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Na_I   = (ray.r[('gas', 'Na_p0_number_density')]  * dl_cm).tolist()
+        i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Na_IX  = (ray.r[('gas', 'Na_p8_number_density')]  * dl_cm).tolist()
+        i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Ne_III = (ray.r[('gas', 'Ne_p2_number_density')]  * dl_cm).tolist()
+        i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
+
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Ne_IV  = (ray.r[('gas', 'Ne_p3_number_density')]  * dl_cm).tolist()
+        i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Ne_V   = (ray.r[('gas', 'Ne_p4_number_density')]  * dl_cm).tolist()
+        i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Ne_VI  = (ray.r[('gas', 'Ne_p5_number_density')]  * dl_cm).tolist()
+        i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Ne_VIII= (ray.r[('gas', 'Ne_p7_number_density')]  * dl_cm).tolist()
+        i_Ne_VIII=interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_I    = (ray.r[('gas', 'O_p0_number_density')]   * dl_cm).tolist()
+        i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_II   = (ray.r[('gas', 'O_p1_number_density')]   * dl_cm).tolist()
+        i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_III  = (ray.r[('gas', 'O_p2_number_density')]   * dl_cm).tolist()
+        i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_IV   = (ray.r[('gas', 'O_p3_number_density')]   * dl_cm).tolist()
+        i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_V    = (ray.r[('gas', 'O_p4_number_density')]   * dl_cm).tolist()
+        i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_VI   = (ray.r[('gas', 'O_p5_number_density')]   * dl_cm).tolist()
+        i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_VII  = (ray.r[('gas', 'O_p6_number_density')]   * dl_cm).tolist()
+        i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        O_VIII = (ray.r[('gas', 'O_p7_number_density')]   * dl_cm).tolist()
+        i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        S_II   = (ray.r[('gas', 'S_p1_number_density')]   * dl_cm).tolist()
+        i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        S_III  = (ray.r[('gas', 'S_p2_number_density')]   * dl_cm).tolist()
+        i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        S_IV   = (ray.r[('gas', 'S_p3_number_density')]   * dl_cm).tolist()
+        i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        S_V    = (ray.r[('gas', 'S_p4_number_density')]   * dl_cm).tolist()
+        i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        S_VI   = (ray.r[('gas', 'S_p5_number_density')]   * dl_cm).tolist()
+        i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] *  dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Si_II  = (ray.r[('gas', 'Si_p1_number_density')]  * dl_cm).tolist()
+        i_Si_II = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Si_III = (ray.r[('gas', 'Si_p2_number_density')]  * dl_cm).tolist()
+        i_Si_III= interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Si_IV  = (ray.r[('gas', 'Si_p3_number_density')]  * dl_cm).tolist()
+        i_Si_IV = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
+    
+    try:
+        Si_XII = (ray.r[('gas', 'Si_p11_number_density')] * dl_cm).tolist()
+        i_Si_XII= interpol8(l,ray.r[('gas', 'Si_p11_number_density')] *dl_cm,dx)[1]
+    except Exception as e:
+        print('error: '+ str( e ))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno) 
 
     log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
     density     = (10**log_density).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
@@ -237,50 +611,50 @@ def handle_skewer_simple_ray(simID,idx,start,end):
 
     ## INTERPOLATED VALUES
     ## used for skewer textures
-    i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')]*dl_cm,dx)[1]
-    i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] * dl_cm,dx)[1]
-    i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] * dl_cm,dx)[1]
-    i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] * dl_cm,dx)[1]
-    i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] * dl_cm,dx)[1]
-    i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] * dl_cm,dx)[1]
-    i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] * dl_cm,dx)[1]
-    i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] * dl_cm,dx)[1]
-    i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
-    i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
-    i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
-    i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
-    i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
-    i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
-    i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] * dl_cm,dx)[1]
-    i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] * dl_cm,dx)[1]
-    i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] * dl_cm,dx)[1]
-    i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] * dl_cm,dx)[1]
-    i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] * dl_cm,dx)[1]
-    i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] * dl_cm,dx)[1]
-    i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
-    i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
-    i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
-    i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
-    i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
-    i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
-    i_Ne_VIII= interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
-    i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] * dl_cm,dx)[1]
-    i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] * dl_cm,dx)[1]
-    i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] * dl_cm,dx)[1]
-    i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] * dl_cm,dx)[1]
-    i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] * dl_cm,dx)[1]
-    i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] * dl_cm,dx)[1]
-    i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] * dl_cm,dx)[1]
-    i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] * dl_cm,dx)[1]
-    i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] * dl_cm,dx)[1]
-    i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] * dl_cm,dx)[1]
-    i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] * dl_cm,dx)[1]
-    i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] * dl_cm,dx)[1]
-    i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] * dl_cm,dx)[1]
-    i_Si_II  = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
-    i_Si_III = interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
-    i_Si_IV  = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
-    i_Si_XII = interpol8(l,ray.r[('gas', 'Si_p11_number_density')] * dl_cm,dx)[1]
+    # i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
+    # i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] *  dl_cm,dx)[1]
+    # i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] *  dl_cm,dx)[1]
+    # i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] *  dl_cm,dx)[1]
+    # i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] *  dl_cm,dx)[1]
+    # i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] *  dl_cm,dx)[1]
+    # i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] *  dl_cm,dx)[1]
+    # i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] *  dl_cm,dx)[1]
+    # i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
+    # i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
+    # i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
+    # i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
+    # i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
+    # i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
+    # i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] *  dl_cm,dx)[1]
+    # i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] *  dl_cm,dx)[1]
+    # i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] *  dl_cm,dx)[1]
+    # i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] *  dl_cm,dx)[1]
+    # i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] *  dl_cm,dx)[1]
+    # i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] *  dl_cm,dx)[1]
+    # i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
+    # i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
+    # i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
+    # i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
+    # i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
+    # i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
+    # i_Ne_VIII=interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
+    # i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] *  dl_cm,dx)[1]
+    # i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] *  dl_cm,dx)[1]
+    # i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] *  dl_cm,dx)[1]
+    # i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] *  dl_cm,dx)[1]
+    # i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] *  dl_cm,dx)[1]
+    # i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] *  dl_cm,dx)[1]
+    # i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] *  dl_cm,dx)[1]
+    # i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] *  dl_cm,dx)[1]
+    # i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] *  dl_cm,dx)[1]
+    # i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] *  dl_cm,dx)[1]
+    # i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] *  dl_cm,dx)[1]
+    # i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] *  dl_cm,dx)[1]
+    # i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] *  dl_cm,dx)[1]
+    # i_Si_II = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
+    # i_Si_III= interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
+    # i_Si_IV = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
+    # i_Si_XII= interpol8(l,ray.r[('gas', 'Si_p11_number_density')] *dl_cm,dx)[1]
 
     log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
     i_density       = (10**np.array(interpol8(l, log_density,dx)[1])).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
@@ -413,14 +787,38 @@ def handle_ray_selection_background(simID,idx,start,end):
     socketio.emit( 'processingRay', {'index': idx}, namespace = '/test' )
     eventlet.sleep()
     socketio.sleep(0)
+    # fn = ''
+    # if 'RefL' in simID:
+    #     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+    # if 'TNG' in simID:
+    #     fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
+    # # ds = yt.load(fn)
+    # socketio.sleep(0)
+    # # ad = ds.all_data()
+
     fn = ''
-    if 'RefL' in simID:
-        fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
-    if 'TNG' in simID:
-        fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
-    # ds = yt.load(fn)
-    socketio.sleep(0)
-    # ad = ds.all_data()
+    # ds = []
+    
+    if simID == 'RefL0012N0188':
+        ds = EAGLE_12Mpc
+    elif simID == 'RefL0025N0376':
+        ds = EAGLE_25Mpc
+    elif simID == 'RefL0100N1504':
+        ds = EAGLE_100Mpc
+    elif simID == 'TNG100_z2.3':
+        ds = TNG100_snap030
+    elif simID == 'TNG100_z0.0':
+        ds = TNG100_snap099
+    else:
+        # if 'RefL' in simID:
+        #     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+        # if 'TNG' in simID:
+        #     fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
+        # print("loading" + str(fn))
+        print(fn)
+        ds = yt.load(fn)
+    ad = ds.all_data()
+    print(simID)
 
     print('received args: ' + str(start) + str(end))
     ray_start = list(np.float_(start))
