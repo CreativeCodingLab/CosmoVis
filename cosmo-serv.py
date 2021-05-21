@@ -49,6 +49,8 @@ spectrum_hdul = fits.HDUList()
 
 try:
     EAGLE_12Mpc = yt.load('static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_12Mpc_ad = EAGLE_12Mpc.all_data()
+
 except Exception as e:
     print('error: '+ str( e ))
     exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -57,6 +59,7 @@ except Exception as e:
 
 try:
     EAGLE_25Mpc = yt.load('static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_25Mpc_ad = EAGLE_25Mpc.all_data()
 except Exception as e:
     print('error: '+ str( e ))
     exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -64,7 +67,8 @@ except Exception as e:
     print(exc_type, fname, exc_tb.tb_lineno) 
 
 try:
-    EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_100Mpc_ad = EAGLE_100Mpc.all_data()
 except Exception as e:
     print('error: '+ str( e ))
     exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -73,6 +77,7 @@ except Exception as e:
 
 try:
     TNG100_snap030 = yt.load('static/data/TNG100_z2.3/snapshot/snap_030.0.hdf5')
+    TNG100_snap030_ad = TNG100_snap030.all_data()
 except Exception as e:
     print('error: '+ str( e ))
     exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -81,6 +86,7 @@ except Exception as e:
 
 try:
     TNG100_snap099 = yt.load('static/data/TNG100_z0.0/snapshot/snap_099.0.hdf5')
+    TNG100_snap099_ad = TNG100_snap099.all_data()
 except Exception as e:
     print('error: '+ str( e ))
     exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -165,7 +171,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     socketio.sleep(0)
     trident.add_ion_fields(ray, ions=['O VI', 'C IV', 'N', 'He I', 'He II', 'O II', 'O III', 'O V', 'Ne III', 'Ne IV', 'Ne V', 'Ne VI', 'Ne VIII', 'Na I', 'Na IX', 'Mg X', 'Si II', 'Si III', 'Si IV', 'Si XII', 'S II', 'S III', 'S IV', 'S V', 'S VI', 'O IV'])
 
-    for field in ray.derived_field_list: print(field)
+    # for field in ray.derived_field_list: print(field)
     # ('gas', 'l') -- the 1D location of the gas going from nearby (0) to faraway along the LightRay
     # convert to kpc
     l = ray.r[('gas', 'l')].to('kpc')
