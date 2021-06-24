@@ -342,7 +342,7 @@ THREE.VolumeRenderShader1 = {
 						
 						// else path_L += 100.0 * transmittance * skewerCol;
 					}
-					// pathL += skewerColor or starColor * transmittance
+
 					vec4 c = vec4(vec3(1.0,1.0,1.0) - exp(-u_exposure*path_L),1.0);
 					fragColor = c;
 					

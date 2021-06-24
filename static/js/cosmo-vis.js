@@ -761,7 +761,7 @@ function loadGas(size, attr, resolution_bool) {
                     dropdown.value = 'Temperature'
                     min = 2.0
                     minval.value = 3.745
-                    max = 7.0
+                    max = 7.5
                     maxval.value = 6.75
                     gasUnpackDomain = [2.0, 7.5]
                 }
@@ -787,11 +787,11 @@ function loadGas(size, attr, resolution_bool) {
                     gasUnpackDomain = [1.0, 6.0]
                 }
                 if (attr == "Metallicity") {
-                    min = -15.0
-                    minval.value = -15.0
+                    min = -3.0
+                    minval.value = -3.0
                     max = 1.0
-                    maxval.value = 1.0
-                    gasUnpackDomain = [-15.0, 1.0]
+                    maxval.value = -1.0
+                    gasUnpackDomain = [-3.0, 1.0]
                 }
                 if (attr == "Oxygen") {
                     min = 0.0
@@ -820,9 +820,9 @@ function loadGas(size, attr, resolution_bool) {
                     gasUnpackDomain = [min, max]
                 }
                 if (attr == "Metallicity") {
-                    min = Math.log10(4.06559314e-10)
+                    min = -3.0 //Math.log10(4.06559314e-10)
                     minval.value = Math.log10(4.06559314e-10)
-                    max = Math.log10(0.16250114)
+                    max = -1.0 //Math.log10(0.16250114)
                     maxval.value = Math.log10(0.16250114)
                     gasUnpackDomain = [min, max]
                 }
@@ -852,9 +852,9 @@ function loadGas(size, attr, resolution_bool) {
                     gasUnpackDomain = [min, max]
                 }
                 if (attr == "Metallicity") {
-                    min = Math.log10(4.06559314e-10)
+                    min = -3.0 //Math.log10(4.06559314e-10)
                     minval.value = Math.log10(4.06559314e-10)
-                    max = Math.log10(0.16250114)
+                    max = -1.0 //Math.log10(0.16250114)
                     maxval.value = Math.log10(0.16250114)
                     gasUnpackDomain = [min, max]
                 }
@@ -1934,7 +1934,62 @@ function requestSimpleLineData(idx) {
     }
 }
 
+function downloadSkewerTable(d) {
+
+    // var c = skewerData[0][0].lambda.map(function(e, i) {
+    //     return [e, skewerData[0][0].flux[i]];
+    // });
+
+    c = JSON.stringify(d)
+
+    let fn = 'skewer_info.txt'
+    const a = document.createElement('a');
+    const type = fn.split(".").pop();
+    a.href = URL.createObjectURL(new Blob([c], { type: type }));
+    a.download = fn;
+    a.click();
+}
+
 skewer_attribute_matrix = []
+
+function createSkewerDataTexture(skewer_index, attr_data) {
+    // console.log(attr_data)
+    size = attr_data.length
+    d = new Uint8Array(3 * size)
+
+    for (i = 0; i < size; i++) {
+        band_col = attr_data[i].c
+        stride = i * 3
+
+        // low_col = new THREE.Color("rgb(18, 0, 153)")
+        // high_col = new THREE.Color("rgb(200,200,200)")
+
+        // band_col = low_col.lerp(high_col,attr_data[i].c)
+        // console.log(band_col)
+        d[stride] = band_col * 255; // stores length along skewer (to be used as texture UV lookup)
+        d[stride + 1] = band_col * 255; // stores attribute value at distance x
+        d[stride + 2] = band_col * 255; // empty
+        // color will be programmed in the shader based on these values since delta_x is not uniform
+    }
+    console.log(d)
+
+    skewerTexture[skewer_index] = new THREE.DataTexture(d, 1, size, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
+    console.log(skewer_index)
+    skewerTexture[skewer_index].needsUpdate = true
+    lines[skewer_index].material.uniforms.skewer_tex.value = skewerTexture[skewer_index]
+    lines[skewer_index].material.uniformsNeedUpdate = true
+    lines[skewer_index].material.uniforms.skewer_tex.needsUpdate = true
+    lines[skewer_index].updateMatrix();
+    lines[skewer_index].verticesNeedUpdate = true;
+    lines[skewer_index].elementsNeedUpdate = true;
+    lines[skewer_index].morphTargetsNeedUpdate = true;
+    lines[skewer_index].uvsNeedUpdate = true;
+    lines[skewer_index].normalsNeedUpdate = true;
+    lines[skewer_index].colorsNeedUpdate = true;
+    lines[skewer_index].tangentsNeedUpdate = true;
+    lines[skewer_index].material.needsUpdate = true
+}
 
 function createColumnDensityInfoPanel(msg) {
     // this function creates the dropdown menu containing column density information along with accompanying graph
@@ -1942,6 +1997,14 @@ function createColumnDensityInfoPanel(msg) {
     idx = msg.index
     divID = 'simple-line-status-skewer-coords-' + idx + ''
     div = document.getElementById(divID)
+
+    let dwnld_btn = document.createElement("button");
+    dwnld_btn.innerHTML = "download skewer attributes";
+    dwnld_btn.addEventListener("click", function () {
+        downloadSkewerTable(msg)
+    });
+    div.appendChild(dwnld_btn)
+    div.appendChild(document.createElement("br"))
 
     dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
     var select = document.createElement("select")
@@ -1964,46 +2027,6 @@ function createColumnDensityInfoPanel(msg) {
         width = 300 - margin.left - margin.right,
         height = 200 - margin.top - margin.bottom;
 
-
-    function createSkewerDataTexture(skewer_index, attr_data) {
-        // console.log(attr_data)
-        size = attr_data.length
-        d = new Uint8Array(3 * size)
-
-        for (i = 0; i < size; i++) {
-            band_col = attr_data[i].c
-            stride = i * 3
-
-            // low_col = new THREE.Color("rgb(18, 0, 153)")
-            // high_col = new THREE.Color("rgb(200,200,200)")
-
-            // band_col = low_col.lerp(high_col,attr_data[i].c)
-            // console.log(band_col)
-            d[stride] = band_col * 255; // stores length along skewer (to be used as texture UV lookup)
-            d[stride + 1] = band_col * 255; // stores attribute value at distance x
-            d[stride + 2] = band_col * 255; // empty
-            // color will be programmed in the shader based on these values since delta_x is not uniform
-        }
-        console.log(d)
-
-        skewerTexture[skewer_index] = new THREE.DataTexture(d, 1, size, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
-        console.log(skewer_index)
-        skewerTexture[skewer_index].needsUpdate = true
-        lines[skewer_index].material.uniforms.skewer_tex.value = skewerTexture[skewer_index]
-        lines[skewer_index].material.uniformsNeedUpdate = true
-        lines[skewer_index].material.uniforms.skewer_tex.needsUpdate = true
-        lines[skewer_index].updateMatrix();
-        lines[skewer_index].verticesNeedUpdate = true;
-        lines[skewer_index].elementsNeedUpdate = true;
-        lines[skewer_index].morphTargetsNeedUpdate = true;
-        lines[skewer_index].uvsNeedUpdate = true;
-        lines[skewer_index].normalsNeedUpdate = true;
-        lines[skewer_index].colorsNeedUpdate = true;
-        lines[skewer_index].tangentsNeedUpdate = true;
-        lines[skewer_index].material.needsUpdate = true
-    }
-
     s = document.getElementById('simple-line-results-' + idx + '')
     s.onchange = function() {
         // remove old plot
@@ -2022,7 +2045,6 @@ function createColumnDensityInfoPanel(msg) {
         skewer_attribute_matrix = msg[s.value]
 
         // print this above graph for just element column density
-
 
         if ((s.value).charAt(0) == 'N') {
 
@@ -2071,7 +2093,6 @@ function createColumnDensityInfoPanel(msg) {
                     c++
                 }
             }
-
         }
 
         // ideally this should be more field agnostic... avoids wonky log10 scaling
@@ -2552,6 +2573,8 @@ function commonWavelength() {
     createBrush()
 }
 
+
+
 function downloadSpectra() {
 
     var c = skewerData[0][0].lambda.map(function(e, i) {
@@ -2560,11 +2583,11 @@ function downloadSpectra() {
 
     c = JSON.stringify(c)
 
-    name = 'spectra.txt'
+    let fn = 'spectra.txt'
     const a = document.createElement('a');
-    const type = name.split(".").pop();
+    const type = fn.split(".").pop();
     a.href = URL.createObjectURL(new Blob([c], { type: type }));
-    a.download = name;
+    a.download = fn;
     a.click();
 }
 

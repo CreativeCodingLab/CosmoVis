@@ -2,6 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 
 # app.py
+import multiprocessing
 from threading import Lock
 from flask import Flask, jsonify, request, render_template, session, copy_current_request_context
 import yt
@@ -19,7 +20,7 @@ from itertools import product
 from flask import Response
 from flask_socketio import SocketIO, emit, join_room, leave_room, close_room, rooms, disconnect
 import random
-import mpi4py
+from mpi4py import MPI
 import os.path
 from os import path
 from trident.config import trident_path
@@ -27,6 +28,10 @@ from scipy import interpolate
 import sys,os
 import copy
 import pprint
+from numba import jit
+import psutil
+
+
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
 # access to low latency bi-directional communications
@@ -34,13 +39,14 @@ import pprint
  
 async_mode = 'eventlet'
 app = Flask(__name__)
+
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
-thread = None
-thread_lock = Lock()
-
+# thread = None
+# thread_lock = Lock()
+multiprocessing.set_start_method('spawn')
 yt.enable_parallelism()
 sgs = []
 rpts = {}
@@ -123,7 +129,29 @@ def index():
 
 #getSkewerSimpleRay -- this function is used to get the 'quick' data along the skewer and sends it back to the frontend
 @socketio.on('getSkewerSimpleRay',namespace="/test")
+def handle_ray_selection(simID,idx, start, end):
+    # try:
+    print(multiprocessing.cpu_count())
+    sys.stdout.flush()
+    socketio.start_background_task(handle_skewer_simple_ray,simID,idx, start, end)
+        # th = multiprocessing.Process(target=handle_skewer_simple_ray(simID,idx, start, end))
+        # th.start()
+        # th.join()
+    # except Exception as e:
+    #     print('error: '+ str( e ))
+    #     exc_type, exc_obj, exc_tb = sys.exc_info()
+    #     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    #     print(exc_type, fname, exc_tb.tb_lineno) 
+
+
 def handle_skewer_simple_ray(simID,idx,start,end):
+    yt.enable_parallelism()
+    print('system cpu cores: ' + str(multiprocessing.cpu_count()))
+    sys.stdout.flush()
+    print('cpu cores available to python: ' + str(len(psutil.Process().cpu_affinity())))
+    sys.stdout.flush()
+    print('mpi parallelism: ' + str(yt.enable_parallelism()))
+    sys.stdout.flush()
     print('recieved simple ray request')
     socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
     socketio.sleep(0)
