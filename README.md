@@ -33,8 +33,18 @@ In addition, the development versions of yt, trident and yt-astro-analysis must 
     $ pip install -e .
     $ cd ..
 
+To finish installing Trident, open Python in the terminal and import Trident.
 
-To run
+    $ python
+    > import trident
+  
+  The first time Trident runs an installation dialogue appears. Follow the on screen instructions and verify that is has been installed successfully by typing:
+  
+    > trident.verify()
+
+## Running CosmoVis
 - In the terminal, cd into the CosmoVis folder and type `python cosmo-serv.py`
 - Once the application starts, wait for the data to finish loading and in the web browser go to `localhost:5000`
 - If the webpage does not load, try doing a hard refresh of the page `(cmd+shft+R on mac)` as it may take a moment to first display
+
+
