@@ -178,7 +178,6 @@ async function updateSize() {
         asyncCall(true)
             //check to see which variables are visible and update those immediately
         checkSelectedSimID()
-            // loadGasDMAttributes(gridsize,'Temperature',true)
             // asyncCall()
             // loadHaloCenters()
 
@@ -821,9 +820,9 @@ function loadGas(size, attr, resolution_bool) {
                 }
                 if (attr == "Metallicity") {
                     min = -3.0 //Math.log10(4.06559314e-10)
-                    minval.value = Math.log10(4.06559314e-10)
-                    max = -1.0 //Math.log10(0.16250114)
-                    maxval.value = Math.log10(0.16250114)
+                    minval.value = -3.0 //Math.log10(4.06559314e-10)
+                    max = 1.0 //Math.log10(0.16250114)
+                    maxval.value = -1.0 //Math.log10(0.16250114)
                     gasUnpackDomain = [min, max]
                 }
                 if (attr == "Masses") {
@@ -853,9 +852,9 @@ function loadGas(size, attr, resolution_bool) {
                 }
                 if (attr == "Metallicity") {
                     min = -3.0 //Math.log10(4.06559314e-10)
-                    minval.value = Math.log10(4.06559314e-10)
-                    max = -1.0 //Math.log10(0.16250114)
-                    maxval.value = Math.log10(0.16250114)
+                    minval.value = -3.0 //Math.log10(4.06559314e-10)
+                    max = 1.0 //Math.log10(0.16250114)
+                    maxval.value = -1.0 //Math.log10(0.16250114)
                     gasUnpackDomain = [min, max]
                 }
                 if (attr == "Masses") {
@@ -2885,7 +2884,6 @@ function checkSelectedSimID() {
             }
         }
         // sendSimIDtoServer(simID)
-        // loadGasDMAttributes(gridsize,'Temperature', false)
 
     }
 
@@ -3192,8 +3190,9 @@ function onMouseClick(event) {
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id=' + id + '>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
         div = document.getElementById(id)
         id = "skewer-coords-point1-" + idx + ''
-        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x, 3) + ', ' + round(point1.y, 3) + ', ' + round(point1.z, 3) + ' )</div>')
-
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x * (edges.right_edge[0] / gridsize), 3) + ', ' + round(point1.y * (edges.right_edge[1] / gridsize), 3) + ', ' + round(point1.z * (edges.right_edge[0] / gridsize), 3) + ' ) Mpc </div>')
+        console.log(point1)
+        console.log(point1.x * (edges.right_edge[0] / gridsize))
         //create div to show pt2 details and range slider
         id = 'skewer-coords-' + idx
         div = document.getElementById(id)
@@ -3202,7 +3201,7 @@ function onMouseClick(event) {
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="' + id + '">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
         div = document.getElementById(id)
         id = "skewer-coords-point2-" + idx + ''
-        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x, 3) + ', ' + round(point2.y, 3) + ', ' + round(point2.z, 3) + ' ) </div>')
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x * (edges.right_edge[0] / gridsize), 3) + ', ' + round(point2.y * (edges.right_edge[1] / gridsize), 3) + ', ' + round(point2.z * (edges.right_edge[0] / gridsize), 3) + ' ) Mpc </div>')
 
         //create event listeners for the range sliders
         p1slider = document.getElementById('p1-range-' + idx + '')
@@ -3222,7 +3221,7 @@ function onMouseClick(event) {
             id = "skewer-coords-point1-" + idx + ''
             div = document.getElementById(id)
             div.innerHTML = ''
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt1.x, 3) + ', ' + round(pt1.y, 3) + ', ' + round(pt1.z, 3) + ' )</div>')
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt1.x * (edges.right_edge[0] / gridsize), 3) + ', ' + round(pt1.y * (edges.right_edge[1] / gridsize), 3) + ', ' + round(pt1.z * (edges.right_edge[0] / gridsize), 3) + ' ) Mpc </div>')
             printLine(idx, pt1, pt2)
             saveLine(idx, pt1, pt2)
         }
@@ -3245,7 +3244,7 @@ function onMouseClick(event) {
             id = "skewer-coords-point2-" + idx + ''
             div = document.getElementById(id)
             div.innerHTML = ''
-            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt2.x, 3) + ', ' + round(pt2.y, 3) + ', ' + round(pt2.z, 3) + ' )</div>')
+            div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(pt2.x * (edges.right_edge[0] / gridsize), 3) + ', ' + round(pt2.y * (edges.right_edge[1] / gridsize), 3) + ', ' + round(pt2.z * (edges.right_edge[0] / gridsize), 3) + ' ) Mpc </div>')
             printLine(idx, pt1, pt2)
             saveLine(idx, pt1, pt2)
         }
