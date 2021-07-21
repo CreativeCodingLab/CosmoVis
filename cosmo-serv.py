@@ -180,30 +180,40 @@ def handle_skewer_simple_ray(simID,idx,start,end):
 
     socketio.sleep(0)
 
+    sim_width = np.float(ds.domain_right_edge[0].in_units('Mpc') - ds.domain_left_edge[0].in_units('Mpc'))
+
+    print(ds.domain_right_edge)
+
     ray_start = np.float_(start)
     ray_end   = np.float_(end)
     print('ray start: ' + str(ray_start))
     print('ray end  : ' + str(ray_end))
-    ray_start = ds.arr(ray_start, 'Mpc') #list(np.float_(start))
-    ray_end   = ds.arr(ray_end, 'Mpc')  #list(np.float_(end))
-    print(ray_start.in_units('Mpc'))
-    print(ray_end.in_units('Mpc'))
+
+    ray_start = ds.arr(ray_start/sim_width * np.float(ds.domain_right_edge[0]), 'code_length') #list(np.float_(start))
+    ray_end   = ds.arr(ray_end/sim_width * np.float(ds.domain_right_edge[0]), 'code_length')   #list(np.float_(end))
+
+    # ray_start = ds.arr(ray_start, 'Mpc')/sim_width #list(np.float_(start))
+    # ray_end   = ds.arr(ray_end, 'Mpc')/sim_width  #list(np.float_(end))
+
+    # print(ray_start.in_units('Mpc'))
+    # print(ray_end.in_units('Mpc'))
     line_list = ['H', 'C', 'N', 'O', 'Mg']
     socketio.sleep(0)
     # This LightRay object is a yt dataset of a 1D data structure representing the skewer path as it traverses the dataset. 
     ray = trident.make_simple_ray(ds, start_position=ray_start,
                                end_position=ray_end,
                                data_filename="ray.h5", # update file name if we need multiple
-                               lines=line_list)
+                               lines=line_list,
+                               ftype='PartType0')
     socketio.sleep(0)
-    trident.add_ion_fields(ray, ions=['O VI', 'C IV', 'N', 'He I', 'He II', 'O II', 'O III', 'O V', 'Ne III', 'Ne IV', 'Ne V', 'Ne VI', 'Ne VIII', 'Na I', 'Na IX', 'Mg X', 'Si II', 'Si III', 'Si IV', 'Si XII', 'S II', 'S III', 'S IV', 'S V', 'S VI', 'O IV'])
+    trident.add_ion_fields(ray, ions=['O VI', 'C IV', 'N', 'He I', 'He II', 'O II', 'O III', 'O V', 'Ne III', 'Ne IV', 'Ne V', 'Ne VI', 'Ne VIII', 'Na I', 'Na IX', 'Mg X', 'Si II', 'Si III', 'Si IV', 'Si XII', 'S II', 'S III', 'S IV', 'S V', 'S VI', 'O IV'], ftype="PartType0")
 
     # for field in ray.derived_field_list: print(field)
     # ('gas', 'l') -- the 1D location of the gas going from nearby (0) to faraway along the LightRay
     # convert to kpc
     l = ray.r[('gas', 'l')].to('kpc')
 
-
+    print(ray)
     # ('gas', 'temperature') -- the gas temperature along l (K)
 
     # the way trident+yt represents ions as fields is a little weird
@@ -219,7 +229,10 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     ## FULL RANGE VALUES
     ## used for graphing
     try:
-        H_I    = (ray.r[('gas', 'H_p0_number_density')]   * dl_cm).tolist()
+        H_I = (ray.r[('gas', 'H_p0_number_density')] * dl_cm).tolist()
+        HI  = (ray.r[('gas', 'H_p0_number_density')][:] * ray.r[('gas', 'dl')][:]).sum()
+        print(HI)
+        print(np.sum(H_I))
         i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:

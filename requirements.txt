@@ -4,6 +4,7 @@ Flask==1.1.2
 Flask-SocketIO==4.3.0
 Frozen-Flask==0.15
 greenlet==0.4.15
+gunicorn==20.0.4
 mpi4py==3.0.3
 psutil
 python-engineio==3.13.0
