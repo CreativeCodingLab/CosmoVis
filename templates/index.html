@@ -681,6 +681,8 @@
                 x.style.display = "none";
                 var x = document.getElementById("terminal");
                 x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
             }    
         }
 
@@ -711,6 +713,8 @@
                 x.style.display = "none";
                 var x = document.getElementById("terminal");
                 x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
             }    
         }
         
@@ -739,6 +743,8 @@
                 var x = document.getElementById("spectrum");
                 x.style.display = "none";
                 var x = document.getElementById("terminal");
+                x.style.display = "none";
+                var x = document.getElementById("share-presets");
                 x.style.display = "none";
             }    
         }
@@ -769,6 +775,40 @@
                 x.style.display = "none";
                 var x = document.getElementById("terminal");
                 x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
+            }    
+        }
+
+        function share(){
+            var x = document.getElementById("share-presets");
+            if (x.style.display === "grid") {
+                x.style.display = "none";
+                var x = document.getElementById("share");
+                x.style.filter ="";
+            } else {
+                x.style.display = "grid";
+                var x = document.getElementById("share");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";                
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
+                
             }    
         }
 
@@ -807,6 +847,8 @@
                 var x = document.getElementById("spectrum");
                 x.style.display = "none";
                 var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("share-presets");
                 x.style.display = "none";
             }
         }
@@ -869,6 +911,12 @@
             alt="view spectrum"
             role="button"
             onclick="graph()"/>spectra</div>
+        <div id="share" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/share.svg" 
+            alt="share the current view"
+            role="button"
+            onclick="share()"/>share</div>
     </div>
 
     <div id="containers">
@@ -1270,6 +1318,11 @@
             
         </div>
 
+        <div id="share-presets" class="container">
+            <button type="submit" class="request-button" onclick="storeSceneState()"  >download state file</button>
+            <button type="submit" class="request-button" onclick="restoreSceneState()"  >upload state file</button>
+        </div>
+
         <!-- <div id="welcome-container">
             <h2>Welcome to CosmoVis</h2>
             <p>CosmoVis is a tool that aims to help astronomers visually inspect cosmological simulations at various scales and make and collect observations through the interactive generation of spectral line plots. </p>
@@ -1290,6 +1343,7 @@
     </script>
     </body>
 
-    <footer hidden><div><div>Galaxy icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a>Refresh icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Delete icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Laser icon made by  <a href="https://www.flaticon.com/authors/those-icons" title="Those Icons">Those Icons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Layer icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>Telescope icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>,<a href="https://www.flaticon.com/authors/dinosoftlabs" title="DinosoftLabs">DinosoftLabs</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Line Graph Icon made by Zach Bogart from the Noun Project, Wrench Icon by Icon Lauk from the Noun Project</div></footer>
+    <footer hidden><div>Icons made by <a href="https://www.flaticon.com/authors/photo3idea-studio" title="photo3idea_studio">photo3idea_studio</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+        <div><div>Galaxy icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a>Refresh icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Delete icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Laser icon made by  <a href="https://www.flaticon.com/authors/those-icons" title="Those Icons">Those Icons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Layer icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>Telescope icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>,<a href="https://www.flaticon.com/authors/dinosoftlabs" title="DinosoftLabs">DinosoftLabs</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Line Graph Icon made by Zach Bogart from the Noun Project, Wrench Icon by Icon Lauk from the Noun Project</div></footer>
 
 </html>

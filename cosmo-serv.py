@@ -42,7 +42,9 @@ app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+# socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
+
+socketio = SocketIO(app,cors_allowed_origins="https://cosmovis.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 # thread = None
 # thread_lock = Lock()
 multiprocessing.set_start_method('spawn')
@@ -151,7 +153,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     sys.stdout.flush()
     print('mpi parallelism: ' + str(yt.enable_parallelism()))
     sys.stdout.flush()
-    print('recieved simple ray request')
+    print('received simple ray request')
     socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
     socketio.sleep(0)
     fn = ''
@@ -202,11 +204,12 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     # This LightRay object is a yt dataset of a 1D data structure representing the skewer path as it traverses the dataset. 
     ray = trident.make_simple_ray(ds, start_position=ray_start,
                                end_position=ray_end,
-                               data_filename="ray.h5", # update file name if we need multiple
+                               data_filename="ray.h5",
                                lines=line_list,
-                               ftype='PartType0')
+                               ftype='gas',
+                               fields=[('PartType0','Entropy')])
     socketio.sleep(0)
-    trident.add_ion_fields(ray, ions=['O VI', 'C IV', 'N', 'He I', 'He II', 'O II', 'O III', 'O V', 'Ne III', 'Ne IV', 'Ne V', 'Ne VI', 'Ne VIII', 'Na I', 'Na IX', 'Mg X', 'Si II', 'Si III', 'Si IV', 'Si XII', 'S II', 'S III', 'S IV', 'S V', 'S VI', 'O IV'], ftype="PartType0")
+    trident.add_ion_fields(ray, ions=['O VI', 'C IV', 'N', 'He I', 'He II', 'He III', 'O II', 'O III', 'O V', 'Ne III', 'Ne IV', 'Ne V', 'Ne VI', 'Ne VIII', 'Na I', 'Na IX', 'Mg X', 'Si II', 'Si III', 'Si IV', 'Si XII', 'S II', 'S III', 'S IV', 'S V', 'S VI', 'O IV'], ftype="PartType0")
 
     # for field in ray.derived_field_list: print(field)
     # ('gas', 'l') -- the 1D location of the gas going from nearby (0) to faraway along the LightRay
@@ -230,9 +233,6 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     ## used for graphing
     try:
         H_I = (ray.r[('gas', 'H_p0_number_density')] * dl_cm).tolist()
-        HI  = (ray.r[('gas', 'H_p0_number_density')][:] * ray.r[('gas', 'dl')][:]).sum()
-        print(HI)
-        print(np.sum(H_I))
         i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
 
     except Exception as e:
@@ -740,13 +740,22 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     finally:
         log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
         density     = (10**log_density).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
-        entropy     = (ray.r[('gas', 'entropy')]).tolist()
+        try:
+            entropy   = (ray.r[('gas', 'Entropy')]).tolist()
+            i_entropy = interpol8(l,ray.r[('gas', 'Entropy')],dx)[1]
+        except Exception as e:
+            entropy = []
+            i_entropy = []
+            print('error: '+ str( e ))
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno) 
+
         metallicity = (ray.r[('gas', 'metallicity')].to('Zsun')).tolist()
         temperature = (ray.r[('gas', 'temperature')]).tolist()
 
         log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
         i_density       = (10**np.array(interpol8(l, log_density,dx)[1])).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
-        i_entropy       = interpol8(l,ray.r[('gas', 'entropy')],dx)[1]
         i_metallicity   = interpol8(l,ray.r[('gas', 'metallicity')].to('Zsun'),dx)[1]
         i_l, i_temperature = interpol8(l,ray.r[('gas', 'temperature')],dx)
 
@@ -994,8 +1003,6 @@ def handle_ray_selection_background(simID,idx,start,end):
     socketio.sleep(0)
     print('emitting spectrum')
     socketio.sleep(0)
-    socketio.sleep(0)
-    socketio.sleep(0)
     socketio.emit('synthetic_spectrum',{'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
     socketio.sleep(0)
     print('sent spectrum')
@@ -1108,5 +1115,5 @@ def test_connect():
 
 if __name__ == '__main__':
     # socketio.run(app, debug=False)
-    socketio.run(app, host='0.0.0.0', debug=True)
-    # socketio.run(app, host='0.0.0.0', port=8080, threaded=False, debug=True)
+    # socketio.run(app, host='0.0.0.0', debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

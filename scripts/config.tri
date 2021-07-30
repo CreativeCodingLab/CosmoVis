@@ -1,0 +1,3 @@
+[Trident]
+ion_table_dir = ~/.trident
+ion_table_file = /cv-docker/hm2012_hr.h5

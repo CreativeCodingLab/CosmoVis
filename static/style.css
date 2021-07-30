@@ -120,6 +120,10 @@ h1{
     display: none;
 }
 
+#share-presets {
+    display: none;
+}
+
 #data_layers {
     display: none;
 }
@@ -1027,7 +1031,7 @@ label[for="bh_select"]{
     display:none;
 }
 #galaxy_list{
-    display: none;
+    /* display: none; */
 }
 
 .col-density-sum{

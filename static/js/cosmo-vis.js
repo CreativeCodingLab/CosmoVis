@@ -105,6 +105,137 @@ let renderRequested = false
  * * GLOBAL FUNCTIONS 
  */
 
+function storeSceneState() {
+    sceneState = {}
+    // simulation snapshot
+    sceneState.simID = simID
+    // layer visibility
+    sceneState.gas   = volMaterial.uniforms["u_gasVisibility"].value
+    sceneState.dm    = volMaterial.uniforms["u_dmVisibility"].value
+    sceneState.stars = volMaterial.uniforms["u_starVisibility"].value
+    // camera orientation/location
+    sceneState.camera = camera.matrix.toArray()
+    sceneState.cameraZoom = camera.zoom
+    // XYZ slice
+    sceneState.domainXYZ = domainXYZ
+    
+    // min/max for transfer function
+    // save sceneState
+
+    c = JSON.stringify(sceneState)
+
+    let fn = 'sceneState.json'
+    const a = document.createElement('a');
+    const type = fn.split(".").pop();
+    a.href = URL.createObjectURL(new Blob([c], { type: type }));
+    a.download = fn;
+    a.click();
+}
+
+var newSceneState = {}
+function restoreSceneState(){
+    var input = document.createElement('input');
+    input.type = 'file';
+    
+    input.onchange = e => { 
+
+        // getting a hold of the file reference
+        var file = e.target.files[0]; 
+
+        // setting up the reader
+        var reader = new FileReader();
+        reader.readAsText(file,'UTF-8');
+
+        // here we tell the reader what to do when it's done reading...
+        reader.onload = readerEvent => {
+            newSceneState = JSON.parse(readerEvent.target.result); // this is the content!
+            console.log( newSceneState );
+
+            // simID = newSceneState.simID
+            document.getElementById("sim_size_select").value = newSceneState.simID
+            document.getElementById("size_select").value = 64
+            
+            updateSize()
+            checkSelectedSimID()
+
+            volMaterial.uniforms["u_gasVisibility"].value  = newSceneState.gas
+            volMaterial.uniforms["u_dmVisibility"].value   = newSceneState.dm
+            volMaterial.uniforms["u_starVisibility"].value = newSceneState.stars
+
+            camera.matrix.fromArray(newSceneState.camera)
+            camera.matrix.decompose(camera.position, camera.quaternion, camera.scale)
+
+            camera.zoom = newSceneState.cameraZoom
+            domainXYZ = newSceneState.domainXYZ
+            updateXYZDomain('x', domainXYZ[0], domainXYZ[1])
+            updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
+            updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
+
+            let margin = { top: 20, right: 15, bottom: 30, left: 20 };
+            let width = 300 - margin.left - margin.right,
+                height = 40
+            var x = d3.scaleLinear()
+                .domain([0.0, 1.0])
+                .range([margin.left + width * domainXYZ[0], margin.left + width * domainXYZ[1] ]);
+            xBrush.call(xBrusher).call(xBrusher.move, x.range())
+
+            var y = d3.scaleLinear()
+                .domain([0.0, 1.0])
+                .range([margin.left + width * domainXYZ[2],margin.left +  width * domainXYZ[3] ]);
+            yBrush.call(yBrusher).call(yBrusher.move, y.range())
+
+            var z = d3.scaleLinear()
+                .domain([0.0, 1.0])
+                .range([margin.left + width * domainXYZ[4], margin.left + width * domainXYZ[5] ]);
+            zBrush.call(zBrusher).call(zBrusher.move, z.range())
+            
+
+            updateUniforms()
+        }
+    
+    }
+    
+    input.click();
+}    
+
+
+
+
+    // // load sceneState
+    // var file = document.getElementById('file').files[0];
+    // if(file){
+    //     var reader = new FileReader();
+
+    //     // Read file into memory as UTF-16
+    //     reader.readAsText(file, "UTF-16");
+
+    //     // Handle progress, success, and errors
+    //     reader.onload = loaded;
+    //     reader.onerror = errorHandler;
+
+    // }
+      
+    // function loaded(evt) {
+    //     // Obtain the read file data
+    //     var newSceneState = evt.target.result;
+        
+    //     simID = newSceneState.simID
+    //     volMaterial.uniforms["u_gasVisibility"].value  = newSceneState.gas
+    //     volMaterial.uniforms["u_dmVisibility"].value   = newSceneState.dm
+    //     volMaterial.uniforms["u_starVisibility"].value = newSceneState.stars
+ 
+    //     camera = newSceneState.camera
+
+    //     domainXYZ = newSceneState.domainXYZ
+    // }
+    
+    // function errorHandler(evt) {
+    //     if(evt.target.error.name == "NotReadableError") {
+    //         // The file could not be read
+    //     }
+    // }      
+// }
+
 function clearThree(obj) {
     /**
      * * removes THREE.js objects and materials from memory more efficiently than just by setting `scene = []`
@@ -1449,8 +1580,8 @@ function loadHaloCenters() {
         div = document.getElementById("galaxylist")
         str = '<div id="galaxy-list">'
         for (i = 0; i < Object.keys(galaxy_centers).length; i++) {
-            m = gridsize / (edges.right_edge[0] - edges.left_edge[0])
-            str += '<button onclick="goToPoint(' + galaxy_centers[i].x + ',' + galaxy_centers[i].y + ',' + galaxy_centers[i].z + ')">'
+            m = (edges.right_edge[0] - edges.left_edge[0])
+            str += '<button onclick="goToPoint(' + galaxy_centers[i].x*m + ',' + galaxy_centers[i].y*m + ',' + galaxy_centers[i].z*m + ')">'
             str += i + '<br>'
             str += "</p>"
         }
@@ -1501,7 +1632,7 @@ function goToPoint(x, y, z) {
 
 
     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
-    let width = 300,
+    let width = 300 - margin.left - margin.right,
         height = 40
     var x = d3.scaleLinear()
         .domain([0.0, 1.0])
