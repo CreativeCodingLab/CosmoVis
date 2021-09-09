@@ -20,6 +20,7 @@ from itertools import product
 from flask import Response
 from flask_socketio import SocketIO, emit, join_room, leave_room, close_room, rooms, disconnect
 import random
+import mpi4py
 from mpi4py import MPI
 import os.path
 from os import path
@@ -29,7 +30,6 @@ import sys,os
 import copy
 import pprint
 import psutil
-
 
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
@@ -42,12 +42,13 @@ app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-# socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
+socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 
-socketio = SocketIO(app,cors_allowed_origins="https://cosmovis.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+# socketio = SocketIO(app,cors_allowed_origins="https://cosmovis.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 # thread = None
 # thread_lock = Lock()
 multiprocessing.set_start_method('spawn')
+
 yt.enable_parallelism()
 sgs = []
 rpts = {}
@@ -65,7 +66,8 @@ except Exception as e:
     print(exc_type, fname, exc_tb.tb_lineno) 
 
 try:
-    EAGLE_25Mpc = yt.load('static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    #EAGLE_25Mpc = yt.load('static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_25Mpc = yt.load('/cv-vol/EAGLE25_z0_0/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
     EAGLE_25Mpc_ad = EAGLE_25Mpc.all_data()
 except Exception as e:
     print('error: '+ str( e ))
@@ -74,7 +76,8 @@ except Exception as e:
     print(exc_type, fname, exc_tb.tb_lineno) 
 
 try:
-    EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    # EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_100Mpc = yt.load('/cv-vol/EAGLE100_z0_0/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
     EAGLE_100Mpc_ad = EAGLE_100Mpc.all_data()
 except Exception as e:
     print('error: '+ str( e ))
@@ -84,6 +87,7 @@ except Exception as e:
 
 try:
     TNG100_snap030 = yt.load('static/data/TNG100_z2.3/snapshot/snap_030.0.hdf5')
+    # TNG100_snap030 = yt.load('/cv-vol/TNG100_z2_3/snap_030.0.hdf5')
     TNG100_snap030_ad = TNG100_snap030.all_data()
 except Exception as e:
     print('error: '+ str( e ))
@@ -93,6 +97,7 @@ except Exception as e:
 
 try:
     TNG100_snap099 = yt.load('static/data/TNG100_z0.0/snapshot/snap_099.0.hdf5')
+    # TNG100_snap099 = yt.load('/cv-vol/TNG100_z0.0/snap_099.0.hdf5')
     TNG100_snap099_ad = TNG100_snap099.all_data()
 except Exception as e:
     print('error: '+ str( e ))
@@ -132,9 +137,11 @@ def index():
 @socketio.on('getSkewerSimpleRay',namespace="/test")
 def handle_ray_selection(simID,idx, start, end):
     # try:
+   
     print(multiprocessing.cpu_count())
     sys.stdout.flush()
     socketio.start_background_task(handle_skewer_simple_ray,simID,idx, start, end)
+
         # th = multiprocessing.Process(target=handle_skewer_simple_ray(simID,idx, start, end))
         # th.start()
         # th.join()
@@ -177,19 +184,21 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         # print("loading" + str(fn))
         print(fn)
         ds = yt.load(fn)
+    socketio.sleep(0)
     ad = ds.all_data()
+    socketio.sleep(0)
     print(simID)
 
     socketio.sleep(0)
 
     sim_width = np.float(ds.domain_right_edge[0].in_units('Mpc') - ds.domain_left_edge[0].in_units('Mpc'))
 
-    print(ds.domain_right_edge)
+    # print(ds.domain_right_edge)
 
     ray_start = np.float_(start)
     ray_end   = np.float_(end)
-    print('ray start: ' + str(ray_start))
-    print('ray end  : ' + str(ray_end))
+    # print('ray start: ' + str(ray_start))
+    # print('ray end  : ' + str(ray_end))
 
     ray_start = ds.arr(ray_start/sim_width * np.float(ds.domain_right_edge[0]), 'code_length') #list(np.float_(start))
     ray_end   = ds.arr(ray_end/sim_width * np.float(ds.domain_right_edge[0]), 'code_length')   #list(np.float_(end))
@@ -197,20 +206,27 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     # ray_start = ds.arr(ray_start, 'Mpc')/sim_width #list(np.float_(start))
     # ray_end   = ds.arr(ray_end, 'Mpc')/sim_width  #list(np.float_(end))
 
-    # print(ray_start.in_units('Mpc'))
-    # print(ray_end.in_units('Mpc'))
+    print(ray_start.in_units('Mpc'))
+    print(ray_end.in_units('Mpc'))
     line_list = ['H', 'C', 'N', 'O', 'Mg']
     socketio.sleep(0)
     # This LightRay object is a yt dataset of a 1D data structure representing the skewer path as it traverses the dataset. 
-    ray = trident.make_simple_ray(ds, start_position=ray_start,
-                               end_position=ray_end,
-                               data_filename="ray.h5",
-                               lines=line_list,
-                               ftype='gas',
-                               fields=[('PartType0','Entropy')])
+    if simID[:3] == 'Ref':
+        ray = trident.make_simple_ray(ds, start_position=ray_start,
+                                end_position=ray_end,
+                                data_filename="ray.h5",
+                                lines=line_list,
+                                ftype='gas',
+                                fields=[('PartType0','Entropy')])
+    elif simID[:3] == 'TNG':
+        ray = trident.make_simple_ray(ds, start_position=ray_start,
+                                end_position=ray_end,
+                                data_filename="ray.h5",
+                                lines=line_list)
+
     socketio.sleep(0)
     trident.add_ion_fields(ray, ions=['O VI', 'C IV', 'N', 'He I', 'He II', 'He III', 'O II', 'O III', 'O V', 'Ne III', 'Ne IV', 'Ne V', 'Ne VI', 'Ne VIII', 'Na I', 'Na IX', 'Mg X', 'Si II', 'Si III', 'Si IV', 'Si XII', 'S II', 'S III', 'S IV', 'S V', 'S VI', 'O IV'], ftype="PartType0")
-
+    socketio.sleep(0)
     # for field in ray.derived_field_list: print(field)
     # ('gas', 'l') -- the 1D location of the gas going from nearby (0) to faraway along the LightRay
     # convert to kpc
@@ -231,6 +247,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
 
     ## FULL RANGE VALUES
     ## used for graphing
+    socketio.sleep(0)
     try:
         H_I = (ray.r[('gas', 'H_p0_number_density')] * dl_cm).tolist()
         i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
@@ -243,6 +260,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
     
+    socketio.sleep(0)
     try:
         H_II   = (ray.r[('gas', 'H_p1_number_density')]   * dl_cm).tolist()
         i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] *  dl_cm,dx)[1]
@@ -254,11 +272,10 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         C_I    = (ray.r[('gas', 'C_p0_number_density')]   * dl_cm).tolist()
         i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] *  dl_cm,dx)[1]
-
     except Exception as e:
         C_I    = []
         i_C_I  = []
@@ -266,7 +283,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         C_II   = (ray.r[('gas', 'C_p1_number_density')]   * dl_cm).tolist()
         i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] *  dl_cm,dx)[1]
@@ -278,7 +295,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         C_III  = (ray.r[('gas', 'C_p2_number_density')]   * dl_cm).tolist()
         i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] *  dl_cm,dx)[1]
@@ -290,7 +307,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         C_IV   = (ray.r[('gas', 'C_p3_number_density')]   * dl_cm).tolist()
         i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] *  dl_cm,dx)[1]
@@ -302,7 +319,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         C_V    = (ray.r[('gas', 'C_p4_number_density')]   * dl_cm).tolist()
         i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] *  dl_cm,dx)[1]
@@ -314,7 +331,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         C_VI   = (ray.r[('gas', 'C_p5_number_density')]   * dl_cm).tolist()
         i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] *  dl_cm,dx)[1]
@@ -326,7 +343,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         He_I   = (ray.r[('gas', 'He_p0_number_density')]  * dl_cm).tolist()
         i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
@@ -338,7 +355,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         He_II  = (ray.r[('gas', 'He_p1_number_density')]  * dl_cm).tolist()
         i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
@@ -350,7 +367,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         He_III = (ray.r[('gas', 'He_p2_number_density')]  * dl_cm).tolist()
         i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
@@ -362,7 +379,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Mg_I   = (ray.r[('gas', 'Mg_p0_number_density')]  * dl_cm).tolist()
         i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
@@ -374,7 +391,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Mg_II  = (ray.r[('gas', 'Mg_p1_number_density')]  * dl_cm).tolist()
         i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
@@ -386,7 +403,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Mg_X   = (ray.r[('gas', 'Mg_p9_number_density')]  * dl_cm).tolist()
         i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
@@ -398,7 +415,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         N_II   = (ray.r[('gas', 'N_p1_number_density')]   * dl_cm).tolist()
         i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] *  dl_cm,dx)[1]
@@ -410,7 +427,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         N_III  = (ray.r[('gas', 'N_p2_number_density')]   * dl_cm).tolist()
         i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] *  dl_cm,dx)[1]
@@ -422,7 +439,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         N_IV   = (ray.r[('gas', 'N_p3_number_density')]   * dl_cm).tolist()
         i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] *  dl_cm,dx)[1]
@@ -434,7 +451,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         N_V    = (ray.r[('gas', 'N_p4_number_density')]   * dl_cm).tolist()
         i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] *  dl_cm,dx)[1]
@@ -446,7 +463,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         N_VI   = (ray.r[('gas', 'N_p5_number_density')]   * dl_cm).tolist()
         i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] *  dl_cm,dx)[1]
@@ -457,7 +474,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         N_VII  = (ray.r[('gas', 'N_p6_number_density')]   * dl_cm).tolist()
         i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] *  dl_cm,dx)[1]
@@ -469,7 +486,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Na_I   = (ray.r[('gas', 'Na_p0_number_density')]  * dl_cm).tolist()
         i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
@@ -481,7 +498,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Na_IX  = (ray.r[('gas', 'Na_p8_number_density')]  * dl_cm).tolist()
         i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
@@ -493,7 +510,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Ne_III = (ray.r[('gas', 'Ne_p2_number_density')]  * dl_cm).tolist()
         i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
@@ -505,7 +522,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Ne_IV  = (ray.r[('gas', 'Ne_p3_number_density')]  * dl_cm).tolist()
         i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
@@ -516,7 +533,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Ne_V   = (ray.r[('gas', 'Ne_p4_number_density')]  * dl_cm).tolist()
         i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
@@ -527,7 +544,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Ne_VI  = (ray.r[('gas', 'Ne_p5_number_density')]  * dl_cm).tolist()
         i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
@@ -538,7 +555,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Ne_VIII= (ray.r[('gas', 'Ne_p7_number_density')]  * dl_cm).tolist()
         i_Ne_VIII=interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
@@ -549,7 +566,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_I    = (ray.r[('gas', 'O_p0_number_density')]   * dl_cm).tolist()
         i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] *  dl_cm,dx)[1]
@@ -560,7 +577,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_II   = (ray.r[('gas', 'O_p1_number_density')]   * dl_cm).tolist()
         i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] *  dl_cm,dx)[1]
@@ -571,7 +588,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_III  = (ray.r[('gas', 'O_p2_number_density')]   * dl_cm).tolist()
         i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] *  dl_cm,dx)[1]
@@ -582,7 +599,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_IV   = (ray.r[('gas', 'O_p3_number_density')]   * dl_cm).tolist()
         i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] *  dl_cm,dx)[1]
@@ -593,7 +610,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_V    = (ray.r[('gas', 'O_p4_number_density')]   * dl_cm).tolist()
         i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] *  dl_cm,dx)[1]
@@ -604,7 +621,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_VI   = (ray.r[('gas', 'O_p5_number_density')]   * dl_cm).tolist()
         i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] *  dl_cm,dx)[1]
@@ -615,7 +632,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_VII  = (ray.r[('gas', 'O_p6_number_density')]   * dl_cm).tolist()
         i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] *  dl_cm,dx)[1]
@@ -626,7 +643,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         O_VIII = (ray.r[('gas', 'O_p7_number_density')]   * dl_cm).tolist()
         i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] *  dl_cm,dx)[1]
@@ -637,7 +654,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         S_II   = (ray.r[('gas', 'S_p1_number_density')]   * dl_cm).tolist()
         i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] *  dl_cm,dx)[1]
@@ -648,7 +665,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         S_III  = (ray.r[('gas', 'S_p2_number_density')]   * dl_cm).tolist()
         i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] *  dl_cm,dx)[1]
@@ -659,7 +676,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         S_IV   = (ray.r[('gas', 'S_p3_number_density')]   * dl_cm).tolist()
         i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] *  dl_cm,dx)[1]
@@ -670,7 +687,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         S_V    = (ray.r[('gas', 'S_p4_number_density')]   * dl_cm).tolist()
         i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] *  dl_cm,dx)[1]
@@ -681,7 +698,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         S_VI   = (ray.r[('gas', 'S_p5_number_density')]   * dl_cm).tolist()
         i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] *  dl_cm,dx)[1]
@@ -692,7 +709,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Si_II  = (ray.r[('gas', 'Si_p1_number_density')]  * dl_cm).tolist()
         i_Si_II = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
@@ -703,7 +720,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Si_III = (ray.r[('gas', 'Si_p2_number_density')]  * dl_cm).tolist()
         i_Si_III= interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
@@ -714,7 +731,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Si_IV  = (ray.r[('gas', 'Si_p3_number_density')]  * dl_cm).tolist()
         i_Si_IV = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
@@ -725,7 +742,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-    
+    socketio.sleep(0)
     try:
         Si_XII = (ray.r[('gas', 'Si_p11_number_density')] * dl_cm).tolist()
         i_Si_XII= interpol8(l,ray.r[('gas', 'Si_p11_number_density')] *dl_cm,dx)[1]
@@ -736,13 +753,18 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno) 
-
+    
     finally:
+        socketio.sleep(0)
         log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
         density     = (10**log_density).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
         try:
-            entropy   = (ray.r[('gas', 'Entropy')]).tolist()
-            i_entropy = interpol8(l,ray.r[('gas', 'Entropy')],dx)[1]
+            if simID[:3] == 'Ref':
+                entropy   = (ray.r[('gas', 'Entropy')]).tolist()
+                i_entropy = interpol8(l,ray.r[('gas', 'Entropy')],dx)[1]
+            elif simID[:3] == 'TNG':
+                entropy   = (ray.r[('gas', 'entropy')]).tolist()
+                i_entropy = interpol8(l,ray.r[('gas', 'entropy')],dx)[1]
         except Exception as e:
             entropy = []
             i_entropy = []
@@ -751,6 +773,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print(exc_type, fname, exc_tb.tb_lineno) 
 
+        socketio.sleep(0)
         metallicity = (ray.r[('gas', 'metallicity')].to('Zsun')).tolist()
         temperature = (ray.r[('gas', 'temperature')]).tolist()
 
@@ -918,13 +941,18 @@ def handle_ray_selection_background(simID,idx,start,end):
     print(simID)
 
     print('received args: ' + str(start) + str(end))
-    ray_start = list(np.float_(start))
-    ray_end = list(np.float_(end))
-    ray_start = ds.arr(ray_start, 'Mpc') #list(np.float_(start))
-    ray_end   = ds.arr(ray_end, 'Mpc')
+    ray_start = np.float_(start)
+    ray_end = np.float_(end)
 
-    print(ray_start)
-    print(ray_end)
+    sim_width = np.float(ds.domain_right_edge[0].in_units('Mpc') - ds.domain_left_edge[0].in_units('Mpc'))
+
+    # ray_start = ds.arr(ray_start, 'Mpc') #list(np.float_(start))
+    # ray_end   = ds.arr(ray_end, 'Mpc')
+    ray_start = ds.arr(ray_start/sim_width * np.float(ds.domain_right_edge[0]), 'code_length') #list(np.float_(start))
+    ray_end   = ds.arr(ray_end/sim_width * np.float(ds.domain_right_edge[0]), 'code_length')   #list(np.float_(end))
+
+    print(ray_start.in_units('Mpc'))
+    print(ray_end.in_units('Mpc'))
     line_list = ['H', 'C', 'N', 'O', 'Mg']
 
     instrument = 'COS'
@@ -1116,4 +1144,4 @@ def test_connect():
 if __name__ == '__main__':
     # socketio.run(app, debug=False)
     # socketio.run(app, host='0.0.0.0', debug=True)
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)

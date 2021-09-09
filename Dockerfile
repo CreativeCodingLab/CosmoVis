@@ -27,7 +27,6 @@ COPY scripts/cosmovis.service /etc/systemd/system/
 RUN systemctl daemon-reload
 RUN systemctl enable cosmovis
 RUN systemctl restart nginx
-RUN systemctl start cosmovis
 
 
 

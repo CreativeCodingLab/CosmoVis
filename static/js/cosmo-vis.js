@@ -2038,8 +2038,8 @@ function retryLine(idx) {
 }
 
 function requestSimpleLineData(idx) {
-    pt1 = scalePointCoords(skewers[idx].point1)
-    pt2 = scalePointCoords(skewers[idx].point2)
+    pt1 = scalePointCoords(skewers[idx].point1.clone())
+    pt2 = scalePointCoords(skewers[idx].point2.clone())
 
     buttonId = 'simple-line-request-button-' + idx + ''
     div = document.getElementById(buttonId)
@@ -2405,8 +2405,8 @@ function requestSpectrum(idx) {
      * ? pt values are scaled since the voxelization process distorts the physical distances
      */
 
-    pt1 = scalePointCoords(skewers[idx].point1)
-    pt2 = scalePointCoords(skewers[idx].point2)
+    pt1 = scalePointCoords(skewers[idx].point1.clone())
+    pt2 = scalePointCoords(skewers[idx].point2.clone())
 
     buttonId = 'request-button-' + idx + ''
     div = document.getElementById(buttonId)
@@ -2444,8 +2444,8 @@ function plotSyntheticSpectrum(points) {
         data[i] = { 'lambda': points.lambda[i], 'flux': points.flux[i] }
     }
 
-
-    skewers[points.index] = ({ 'point1': { 'x': points.start[0], 'y': points.start[1], 'z': points.start[2] }, 'point2': { 'x': points.end[0], 'y': points.end[1], 'z': points.end[2] }, 'lambda': points.lambda, 'flux': points.flux })
+    skewers[points.index] = ({ 'point1': skewers[points.index].point1.clone() , 'point2': skewers[points.index].point2.clone(), 'lambda': points.lambda, 'flux': points.flux })
+    // skewers[points.index] = ({ 'point1': { 'x': points.start[0], 'y': points.start[1], 'z': points.start[2] }, 'point2': { 'x': points.end[0], 'y': points.end[1], 'z': points.end[2] }, 'lambda': points.lambda, 'flux': points.flux })
     skewerData[points.index] = ([points, data])
     domainLambda = d3.extent(points.lambda)
     xScale = d3.scaleLinear()
