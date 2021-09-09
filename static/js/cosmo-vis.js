@@ -897,10 +897,10 @@ function loadGas(size, attr, resolution_bool) {
                 }
                 if (attr == "Carbon") {
                     min = 0.0
-                    minval.value = 0.0
-                    max = 0.007
-                    maxval.value = 0.007
-                    gasUnpackDomain = [0.0, 0.007]
+                    minval.value = 0.0001
+                    max = 0.01
+                    maxval.value = 0.001
+                    gasUnpackDomain = [0.0, 0.01]
                 }
                 if (attr == "Density") {
                     min = -33.0
@@ -917,18 +917,18 @@ function loadGas(size, attr, resolution_bool) {
                     gasUnpackDomain = [1.0, 6.0]
                 }
                 if (attr == "Metallicity") {
-                    min = -3.0
-                    minval.value = -3.0
+                    min = -5.0
+                    minval.value = -5.0
                     max = 1.0
-                    maxval.value = -1.0
-                    gasUnpackDomain = [-3.0, 1.0]
+                    maxval.value = 0
+                    gasUnpackDomain = [-5.0, 1.0]
                 }
                 if (attr == "Oxygen") {
                     min = 0.0
-                    minval.value = 0.0
-                    max = 0.02
-                    maxval.value = 0.02
-                    gasUnpackDomain = [0.0, 0.02]
+                    minval.value = 0.0001
+                    max = 0.01
+                    maxval.value = 0.001
+                    gasUnpackDomain = [0.0, 0.01]
                 }
 
             } else if (simID == 'TNG100_z0.0') {
