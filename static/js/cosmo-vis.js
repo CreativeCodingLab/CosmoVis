@@ -2721,14 +2721,88 @@ function downloadSpectra() {
     a.click();
 }
 
-function createGalaxyFilteringBrushes(attr) {
+
+//old:
+// function createGalaxyFilteringBrushes(attr) {
+//     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
+//     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
+
+//     var check = document.createElement("INPUT");
+//     check.setAttribute("type", "checkbox");
+//     document.getElementById(attr + 'galaxy-brush-label').prepend(check)
+
+
+//     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
+//     let width = 300,
+//         height = 40
+//     let axis = svg.append('g');
+//     let brush = svg.append("g")
+//         .attr("class", "brush")
+
+//     var attrScale = d3.scaleLinear()
+//         .domain([0.0, 1.0])
+//         .range([margin.left, width]);
+
+//     galaxyBrushResize()
+//     drawGalaxyAttrBrush(attr)
+
+//     function galaxyBrushResize() {
+//         var w = width - margin.right;
+//         var h = 60;
+
+//         var aspect = w / h;
+//         var vw = width;
+//         var vh = vw / aspect;
+
+//         width = vw;
+//         height = vh - margin.bottom;
+
+//         svg
+//             .attr('width', w).attr('height', h)
+//             .attr("viewBox", "0 0 " + vw + " " + vh)
+
+//         attrScale.range([margin.left, width - margin.right]);
+//         axis.attr('transform', 'translate(0,' + height + ')')
+//             .call(d3.axisBottom(attrScale).ticks(6))
+//     }
+
+//     function drawGalaxyAttrBrush(attr) {
+//         if (!attr) { return; }
+//         galaxyAttrBrush = brush
+//         galaxyAttrBrusher = d3.brushX()
+//             .extent([
+//                 [margin.left, 0],
+//                 [width - margin.right, height]
+//             ])
+//             .on("brush end", galaxyAttrBrushed);
+//         galaxyAttrBrush.call(galaxyAttrBrusher)
+//             .call(galaxyAttrBrusher.move, attrScale.range());
+//     }
+
+//     function galaxyAttrBrushed() {
+
+//         var s = d3.event.selection || attrScale.range();
+//         ret = s.map(attrScale.invert, attrScale);
+//         // console.log(s)
+//         // console.log(ret)
+
+//         if (ret[0] !== ret[1]) {
+//             // updateXYZDomain(xyz,ret[0],ret[1])
+//         }
+//     }
+// } 
+
+
+// FH version:
+
+async function createGalaxyFilteringBrushes(attr,field) {
+        
     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
 
     var check = document.createElement("INPUT");
     check.setAttribute("type", "checkbox");
     document.getElementById(attr + 'galaxy-brush-label').prepend(check)
-
 
     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
     let width = 300,
@@ -2737,8 +2811,46 @@ function createGalaxyFilteringBrushes(attr) {
     let brush = svg.append("g")
         .attr("class", "brush")
 
-    var attrScale = d3.scaleLinear()
-        .domain([0.0, 1.0])
+    let minAttrScale, maxAttrScale
+
+    let haloids, galids, quantity
+
+    const data = await d3.json('static/data/eagle_z0_12_ms7.json')
+
+    console.log(data,'json response')
+
+    if (data) {
+
+//         console.log('eagle data')
+//         console.log(data)
+
+        // set the min and max:
+        const data_length = data.length
+        var max = 0
+        var min = data[0][field]
+        for (i = 0; i < data_length; i++) {
+            val = data[i][field]
+            max = val > max ? val : max
+            min = val < min ? val : min  // === 0 ? val : min_ms
+    }
+        minAttrScale = min === 0 ? 0.0001 : min
+        maxAttrScale = max
+
+        // lists of quantities:
+
+        haloids = data.map(d => d.haloID);
+        galids = data.map(d => d.galID)
+        quantity = data.map(d => d[field])
+
+}
+
+    console.log(minAttrScale,maxAttrScale,'these are the attr')
+    console.log(haloids,galids,quantity,'map, filter, etc.')
+
+//scale set by data:
+    var attrScale = d3.scaleLog()
+        // .domain([10**7.0,10**12.5])
+        .domain([minAttrScale,maxAttrScale])
         .range([margin.left, width]);
 
     galaxyBrushResize()
@@ -2779,16 +2891,44 @@ function createGalaxyFilteringBrushes(attr) {
 
     function galaxyAttrBrushed() {
 
-        var s = d3.event.selection || attrScale.range();
-        ret = s.map(attrScale.invert, attrScale);
-        // console.log(s)
-        // console.log(ret)
+        console.log('attrbrushed function')
 
-        if (ret[0] !== ret[1]) {
-            // updateXYZDomain(xyz,ret[0],ret[1])
+        if (check.checked) {
+            console.log("checked");
+         
+            var s = d3.event.selection || attrScale.range();
+
+            ret = s.map(attrScale.invert, attrScale);
+
+            if (ret[0] !== ret[1]) {
+                // updateXYZDomain('x',ret[0],ret[1])
+
+                var filt = data.filter(d => d[field] >= ret[0] && d[field] <= ret[1]);
+
+                var filteredGalIds = filt.map(d => d.galID)
+                var filteredHaloIds = filt.map(d => d.haloID)
+                var filteredProps = filt.map(d => d[field])
+
+                console.log('filtered properties:',filteredProps)
+
+                galIds_doc = document.getElementById('galid')
+                galIds_doc.innerHTML = filteredGalIds.join("<br>")
+            
+                haloIds_doc = document.getElementById('haloid')
+                haloIds_doc.innerHTML = filteredHaloIds.join("<br>")
+
+                prop_doc = document.getElementById(field)
+                prop_doc.innerHTML = filteredProps.join("<br>")
+
+            }
+        }
+            else {
+                console.log("not checked")
         }
     }
+
 }
+
 
 function createXYZBrush(xyz) {
     // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js 
@@ -3158,8 +3298,8 @@ function init() {
 
     camPos = camera.position
 
-    createGalaxyFilteringBrushes('sfr')
-    createGalaxyFilteringBrushes('mass')
+    createGalaxyFilteringBrushes('sfr','sfr)
+//     createGalaxyFilteringBrushes('mass')
 
     x = document.getElementById('x-depth-brush')
     x.addEventListener('change', updateUniforms, false)
