@@ -176,8 +176,8 @@ def compressVoxelData(voxelized_data,size,particle_type,attribute):
                 min_val = 2.0
                 max_val = 7.5
             if attribute is 'Carbon':
-                min_val = 0.0
-                max_val = 0.007
+                min_val = 0.0001
+                max_val = 0.001
             if attribute is 'Density':
                 min_val = -33.0
                 max_val = -27.0
@@ -185,11 +185,11 @@ def compressVoxelData(voxelized_data,size,particle_type,attribute):
                 min_val = 1.0
                 max_val = 6.0
             if attribute is 'Metallicity':
-                min_val = -15.0
+                min_val = -5.0
                 max_val = 1.0
             if attribute is 'Oxygen':
-                min_val = 0.0
-                max_val = 0.02
+                min_val = 0.0001
+                max_val = 0.001
             if attribute is 'H_number_density':
                 min_val = -8.5
                 max_val = -3.0
@@ -233,7 +233,7 @@ def exportStars(ds,percent,sim_type):
                                     round(float(ad['PartType4', 'Coordinates'][j][1].in_units('Mpc')),4),   #y
                                     round(float(ad['PartType4', 'Coordinates'][j][2].in_units('Mpc')),4),   #z
                                     float(ad['PartType4', 'GroupNumber'][j]), # group ID
-                                    round(float(np.log10(ad['PartType4', 'Mass'][j].in_units('Msun'))),2) # stellar mass
+                                    round(float(ad['PartType4', 'Mass'][j].in_units('Msun')),2) # stellar mass
                                 )
         if sim_type is 'TNG':
             star_particles[i] = (
@@ -241,7 +241,7 @@ def exportStars(ds,percent,sim_type):
                                     round(float(ad['PartType4', 'Coordinates'][j][1].in_units('Mpc')),4),   #y
                                     round(float(ad['PartType4', 'Coordinates'][j][2].in_units('Mpc')),4),   #z
                                     float(ad['PartType4', 'ParticleIDs'][j]), # group ID
-                                    round(float(np.log10(ad['PartType4', 'Masses'][j].in_units('Msun'))),2) # stellar mass
+                                    round(float(ad['PartType4', 'Masses'][j].in_units('Msun')),2) # stellar mass
                                 )
     #         'particleID' : int(ad['PartType4', 'ParticleIDs'][i]),
             # 'x' : round(float(ad['PartType4', 'Coordinates'][j][0]),2),
