@@ -923,21 +923,24 @@
         <div id="galaxylist" class="container">
             <!-- https://www.w3schools.com/howto/howto_js_sort_table.asp -->
             <table>
-                <caption>galaxy query results</caption>
+               <caption>galaxy query results</caption>
                 <thead>
                     <tr>
-                        <td>image</td>
-                        <td>mass</td>
-                        <td>sfr</td>
-                        <td> ... </td>
+                        <td> Galaxy ID</td> 
+                        <td> Halo ID</td> 
+                        <td> Stellar Mass</td>
+                        <td> Halo Mass </td>
+                        <td> SFR</td>
+
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>img goes here</td>
-                        <td>mass goes here</td>
-                        <td>sfr goes here</td>
-                        <td> ... </td>
+                    <tr id='galdata'>
+                        <td id='galid'></td>
+                        <td id='haloid'></td>
+                        <td id='mstar'></td>
+                        <td id='mhalo200'></td>
+                        <td id='sfr'></td> 
                     </tr>
                 </tbody>
             </table>
