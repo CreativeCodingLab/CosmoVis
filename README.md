@@ -52,4 +52,4 @@ Alternatively, one can use the included requirements.txt file to install Python 
 - If the webpage does not load, try doing a hard refresh of the page `(cmd+shft+R on Mac or ctrl+shft+r on Windows)` as it may take a moment to first display.
 
 ## Usage
-- CosmoVis enables real time volume rendering. Try it out by clicking and dragging within the visualization.
+- CosmoVis enables real time volume rendering in the web browser. Try it out by clicking and dragging within the visualization. Use your mouse or trackpad scrolling to zoom in and out of the simulation.
