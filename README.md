@@ -42,6 +42,9 @@ To finish installing Trident, open Python in the terminal and import Trident.
   
     > trident.verify()
 
+Alternatively, one can use the included requirements.txt file to install Python dependencies:
+	`pip install -r requirements.txt`
+
 ## Running CosmoVis
 - In the terminal, cd into the CosmoVis folder and type `python cosmo-serv.py`
 - Once the application starts, wait for the data to finish loading and in the web browser go to `localhost:5000`
