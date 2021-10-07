@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=root
 Group=www-data
-WorkingDirectory=/cv-docker/
+WorkingDirectory=/cv-docker/CosmoVis
 ExecStartPre=/bin/bash update.sh
 ExecStart=/usr/local/bin/gunicorn -t 2400 --preload --graceful-timeout 2400 --workers 12 -k eventlet --log-level debug --bind unix:cosmovis.sock -m 007 cosmo-serv:app
 
