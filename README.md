@@ -5,7 +5,7 @@
 We introduce CosmoVis, an open-source web-based astrophysics visualization tool that facilitates the interactive analysis
 of large-scale hydrodynamic cosmological simulation datasets. CosmoVis enables astrophysicists as well as citizen scientists to share and explore these datasets, which are often comprised of complex, unwieldy data structures greater that 1 TB in size. Our tool visualizes a range of salient gas, dark matter, and stellar attributes extracted from the source simulations, and enables further analysis of the data using observational analogues, specifically absorption line spectroscopy. CosmoVis introduces novel analysis functionality through the use of **virtual skewers** that define a sightline through the volume to quickly obtain detailed diagnostics about the gaseous medium along the path of the skewer, including synthetic spectra that can be used to make direct comparisons with observational datasets. We identify the main analysis tasks that CosmoVis enables, and evaluate the software by presenting a series of contemporary scientific use cases that utilize CosmoVis. Additionally, we conduct a series of task-based interviews with astrophysicists indicating the usefulness of CosmoVis for a range of data analysis tasks.
 
-A live demo can be found here: [CosmoVis](http://50.18.20.92:8080/)
+A live demo can be found here: [CosmoVis](http://cosmovis.nrp-nautilus.io)
 
 ## Installation Instructions
 CosmoVis can be configured to run locally or remotely on a server, but the most simple way is to have it run locally. Hosting has the benefit of being able to access the visualization from other devices, and only takes a few extra steps to configure. CosmoVis has been tested on Windows, Linux and Mac.
@@ -42,9 +42,15 @@ To finish installing Trident, open Python in the terminal and import Trident.
   
     > trident.verify()
 
+Alternatively, one can use the included requirements.txt file to install Python dependencies:
+	
+	`pip install -r requirements.txt`
+
 ## Running CosmoVis
 - In the terminal, cd into the CosmoVis folder and type `python cosmo-serv.py`
 - Once the application starts, wait for the data to finish loading and in the web browser go to `localhost:5000`
 - If the webpage does not load, try doing a hard refresh of the page `(cmd+shft+R on Mac or ctrl+shft+r on Windows)` as it may take a moment to first display.
 
-
+## Usage
+- CosmoVis enables real time volume rendering in the web browser. Try it out by clicking and dragging within the visualization. Use your mouse or trackpad scrolling to zoom in and out of the simulation.
+- On the right, click on the "data selection" to open a panel that allows for switching between simulations, changing the resolution, and slicing the volume.
