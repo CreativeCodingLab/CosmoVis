@@ -21,17 +21,20 @@ RUN pip install -r requirements.txt
 COPY hm2012_hr.h5.gz ./
 RUN gzip hm2012_hr.h5.gz
 
-COPY scripts/config.tri $HOME/.trident
+RUN mkdir ~/.trident
+COPY scripts/config.tri ~/.trident
+RUN mv hm2012_hr ~/.trident
+
 COPY scripts/default /etc/nginx/sites-enabled/
 COPY scripts/cosmovis.service /etc/systemd/system/
+
+RUN git clone https://github.com/CreativeCodingLab/CosmoVis.git
+WORKDIR /cv-docker
+
+RUN systemctl restart nginx
 RUN systemctl daemon-reload
 RUN systemctl enable cosmovis
-RUN systemctl restart nginx
-
-
-
-COPY . /cv-docker
-WORKDIR /cv-docker
+RUN systemctl start cosmovis.service
 
 EXPOSE 5000
 

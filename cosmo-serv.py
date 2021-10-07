@@ -3,8 +3,9 @@ eventlet.monkey_patch()
 
 # app.py
 import multiprocessing
-from threading import Lock
+import threading
 from flask import Flask, jsonify, request, render_template, session, copy_current_request_context
+from flask_compress import Compress
 import yt
 from yt import YTArray
 import trident
@@ -30,6 +31,7 @@ import sys,os
 import copy
 import pprint
 import psutil
+import time
 
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
@@ -42,7 +44,8 @@ app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-socketio = SocketIO(app, async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+Compress(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
 
 # socketio = SocketIO(app,cors_allowed_origins="https://cosmovis.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 # thread = None
@@ -129,6 +132,15 @@ def interpol8(oldx,oldy,newdx):
 
 # host the index.html web page
 # default is localhost:5000
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if request.headers['Content-Type'] == 'application/json':
+        info = json.dumps(request.json)
+        print(info)
+        threading.Thread(target=lambda: [time.sleep(2), os.system('systemctl restart cosmovis.service')]).start()
+        return info
+
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)

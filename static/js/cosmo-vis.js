@@ -93,6 +93,21 @@ var galaxy_centers
      */
 const times = [];
 let fps;
+
+function refreshLoop() {
+  window.requestAnimationFrame(() => {
+    const now = performance.now();
+    while (times.length > 0 && times[0] <= now - 1000) {
+      times.shift();
+    }
+    times.push(now);
+    fps = times.length;
+    refreshLoop();
+  });
+}
+
+refreshLoop();
+
 var camPos;
 var oldSize
 var oldPos
@@ -3095,9 +3110,9 @@ function init() {
     controls.update()
     initColor();
 
-    window.addEventListener('mousewheel', function(e) {
+    window.addEventListener('wheel', function(e) {
         // e.preventDefault();
-        // console.log(e)
+        console.log(e)
         //scrolling
         if (!container_hover) {
             camera.zoom -= e.deltaY / 300
