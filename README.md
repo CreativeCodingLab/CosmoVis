@@ -53,3 +53,4 @@ Alternatively, one can use the included requirements.txt file to install Python 
 
 ## Usage
 - CosmoVis enables real time volume rendering in the web browser. Try it out by clicking and dragging within the visualization. Use your mouse or trackpad scrolling to zoom in and out of the simulation.
+- On the right, click on the "data selection" to open a panel that allows for switching between simulations, changing the resolution, and slicing the volume.
