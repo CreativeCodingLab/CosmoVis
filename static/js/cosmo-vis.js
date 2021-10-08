@@ -107,6 +107,8 @@ let renderRequested = false
 
 // FH loading galaxy query data globally
 
+// FH loading galaxy query data globally
+
 var galQueryData
 
 fetch('static/data/eagle12_z0_ms7.json')
@@ -2739,7 +2741,7 @@ var galaxyBrushHistory = {}
 
 
 //  .........FH create galaxy brush function.........
-async function createGalaxyFilteringBrushes(attr,field) {
+async function createGalaxyFilteringBrushes(attr,field,simID='RefL0012N0188') {
 
     console.log('createGalaxyFilteringBrushes function')
 
@@ -2753,11 +2755,9 @@ async function createGalaxyFilteringBrushes(attr,field) {
     // checkState determines if checkbox is clicked
     check.addEventListener('change', e => {
     galaxyBrushHistory[attr].checkState = e.target.checked
-    console.log('new check',galaxyBrushHistory)
-    // console.log('new check 2',attr)
+//     console.log('new check',galaxyBrushHistory)
     filterGalaxies()
     })
-
 
     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
     let width = 300,
@@ -2770,9 +2770,9 @@ async function createGalaxyFilteringBrushes(attr,field) {
 
     let haloids, galids, quantity
 
-    const data = await d3.json('static/data/eagle12_z0_ms7.json')
+    if (simID == 'RefL0012N0188') { // here is where we can add options to view galaxies in other sim volumes
 
-    // console.log(data,'json response')
+    const data = await d3.json('static/data/eagle12_z0_ms7.json')
 
     // var data = galQueryData.slice() //slice of galquerydata
 
@@ -2792,7 +2792,7 @@ async function createGalaxyFilteringBrushes(attr,field) {
         console.log(min,max,'min and max here')
         minAttrScale = min === 0 ? 0.0001 : min  // to prevent undefined values
         maxAttrScale = max
-
+}
 }
 
     console.log(minAttrScale,maxAttrScale,'these are the attr')
@@ -2871,11 +2871,11 @@ async function filterGalaxies() {
     window.addEventListener('dblclick', (e) => {
     updateXYZDomain('x',0.0,1.0) 
     updateXYZDomain('y',0.0,1.0) 
-    updateXYZDomain('z',0.0,1.0)    })
+    updateXYZDomain('z',0.0,1.0)    
+    })
 
     galIds_doc = document.getElementById('galid')
     haloIds_doc = document.getElementById('haloid')
-    // prop_doc.innerText = ''
 
     var filteredData = galQueryData.slice() //slice of galquerydata
 
@@ -2918,7 +2918,6 @@ async function filterGalaxies() {
         var filteredZ = filteredData.map(d => d['gal_z']) 
         var filteredrh = filteredData.map(d => d['rh']) 
 
-
         for (let i in filteredGalIds) {
 
             let anchor = document.createElement("a");
@@ -2928,8 +2927,6 @@ async function filterGalaxies() {
             let elem = document.createElement("li");
             elem.appendChild(anchor);
             galIds_doc.appendChild(elem);
-            // anchorsList.push(anchor)
-            // console.log('hey there',anchorsList)
 
         // takes you to galaxy whose ID you click on:
             anchor.addEventListener('click', (e) => {
@@ -2941,7 +2938,6 @@ async function filterGalaxies() {
         })
     }
 
-
         for (var i in filteredHaloIds) {
 
             var elem = document.createElement("li");
@@ -2952,7 +2948,7 @@ async function filterGalaxies() {
         for (var i in filteredProps) {
 
             var elem = document.createElement("li");
-            elem.innerText = parseFloat(filteredProps[i]).toExponential();
+            elem.innerText = Number.parseFloat(filteredProps[i]).toPrecision(3);
             prop_doc.appendChild(elem);
         }                
 
@@ -3330,6 +3326,7 @@ function init() {
 
     camPos = camera.position
 
+    // FH initializing these
     createGalaxyFilteringBrushes('sfr','sfr')
     createGalaxyFilteringBrushes('stellar mass','ms')
     createGalaxyFilteringBrushes('halo mass','mh')
