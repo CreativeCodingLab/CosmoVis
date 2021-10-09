@@ -1,8 +1,6 @@
 #!/bin/bash
-
-git fetch
-git reset origin/master --hard
-
-git pull
+cd /cv-vol/dev-repo/CosmoVis
+git-lfs fetch
+git-lfs pull
 
 systemctl daemon-reload

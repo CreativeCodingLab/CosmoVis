@@ -1,5 +1,5 @@
 eagleSqlTools==2.0.0
-eventlet>=0.31.0
+eventlet==0.25.0
 Flask==1.1.2
 flask_compress
 Flask-SocketIO==4.3.0

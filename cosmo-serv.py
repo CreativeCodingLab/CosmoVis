@@ -45,9 +45,9 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 Compress(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
+# socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
 
-# socketio = SocketIO(app,cors_allowed_origins="https://cosmovis.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+socketio = SocketIO(app,cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 # thread = None
 # thread_lock = Lock()
 multiprocessing.set_start_method('spawn')
@@ -69,8 +69,8 @@ except Exception as e:
     print(exc_type, fname, exc_tb.tb_lineno) 
 
 try:
-    #EAGLE_25Mpc = yt.load('static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
-    EAGLE_25Mpc = yt.load('/cv-vol/EAGLE25_z0_0/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_25Mpc = yt.load('static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    #EAGLE_25Mpc = yt.load('/cv-vol/EAGLE25_z0_0/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
     EAGLE_25Mpc_ad = EAGLE_25Mpc.all_data()
 except Exception as e:
     print('error: '+ str( e ))
@@ -79,8 +79,8 @@ except Exception as e:
     print(exc_type, fname, exc_tb.tb_lineno) 
 
 try:
-    # EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
-    EAGLE_100Mpc = yt.load('/cv-vol/EAGLE100_z0_0/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
+    # EAGLE_100Mpc = yt.load('/cv-vol/EAGLE100_z0_0/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
     EAGLE_100Mpc_ad = EAGLE_100Mpc.all_data()
 except Exception as e:
     print('error: '+ str( e ))

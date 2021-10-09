@@ -3313,7 +3313,7 @@ function init() {
 
     camPos = camera.position
 
-    createGalaxyFilteringBrushes('sfr','sfr)
+    createGalaxyFilteringBrushes('sfr','sfr')
 //     createGalaxyFilteringBrushes('mass')
 
     x = document.getElementById('x-depth-brush')
