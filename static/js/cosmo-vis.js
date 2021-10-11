@@ -120,6 +120,21 @@ let renderRequested = false
  * * GLOBAL FUNCTIONS 
  */
 
+// FH loading galaxy query data globally
+
+// FH loading galaxy query data globally
+
+var galQueryData
+
+fetch('static/data/eagle12_z0_ms7.json')
+.then(response => {
+   return response.json();
+})
+.then(data => {
+    galQueryData = data
+    console.log(galQueryData)}
+    );
+
 function storeSceneState() {
     sceneState = {}
     // simulation snapshot
@@ -2736,88 +2751,28 @@ function downloadSpectra() {
     a.click();
 }
 
-
-//old:
-// function createGalaxyFilteringBrushes(attr) {
-//     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
-//     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
-
-//     var check = document.createElement("INPUT");
-//     check.setAttribute("type", "checkbox");
-//     document.getElementById(attr + 'galaxy-brush-label').prepend(check)
+// FH galaxy brush history global object:
+var galaxyBrushHistory = {}
 
 
-//     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
-//     let width = 300,
-//         height = 40
-//     let axis = svg.append('g');
-//     let brush = svg.append("g")
-//         .attr("class", "brush")
+//  .........FH create galaxy brush function.........
+async function createGalaxyFilteringBrushes(attr,field,simID='RefL0012N0188') {
 
-//     var attrScale = d3.scaleLinear()
-//         .domain([0.0, 1.0])
-//         .range([margin.left, width]);
+    console.log('createGalaxyFilteringBrushes function')
 
-//     galaxyBrushResize()
-//     drawGalaxyAttrBrush(attr)
-
-//     function galaxyBrushResize() {
-//         var w = width - margin.right;
-//         var h = 60;
-
-//         var aspect = w / h;
-//         var vw = width;
-//         var vh = vw / aspect;
-
-//         width = vw;
-//         height = vh - margin.bottom;
-
-//         svg
-//             .attr('width', w).attr('height', h)
-//             .attr("viewBox", "0 0 " + vw + " " + vh)
-
-//         attrScale.range([margin.left, width - margin.right]);
-//         axis.attr('transform', 'translate(0,' + height + ')')
-//             .call(d3.axisBottom(attrScale).ticks(6))
-//     }
-
-//     function drawGalaxyAttrBrush(attr) {
-//         if (!attr) { return; }
-//         galaxyAttrBrush = brush
-//         galaxyAttrBrusher = d3.brushX()
-//             .extent([
-//                 [margin.left, 0],
-//                 [width - margin.right, height]
-//             ])
-//             .on("brush end", galaxyAttrBrushed);
-//         galaxyAttrBrush.call(galaxyAttrBrusher)
-//             .call(galaxyAttrBrusher.move, attrScale.range());
-//     }
-
-//     function galaxyAttrBrushed() {
-
-//         var s = d3.event.selection || attrScale.range();
-//         ret = s.map(attrScale.invert, attrScale);
-//         // console.log(s)
-//         // console.log(ret)
-
-//         if (ret[0] !== ret[1]) {
-//             // updateXYZDomain(xyz,ret[0],ret[1])
-//         }
-//     }
-// } 
-
-
-// FH version:
-
-async function createGalaxyFilteringBrushes(attr,field) {
-        
     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
 
     var check = document.createElement("INPUT");
     check.setAttribute("type", "checkbox");
     document.getElementById(attr + 'galaxy-brush-label').prepend(check)
+    
+    // checkState determines if checkbox is clicked
+    check.addEventListener('change', e => {
+    galaxyBrushHistory[attr].checkState = e.target.checked
+//     console.log('new check',galaxyBrushHistory)
+    filterGalaxies()
+    })
 
     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
     let width = 300,
@@ -2830,14 +2785,15 @@ async function createGalaxyFilteringBrushes(attr,field) {
 
     let haloids, galids, quantity
 
-    const data = await d3.json('static/data/eagle_z0_12_ms7.json')
+    if (simID == 'RefL0012N0188') { // here is where we can add options to view galaxies in other sim volumes
 
-    console.log(data,'json response')
+    const data = await d3.json('static/data/eagle12_z0_ms7.json')
+
+    // var data = galQueryData.slice() //slice of galquerydata
 
     if (data) {
 
-//         console.log('eagle data')
-//         console.log(data)
+        console.log('eagle data',data)
 
         // set the min and max:
         const data_length = data.length
@@ -2848,25 +2804,21 @@ async function createGalaxyFilteringBrushes(attr,field) {
             max = val > max ? val : max
             min = val < min ? val : min  // === 0 ? val : min_ms
     }
-        minAttrScale = min === 0 ? 0.0001 : min
+        console.log(min,max,'min and max here')
+        minAttrScale = min === 0 ? 0.0001 : min  // to prevent undefined values
         maxAttrScale = max
-
-        // lists of quantities:
-
-        haloids = data.map(d => d.haloID);
-        galids = data.map(d => d.galID)
-        quantity = data.map(d => d[field])
-
+}
 }
 
     console.log(minAttrScale,maxAttrScale,'these are the attr')
     console.log(haloids,galids,quantity,'map, filter, etc.')
 
-//scale set by data:
     var attrScale = d3.scaleLog()
-        // .domain([10**7.0,10**12.5])
         .domain([minAttrScale,maxAttrScale])
         .range([margin.left, width]);
+
+    galaxyBrushHistory[attr] = {
+    ranges:[minAttrScale,maxAttrScale], fieldName:field}
 
     galaxyBrushResize()
     drawGalaxyAttrBrush(attr)
@@ -2907,38 +2859,114 @@ async function createGalaxyFilteringBrushes(attr,field) {
     function galaxyAttrBrushed() {
 
         console.log('attrbrushed function')
-
-        if (check.checked) {
-            console.log("checked");
-         
-            var s = d3.event.selection || attrScale.range();
-
-            ret = s.map(attrScale.invert, attrScale);
-
-            if (ret[0] !== ret[1]) {
-                // updateXYZDomain('x',ret[0],ret[1])
-
-                var filt = data.filter(d => d[field] >= ret[0] && d[field] <= ret[1]);
-
-                var filteredGalIds = filt.map(d => d.galID)
-                var filteredHaloIds = filt.map(d => d.haloID)
-                var filteredProps = filt.map(d => d[field])
-
-                console.log('filtered properties:',filteredProps)
-
-                galIds_doc = document.getElementById('galid')
-                galIds_doc.innerHTML = filteredGalIds.join("<br>")
             
-                haloIds_doc = document.getElementById('haloid')
-                haloIds_doc.innerHTML = filteredHaloIds.join("<br>")
+        var s = d3.event.selection || attrScale.range();
 
-                prop_doc = document.getElementById(field)
-                prop_doc.innerHTML = filteredProps.join("<br>")
+        ret = s.map(attrScale.invert, attrScale);
 
-            }
+        if (s) {
+
+            galaxyBrushHistory[attr].ranges = ret.slice()
+
+            console.log('brush history',galaxyBrushHistory)
+            filterGalaxies()
         }
-            else {
-                console.log("not checked")
+
+    }
+
+}
+
+
+// FH galaxy function #2 - actual querying in table:
+async function filterGalaxies() {
+
+    console.log('filterGalaxies function')
+
+    // for going back to full box view:
+    window.addEventListener('dblclick', (e) => {
+    updateXYZDomain('x',0.0,1.0) 
+    updateXYZDomain('y',0.0,1.0) 
+    updateXYZDomain('z',0.0,1.0)    
+    })
+
+    galIds_doc = document.getElementById('galid')
+    haloIds_doc = document.getElementById('haloid')
+
+    var filteredData = galQueryData.slice() //slice of galquerydata
+
+    console.log('new brush history',galaxyBrushHistory)
+
+    for (const attr in galaxyBrushHistory) {
+        
+        if (galaxyBrushHistory[attr].checkState == true) {
+        
+        const range = galaxyBrushHistory[attr].ranges
+        const field = galaxyBrushHistory[attr].fieldName
+
+        var filteredData = filteredData.filter(d => d[field] >= range[0] && d[field] <= range[1])
+
+        }
+    }
+
+    console.log('after filtering properly',filteredData)
+
+
+    for (const attr in galaxyBrushHistory) {
+
+        if (galaxyBrushHistory[attr].checkState == true) {
+        
+        galIds_doc.innerText = ''  // clears any existing lists
+        haloIds_doc.innerText = ''
+
+        const range = galaxyBrushHistory[attr].ranges
+        const field = galaxyBrushHistory[attr].fieldName
+
+        prop_doc = document.getElementById(field)
+        prop_doc.innerText = ''
+
+        var filteredGalIds = filteredData.map(d => d.galID)
+        var filteredHaloIds = filteredData.map(d => d.haloID)
+        var filteredProps = filteredData.map(d => d[field])
+
+        var filteredX = filteredData.map(d => d['gal_x'])
+        var filteredY = filteredData.map(d => d['gal_y'])
+        var filteredZ = filteredData.map(d => d['gal_z']) 
+        var filteredrh = filteredData.map(d => d['rh']) 
+
+        for (let i in filteredGalIds) {
+
+            let anchor = document.createElement("a");
+            anchor.href = "#";
+            anchor.innerText = parseFloat(filteredGalIds[i]);
+
+            let elem = document.createElement("li");
+            elem.appendChild(anchor);
+            galIds_doc.appendChild(elem);
+
+        // takes you to galaxy whose ID you click on:
+            anchor.addEventListener('click', (e) => {
+        console.log('clicked on this galaxy:',
+        filteredGalIds[i],filteredX[i],filteredY[i],filteredZ[i],filteredrh[i])
+        dl = (filteredrh[i]/1000)/(width_Mpc)
+        console.log(width_Mpc,dl)
+        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)
+        })
+    }
+
+        for (var i in filteredHaloIds) {
+
+            var elem = document.createElement("li");
+            elem.innerText = parseFloat(filteredHaloIds[i])
+            haloIds_doc.appendChild(elem);
+        }
+
+        for (var i in filteredProps) {
+
+            var elem = document.createElement("li");
+            elem.innerText = Number.parseFloat(filteredProps[i]).toPrecision(3);
+            prop_doc.appendChild(elem);
+        }                
+
         }
     }
 
@@ -3313,8 +3341,12 @@ function init() {
 
     camPos = camera.position
 
+
     createGalaxyFilteringBrushes('sfr','sfr')
-//     createGalaxyFilteringBrushes('mass')
+    createGalaxyFilteringBrushes('stellar mass','ms')
+    createGalaxyFilteringBrushes('halo mass','mh')
+    createGalaxyFilteringBrushes('gas mass','mg')
+
 
     x = document.getElementById('x-depth-brush')
     x.addEventListener('change', updateUniforms, false)
