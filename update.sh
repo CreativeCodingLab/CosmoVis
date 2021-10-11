@@ -10,3 +10,4 @@ git fetch
 git pull
 
 systemctl daemon-reload
+systemctl start cosmovis.service
