@@ -1,3 +1,4 @@
+
 server {
         listen 5000;
         listen [::]:5000;
@@ -5,7 +6,7 @@ server {
 
         location / {
                 include proxy_params;
-                proxy_pass http://unix:/cv-docker/cosmovis.sock;
+                proxy_pass http://unix:/cv-vol/dev-repo/CosmoVis/cosmovis.sock;
         }
         location /socket.io {
                 include proxy_params;
@@ -15,6 +16,6 @@ server {
                 proxy_set_header Upgrade $http_upgrade;
                 proxy_set_header Connection "upgrade";
 
-                proxy_pass http://unix:/cv-docker/cosmovis.sock;
+                proxy_pass http://unix:/cv-vol/dev-repo/CosmoVis/cosmovis.sock;
         }
 }
