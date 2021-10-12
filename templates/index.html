@@ -922,16 +922,21 @@
     <div id="containers">
         <div id="galaxylist" class="container">
             <!-- https://www.w3schools.com/howto/howto_js_sort_table.asp -->
+            
+            <h3>Galaxy Filters</h3>
+
+            <div id="galaxy-filter-criteria">
+            </div>
             <table>
                 <caption> <h3>Galaxy Query Results</h3></caption>
                 <thead>
                     <tr>
                         <td> Galaxy ID</td> 
                         <td> Halo ID</td> 
-                        <td> Stellar Mass</td>
-                        <td> Halo Mass </td>
-                        <td> SFR</td>
-                        <td> Gas Mass</td>
+                        <td> Stellar Mass (M<sub>&#9737;</sub>)</td>
+                        <td> Halo Mass (M<sub>&#9737;</sub>) </td>
+                        <td> SFR (M<sub>&#9737;</sub>/yr)</td>
+                        <td> Gas Mass (M<sub>&#9737;</sub>)</td>
 
                     </tr>
                 </thead>
@@ -960,11 +965,8 @@
             </table>
             <br>
             
-            <div id="galaxy-filter-criteria">
-                
-            </div>
-            
-        </div>    
+        </div>  
+              
         <div id="data_layers" class="container">
             <!-- <h2>attribute visualization</h2>
             <br> -->

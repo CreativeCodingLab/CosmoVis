@@ -1,3 +1,3 @@
 [Trident]
-ion_table_dir = ~/.trident
-ion_table_file = /cv-docker/hm2012_hr.h5
+ion_table_dir = /root/.trident
+ion_table_file = hm2012_hr.h5
