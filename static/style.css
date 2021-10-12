@@ -469,8 +469,19 @@ h3 {
 
 #galaxylist{
     display: none;
-    max-height: 50vh;
-    overflow: scroll;
+    width: auto;
+    justify-content: center;
+    align-content: center;
+    text-align: center;
+}
+
+#galaxy-filter-results{
+    overflow-y: auto;
+    height: 20vh;
+}
+
+#galid{
+    overflow-y: auto
 }
 
 #gas-colorscale{

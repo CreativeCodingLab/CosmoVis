@@ -922,33 +922,53 @@
     <div id="containers">
         <div id="galaxylist" class="container">
             <!-- https://www.w3schools.com/howto/howto_js_sort_table.asp -->
-            <table>
-               <caption>galaxy query results</caption>
-                <thead>
-                    <tr>
-                        <td> Galaxy ID</td> 
-                        <td> Halo ID</td> 
-                        <td> Stellar Mass</td>
-                        <td> Halo Mass </td>
-                        <td> SFR</td>
-
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr id='galdata'>
-                        <td id='galid'></td>
-                        <td id='haloid'></td>
-                        <td id='mstar'></td>
-                        <td id='mhalo200'></td>
-                        <td id='sfr'></td> 
-                    </tr>
-                </tbody>
-            </table>
+            
+            <h3>Galaxy Filters</h3>
 
             <div id="galaxy-filter-criteria">
-                
             </div>
-        </div>    
+            <div id="galaxy-filter-results">
+                <table>
+                    <caption> <h3>Galaxy Query Results</h3></caption>
+                    <thead>
+                        <tr>
+                            <td> Galaxy ID</td> 
+                            <td> Halo ID</td> 
+                            <td> Stellar Mass (M<sub>&#9737;</sub>)</td>
+                            <td> Halo Mass (M<sub>&#9737;</sub>) </td>
+                            <td> SFR (M<sub>&#9737;</sub>/yr)</td>
+                            <td> Gas Mass (M<sub>&#9737;</sub>)</td>
+
+                        </tr>
+                    </thead>
+                    <tbody id="gal-tbody">
+                        <tr id='galdata'>
+                            <td>
+                                <ul id='galid' style="list-style-type:none;"> </ul>
+                            </td>
+                            <td>
+                            <ul id='haloid' style="list-style-type:none;"> </ul>
+                            </td>
+                            <td>
+                            <ul id='ms' style="list-style-type:none;"> </ul>    
+                            </td>                    
+                            <td>
+                            <ul id='mh' style="list-style-type:none;"> </ul> 
+                            </td>                        
+                            <td>
+                            <ul id='sfr' style="list-style-type:none;"> </ul>
+                            </td> 
+                            <td>
+                            <ul id='mg' style="list-style-type:none;"> </ul>
+                            </td> 
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <br>
+            
+        </div>  
+              
         <div id="data_layers" class="container">
             <!-- <h2>attribute visualization</h2>
             <br> -->

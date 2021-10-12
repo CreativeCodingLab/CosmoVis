@@ -138,7 +138,8 @@ def webhook():
     if request.headers['Content-Type'] == 'application/json':
         info = json.dumps(request.json)
         print(info)
-        threading.Thread(target=lambda: [time.sleep(2), os.system('systemctl restart cosmovis.service')]).start()
+#         threading.Thread(target=lambda: [time.sleep(2), os.system('systemctl restart cosmovis.service')]).start()
+        os.system('/bin/bash update.sh')
         return info
 
 @app.route('/')
