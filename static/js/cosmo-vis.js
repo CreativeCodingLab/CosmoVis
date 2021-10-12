@@ -1626,7 +1626,7 @@ function zoomIn() {
     goToPoint(ix, iy, iz)
 }
 
-function goToPoint(x, y, z) {
+function goToPoint(x, y, z, delta = 0.1) {
     console.log(x, y, z)
     console.log('click click')
         // x*=0.6776999078
@@ -1635,7 +1635,7 @@ function goToPoint(x, y, z) {
 
     width_Mpc = (edges.right_edge[0] - edges.left_edge[0])
 
-    delta = 0.1
+//     delta = 0.1
     domainXYZ[0] = (x / width_Mpc) - delta
     domainXYZ[1] = (x / width_Mpc) + delta
     domainXYZ[2] = (y / width_Mpc) - delta
