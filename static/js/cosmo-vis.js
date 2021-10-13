@@ -133,6 +133,16 @@ let renderRequested = false
 //     console.log(galQueryData)}
 //     );
 
+// FH - for going back to full box view:
+window.addEventListener('dblclick', (e) => {
+// updateXYZDomain('x',0.0,1.0) 
+// updateXYZDomain('y',0.0,1.0) 
+// updateXYZDomain('z',0.0,1.0)
+// console.log('dblclk',width_Mpc/2)
+goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
+camera.zoom = 1.0  
+})
+
 function storeSceneState() {
     sceneState = {}
     // simulation snapshot
@@ -2901,17 +2911,6 @@ async function filterGalaxies(sim) {
 
     console.log('filterGalaxies function',sim)
 
-
-    // for going back to full box view:
-    window.addEventListener('dblclick', (e) => {
-    // updateXYZDomain('x',0.0,1.0) 
-    // updateXYZDomain('y',0.0,1.0) 
-    // updateXYZDomain('z',0.0,1.0)
-    // console.log('dblclk',width_Mpc/2)
-    goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
-    camera.zoom = 1.0  
-    })
-
     allGalData_doc = document.getElementById('galdata')
     galIds_doc = document.getElementById('galid')
     haloIds_doc = document.getElementById('haloid')
@@ -2929,15 +2928,6 @@ async function filterGalaxies(sim) {
 
         const range = galaxyBrushHistory[attr].ranges
         const field = galaxyBrushHistory[attr].fieldName
-
-        // prop_doc = document.getElementById(field)
-
-        // document.getElementById("sim_size_select").addEventListener('change', e => {
-        // console.log('inside sim select event listener',sim)
-        // galIds_doc.innerText = '' 
-        // haloIds_doc.innerText = ''
-        // prop_doc.innerText = ''
-        // }) 
 
         if (galaxyBrushHistory[attr].checkState == true) {
         
@@ -2992,12 +2982,17 @@ async function filterGalaxies(sim) {
         // console.log(width_Mpc,dl)
         camera.zoom = 3.0
 
-        if (sim == "RefL0100N1504"){
-        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*18)}
-        else if (sim == "RefL0025N0376") {
-        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*7)    
+//         if (sim == "RefL0100N1504"){
+//         goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*18)}
+//         else if (sim == "RefL0025N0376") {
+//         goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*7)    
+//         }
+//         else {goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)}
+            
+         if (filteredrh[i] < 500){
+            goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*15)
         }
-        else {goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)}
+         else {goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*4)}
 
         // goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)
         })
