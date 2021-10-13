@@ -140,7 +140,9 @@ window.addEventListener('dblclick', (e) => {
 // updateXYZDomain('z',0.0,1.0)
 // console.log('dblclk',width_Mpc/2)
 goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
-camera.zoom = 1.0  
+camera.zoom = 1.0
+camera.updateProjectionMatrix()
+updateUniforms() 
 })
 
 function storeSceneState() {
