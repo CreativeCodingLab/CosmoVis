@@ -8,6 +8,7 @@ greenlet==0.4.15
 gunicorn==20.0.4
 mpi4py==3.0.3
 psutil
+pillow
 python-engineio==3.13.0
 python-socketio==4.6.0
 -e git://github.com/yt-project/yt.git#egg=yt

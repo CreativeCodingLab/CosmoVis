@@ -3,7 +3,7 @@ eventlet.monkey_patch()
 
 # app.py
 import multiprocessing
-import threading
+# import threading
 from flask import Flask, jsonify, request, render_template, session, copy_current_request_context
 from flask_compress import Compress
 import yt
@@ -32,6 +32,7 @@ import copy
 import pprint
 import psutil
 import time
+from PIL import Image
 
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
@@ -45,9 +46,9 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 Compress(app)
-# socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
 
-socketio = SocketIO(app,cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+# socketio = SocketIO(app,cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 # thread = None
 # thread_lock = Lock()
 multiprocessing.set_start_method('spawn')
@@ -167,11 +168,11 @@ def handle_ray_selection(simID,idx, start, end):
 
 def handle_skewer_simple_ray(simID,idx,start,end):
     yt.enable_parallelism()
-    print('system cpu cores: ' + str(multiprocessing.cpu_count()))
-    sys.stdout.flush()
-    print('cpu cores available to python: ' + str(len(psutil.Process().cpu_affinity())))
-    sys.stdout.flush()
-    print('mpi parallelism: ' + str(yt.enable_parallelism()))
+    # print('system cpu cores: ' + str(multiprocessing.cpu_count()))
+    # sys.stdout.flush()
+    # print('cpu cores available to python: ' + str(len(psutil.Process().cpu_affinity())))
+    # sys.stdout.flush()
+    # print('mpi parallelism: ' + str(yt.enable_parallelism()))
     sys.stdout.flush()
     print('received simple ray request')
     socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
@@ -245,7 +246,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     # convert to kpc
     l = ray.r[('gas', 'l')].to('kpc')
 
-    print(ray)
+    # print(ray)
     # ('gas', 'temperature') -- the gas temperature along l (K)
 
     # the way trident+yt represents ions as fields is a little weird
@@ -262,8 +263,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     ## used for graphing
     socketio.sleep(0)
     try:
-        H_I = (ray.r[('gas', 'H_p0_number_density')] * dl_cm).tolist()
-        i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')] *  dl_cm,dx)[1]
+        H_I = (ray.r[('gas', 'H_p0_number_density')].in_cgs() * dl_cm).tolist()
+        i_H_I   = interpol8(l,ray.r[('gas', 'H_p0_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         H_I = []   
@@ -275,8 +276,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     
     socketio.sleep(0)
     try:
-        H_II   = (ray.r[('gas', 'H_p1_number_density')]   * dl_cm).tolist()
-        i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')] *  dl_cm,dx)[1]
+        H_II   = (ray.r[('gas', 'H_p1_number_density')].in_cgs()   * dl_cm).tolist()
+        i_H_II  = interpol8(l,ray.r[('gas', 'H_p1_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         H_II  = []
@@ -287,8 +288,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        C_I    = (ray.r[('gas', 'C_p0_number_density')]   * dl_cm).tolist()
-        i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')] *  dl_cm,dx)[1]
+        C_I    = (ray.r[('gas', 'C_p0_number_density')].in_cgs()   * dl_cm).tolist()
+        i_C_I   = interpol8(l,ray.r[('gas', 'C_p0_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         C_I    = []
         i_C_I  = []
@@ -298,8 +299,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        C_II   = (ray.r[('gas', 'C_p1_number_density')]   * dl_cm).tolist()
-        i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')] *  dl_cm,dx)[1]
+        C_II   = (ray.r[('gas', 'C_p1_number_density')].in_cgs()   * dl_cm).tolist()
+        i_C_II  = interpol8(l,ray.r[('gas', 'C_p1_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         C_II  = []
@@ -310,8 +311,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        C_III  = (ray.r[('gas', 'C_p2_number_density')]   * dl_cm).tolist()
-        i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')] *  dl_cm,dx)[1]
+        C_III  = (ray.r[('gas', 'C_p2_number_density')].in_cgs()   * dl_cm).tolist()
+        i_C_III = interpol8(l,ray.r[('gas', 'C_p2_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         C_III  = []
@@ -322,8 +323,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        C_IV   = (ray.r[('gas', 'C_p3_number_density')]   * dl_cm).tolist()
-        i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')] *  dl_cm,dx)[1]
+        C_IV   = (ray.r[('gas', 'C_p3_number_density')].in_cgs()   * dl_cm).tolist()
+        i_C_IV  = interpol8(l,ray.r[('gas', 'C_p3_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         C_IV  = []
@@ -334,8 +335,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        C_V    = (ray.r[('gas', 'C_p4_number_density')]   * dl_cm).tolist()
-        i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')] *  dl_cm,dx)[1]
+        C_V    = (ray.r[('gas', 'C_p4_number_density')].in_cgs()   * dl_cm).tolist()
+        i_C_V   = interpol8(l,ray.r[('gas', 'C_p4_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         C_V   = []
@@ -346,8 +347,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        C_VI   = (ray.r[('gas', 'C_p5_number_density')]   * dl_cm).tolist()
-        i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')] *  dl_cm,dx)[1]
+        C_VI   = (ray.r[('gas', 'C_p5_number_density')].in_cgs()   * dl_cm).tolist()
+        i_C_VI  = interpol8(l,ray.r[('gas', 'C_p5_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         C_VI   = []
@@ -358,8 +359,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        He_I   = (ray.r[('gas', 'He_p0_number_density')]  * dl_cm).tolist()
-        i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')] * dl_cm,dx)[1]
+        He_I   = (ray.r[('gas', 'He_p0_number_density')].in_cgs()  * dl_cm).tolist()
+        i_He_I  = interpol8(l,ray.r[('gas', 'He_p0_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         He_I   = []
@@ -370,8 +371,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        He_II  = (ray.r[('gas', 'He_p1_number_density')]  * dl_cm).tolist()
-        i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')] * dl_cm,dx)[1]
+        He_II  = (ray.r[('gas', 'He_p1_number_density')].in_cgs()  * dl_cm).tolist()
+        i_He_II = interpol8(l,ray.r[('gas', 'He_p1_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         He_II  = []
@@ -382,8 +383,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        He_III = (ray.r[('gas', 'He_p2_number_density')]  * dl_cm).tolist()
-        i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')] * dl_cm,dx)[1]
+        He_III = (ray.r[('gas', 'He_p2_number_density')].in_cgs()  * dl_cm).tolist()
+        i_He_III= interpol8(l,ray.r[('gas', 'He_p2_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         He_III = []
@@ -394,8 +395,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Mg_I   = (ray.r[('gas', 'Mg_p0_number_density')]  * dl_cm).tolist()
-        i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')] * dl_cm,dx)[1]
+        Mg_I   = (ray.r[('gas', 'Mg_p0_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Mg_I  = interpol8(l,ray.r[('gas', 'Mg_p0_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         Mg_I  = []
@@ -406,8 +407,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Mg_II  = (ray.r[('gas', 'Mg_p1_number_density')]  * dl_cm).tolist()
-        i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')] * dl_cm,dx)[1]
+        Mg_II  = (ray.r[('gas', 'Mg_p1_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Mg_II = interpol8(l,ray.r[('gas', 'Mg_p1_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         Mg_II  = []
@@ -418,8 +419,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Mg_X   = (ray.r[('gas', 'Mg_p9_number_density')]  * dl_cm).tolist()
-        i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')] * dl_cm,dx)[1]
+        Mg_X   = (ray.r[('gas', 'Mg_p9_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Mg_X  = interpol8(l,ray.r[('gas', 'Mg_p9_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         Mg_X  = []
@@ -430,8 +431,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        N_II   = (ray.r[('gas', 'N_p1_number_density')]   * dl_cm).tolist()
-        i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')] *  dl_cm,dx)[1]
+        N_II   = (ray.r[('gas', 'N_p1_number_density')].in_cgs()   * dl_cm).tolist()
+        i_N_II  = interpol8(l,ray.r[('gas', 'N_p1_number_density')].in_cgs() *  dl_cm,dx)[1]
         
     except Exception as e:
         N_II  = []
@@ -442,8 +443,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        N_III  = (ray.r[('gas', 'N_p2_number_density')]   * dl_cm).tolist()
-        i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')] *  dl_cm,dx)[1]
+        N_III  = (ray.r[('gas', 'N_p2_number_density')].in_cgs()   * dl_cm).tolist()
+        i_N_III = interpol8(l,ray.r[('gas', 'N_p2_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         N_III  = []
@@ -454,8 +455,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        N_IV   = (ray.r[('gas', 'N_p3_number_density')]   * dl_cm).tolist()
-        i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')] *  dl_cm,dx)[1]
+        N_IV   = (ray.r[('gas', 'N_p3_number_density')].in_cgs()   * dl_cm).tolist()
+        i_N_IV  = interpol8(l,ray.r[('gas', 'N_p3_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         N_IV  = []
@@ -466,8 +467,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        N_V    = (ray.r[('gas', 'N_p4_number_density')]   * dl_cm).tolist()
-        i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')] *  dl_cm,dx)[1]
+        N_V    = (ray.r[('gas', 'N_p4_number_density')].in_cgs()   * dl_cm).tolist()
+        i_N_V   = interpol8(l,ray.r[('gas', 'N_p4_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         N_V   = []
@@ -478,8 +479,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        N_VI   = (ray.r[('gas', 'N_p5_number_density')]   * dl_cm).tolist()
-        i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')] *  dl_cm,dx)[1]
+        N_VI   = (ray.r[('gas', 'N_p5_number_density')].in_cgs()   * dl_cm).tolist()
+        i_N_VI  = interpol8(l,ray.r[('gas', 'N_p5_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         N_VI   = []
         i_N_VI = []
@@ -489,8 +490,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        N_VII  = (ray.r[('gas', 'N_p6_number_density')]   * dl_cm).tolist()
-        i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')] *  dl_cm,dx)[1]
+        N_VII  = (ray.r[('gas', 'N_p6_number_density')].in_cgs()   * dl_cm).tolist()
+        i_N_VII = interpol8(l,ray.r[('gas', 'N_p6_number_density')].in_cgs() *  dl_cm,dx)[1]
 
     except Exception as e:
         N_VII  = []
@@ -501,8 +502,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Na_I   = (ray.r[('gas', 'Na_p0_number_density')]  * dl_cm).tolist()
-        i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')] * dl_cm,dx)[1]
+        Na_I   = (ray.r[('gas', 'Na_p0_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Na_I  = interpol8(l,ray.r[('gas', 'Na_p0_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         Na_I  = []
@@ -513,8 +514,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Na_IX  = (ray.r[('gas', 'Na_p8_number_density')]  * dl_cm).tolist()
-        i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')] * dl_cm,dx)[1]
+        Na_IX  = (ray.r[('gas', 'Na_p8_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Na_IX = interpol8(l,ray.r[('gas', 'Na_p8_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         Na_IX  = []
@@ -525,8 +526,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Ne_III = (ray.r[('gas', 'Ne_p2_number_density')]  * dl_cm).tolist()
-        i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')] * dl_cm,dx)[1]
+        Ne_III = (ray.r[('gas', 'Ne_p2_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Ne_III= interpol8(l,ray.r[('gas', 'Ne_p2_number_density')].in_cgs() * dl_cm,dx)[1]
 
     except Exception as e:
         Ne_III = []
@@ -537,8 +538,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Ne_IV  = (ray.r[('gas', 'Ne_p3_number_density')]  * dl_cm).tolist()
-        i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')] * dl_cm,dx)[1]
+        Ne_IV  = (ray.r[('gas', 'Ne_p3_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Ne_IV = interpol8(l,ray.r[('gas', 'Ne_p3_number_density')].in_cgs() * dl_cm,dx)[1]
     except Exception as e:
         Ne_IV  = []
         i_Ne_IV= []
@@ -548,8 +549,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Ne_V   = (ray.r[('gas', 'Ne_p4_number_density')]  * dl_cm).tolist()
-        i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')] * dl_cm,dx)[1]
+        Ne_V   = (ray.r[('gas', 'Ne_p4_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Ne_V  = interpol8(l,ray.r[('gas', 'Ne_p4_number_density')].in_cgs() * dl_cm,dx)[1]
     except Exception as e:
         Ne_V  = []
         i_Ne_V= []
@@ -559,8 +560,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Ne_VI  = (ray.r[('gas', 'Ne_p5_number_density')]  * dl_cm).tolist()
-        i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')] * dl_cm,dx)[1]
+        Ne_VI  = (ray.r[('gas', 'Ne_p5_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Ne_VI = interpol8(l,ray.r[('gas', 'Ne_p5_number_density')].in_cgs() * dl_cm,dx)[1]
     except Exception as e:
         Ne_VI  = []
         i_Ne_VI= []
@@ -570,8 +571,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Ne_VIII= (ray.r[('gas', 'Ne_p7_number_density')]  * dl_cm).tolist()
-        i_Ne_VIII=interpol8(l,ray.r[('gas', 'Ne_p7_number_density')] * dl_cm,dx)[1]
+        Ne_VIII= (ray.r[('gas', 'Ne_p7_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Ne_VIII=interpol8(l,ray.r[('gas', 'Ne_p7_number_density')].in_cgs() * dl_cm,dx)[1]
     except Exception as e:
         Ne_VIII = []
         i_Ne_VIII= []
@@ -581,8 +582,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_I    = (ray.r[('gas', 'O_p0_number_density')]   * dl_cm).tolist()
-        i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')] *  dl_cm,dx)[1]
+        O_I    = (ray.r[('gas', 'O_p0_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_I   = interpol8(l,ray.r[('gas', 'O_p0_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_I   = []
         i_O_I = []
@@ -592,8 +593,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_II   = (ray.r[('gas', 'O_p1_number_density')]   * dl_cm).tolist()
-        i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')] *  dl_cm,dx)[1]
+        O_II   = (ray.r[('gas', 'O_p1_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_II  = interpol8(l,ray.r[('gas', 'O_p1_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_II  = []
         i_O_II= []
@@ -603,8 +604,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_III  = (ray.r[('gas', 'O_p2_number_density')]   * dl_cm).tolist()
-        i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')] *  dl_cm,dx)[1]
+        O_III  = (ray.r[('gas', 'O_p2_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_III = interpol8(l,ray.r[('gas', 'O_p2_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_III  = []
         i_O_III= []
@@ -614,8 +615,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_IV   = (ray.r[('gas', 'O_p3_number_density')]   * dl_cm).tolist()
-        i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')] *  dl_cm,dx)[1]
+        O_IV   = (ray.r[('gas', 'O_p3_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_IV  = interpol8(l,ray.r[('gas', 'O_p3_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_IV  = []
         i_O_IV= []
@@ -625,8 +626,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_V    = (ray.r[('gas', 'O_p4_number_density')]   * dl_cm).tolist()
-        i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')] *  dl_cm,dx)[1]
+        O_V    = (ray.r[('gas', 'O_p4_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_V   = interpol8(l,ray.r[('gas', 'O_p4_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_V  = []
         i_O_V= []
@@ -636,8 +637,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_VI   = (ray.r[('gas', 'O_p5_number_density')]   * dl_cm).tolist()
-        i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')] *  dl_cm,dx)[1]
+        O_VI   = (ray.r[('gas', 'O_p5_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_VI  = interpol8(l,ray.r[('gas', 'O_p5_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_VI  = []
         i_O_VI= []
@@ -647,8 +648,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_VII  = (ray.r[('gas', 'O_p6_number_density')]   * dl_cm).tolist()
-        i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')] *  dl_cm,dx)[1]
+        O_VII  = (ray.r[('gas', 'O_p6_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_VII = interpol8(l,ray.r[('gas', 'O_p6_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_VII  = []
         i_O_VII= []
@@ -658,8 +659,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        O_VIII = (ray.r[('gas', 'O_p7_number_density')]   * dl_cm).tolist()
-        i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')] *  dl_cm,dx)[1]
+        O_VIII = (ray.r[('gas', 'O_p7_number_density')].in_cgs()   * dl_cm).tolist()
+        i_O_VIII= interpol8(l,ray.r[('gas', 'O_p7_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         O_VIII = []
         i_O_VIII= []
@@ -669,8 +670,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        S_II   = (ray.r[('gas', 'S_p1_number_density')]   * dl_cm).tolist()
-        i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')] *  dl_cm,dx)[1]
+        S_II   = (ray.r[('gas', 'S_p1_number_density')].in_cgs()   * dl_cm).tolist()
+        i_S_II  = interpol8(l,ray.r[('gas', 'S_p1_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         S_II  = []
         i_S_II= []
@@ -680,8 +681,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        S_III  = (ray.r[('gas', 'S_p2_number_density')]   * dl_cm).tolist()
-        i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')] *  dl_cm,dx)[1]
+        S_III  = (ray.r[('gas', 'S_p2_number_density')].in_cgs()   * dl_cm).tolist()
+        i_S_III = interpol8(l,ray.r[('gas', 'S_p2_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         S_III  = []
         i_S_III= []
@@ -691,8 +692,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        S_IV   = (ray.r[('gas', 'S_p3_number_density')]   * dl_cm).tolist()
-        i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')] *  dl_cm,dx)[1]
+        S_IV   = (ray.r[('gas', 'S_p3_number_density')].in_cgs()   * dl_cm).tolist()
+        i_S_IV  = interpol8(l,ray.r[('gas', 'S_p3_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         S_IV  = []
         i_S_IV= []
@@ -702,8 +703,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        S_V    = (ray.r[('gas', 'S_p4_number_density')]   * dl_cm).tolist()
-        i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')] *  dl_cm,dx)[1]
+        S_V    = (ray.r[('gas', 'S_p4_number_density')].in_cgs()   * dl_cm).tolist()
+        i_S_V   = interpol8(l,ray.r[('gas', 'S_p4_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         S_V  = []
         i_S_V= []
@@ -713,8 +714,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        S_VI   = (ray.r[('gas', 'S_p5_number_density')]   * dl_cm).tolist()
-        i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')] *  dl_cm,dx)[1]
+        S_VI   = (ray.r[('gas', 'S_p5_number_density')].in_cgs()   * dl_cm).tolist()
+        i_S_VI  = interpol8(l,ray.r[('gas', 'S_p5_number_density')].in_cgs() *  dl_cm,dx)[1]
     except Exception as e:
         S_VI  = []
         i_S_VI= []
@@ -724,8 +725,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Si_II  = (ray.r[('gas', 'Si_p1_number_density')]  * dl_cm).tolist()
-        i_Si_II = interpol8(l,ray.r[('gas', 'Si_p1_number_density')] * dl_cm,dx)[1]
+        Si_II  = (ray.r[('gas', 'Si_p1_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Si_II = interpol8(l,ray.r[('gas', 'Si_p1_number_density')].in_cgs() * dl_cm,dx)[1]
     except Exception as e:
         Si_II  = []
         i_Si_II= []
@@ -735,8 +736,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Si_III = (ray.r[('gas', 'Si_p2_number_density')]  * dl_cm).tolist()
-        i_Si_III= interpol8(l,ray.r[('gas', 'Si_p2_number_density')] * dl_cm,dx)[1]
+        Si_III = (ray.r[('gas', 'Si_p2_number_density')].in_cgs()  * dl_cm).tolist()
+        i_Si_III= interpol8(l,ray.r[('gas', 'Si_p2_number_density')].in_cgs() * dl_cm,dx)[1]
     except Exception as e:
         Si_III = []
         i_Si_III= []
@@ -746,8 +747,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Si_IV  = (ray.r[('gas', 'Si_p3_number_density')]  * dl_cm).tolist()
-        i_Si_IV = interpol8(l,ray.r[('gas', 'Si_p3_number_density')] * dl_cm,dx)[1]
+        Si_IV  = (ray.r[('gas', 'Si_p3_number_density')].in_cgs() * dl_cm).tolist()
+        i_Si_IV = interpol8(l,ray.r[('gas', 'Si_p3_number_density')].in_cgs() * dl_cm,dx)[1]
     except Exception as e:
         Si_IV  = []
         i_Si_IV= []
@@ -757,8 +758,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         print(exc_type, fname, exc_tb.tb_lineno) 
     socketio.sleep(0)
     try:
-        Si_XII = (ray.r[('gas', 'Si_p11_number_density')] * dl_cm).tolist()
-        i_Si_XII= interpol8(l,ray.r[('gas', 'Si_p11_number_density')] *dl_cm,dx)[1]
+        Si_XII = (ray.r[('gas', 'Si_p11_number_density')].in_cgs() * dl_cm).tolist()
+        i_Si_XII= interpol8(l,ray.r[('gas', 'Si_p11_number_density')].in_cgs() *dl_cm,dx)[1]
     except Exception as e:
         Si_XII   = []
         i_Si_XII = []
@@ -769,7 +770,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     
     finally:
         socketio.sleep(0)
-        log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
+        log_density = np.log10(ray.r[('gas', 'density')].in_cgs())+23.77+0.21 # dividing by mean molecular mass, mass of proton
         density     = (10**log_density).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
         try:
             if simID[:3] == 'Ref':
@@ -790,7 +791,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         metallicity = (ray.r[('gas', 'metallicity')].to('Zsun')).tolist()
         temperature = (ray.r[('gas', 'temperature')]).tolist()
 
-        log_density = np.log10(ray.r[('gas', 'density')])+23.77+0.21 # dividing by mean molecular mass, mass of proton
+        log_density = np.log10(ray.r[('gas', 'density')].in_cgs())+23.77+0.21 # dividing by mean molecular mass, mass of proton
         i_density       = (10**np.array(interpol8(l, log_density,dx)[1])).tolist() # divide by mean molecular mass... somewhere between ~(10^-6, 1)
         i_metallicity   = interpol8(l,ray.r[('gas', 'metallicity')].to('Zsun'),dx)[1]
         i_l, i_temperature = interpol8(l,ray.r[('gas', 'temperature')],dx)
@@ -900,6 +901,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
                                          'i_temperature': i_temperature
                                         }, namespace='/test')
     socketio.sleep(0)
+    # print((ray.r[('gas', 'H_p0_number_density')])[0].units)
 
     print('sent simple ray data')
 
@@ -1107,7 +1109,135 @@ def handle_ray_selection_background(simID,idx,start,end):
     socketio.emit( 'synthetic_spectrum_saved', {'index': 'static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json'}, namespace = '/test' )
     socketio.sleep(0)
     print("spectrum saved")
+    return
     
+
+@socketio.on('makePlots',namespace="/test")
+def make_plots(simID,plot_type,galaxyID, center_coord_mpc, rvir, camera ):
+
+    ## This section still needs work
+    ## Need to determine what types of plots would be useful -- any others?
+    ## Give user some choices as to what plots to make
+    ## Need to hook up a way to send plots back to front end
+    ## Would it make more sense to call this function once to retrieve multiple plots simultaneously? Probably
+    ## Would this operate on the singular galaxy level? Yes!
+
+    ## Check simID ##
+    if simID == 'RefL0012N0188':
+        ds = EAGLE_12Mpc
+    elif simID == 'RefL0025N0376':
+        ds = EAGLE_25Mpc
+    elif simID == 'RefL0100N1504':
+        ds = EAGLE_100Mpc
+    elif simID == 'TNG100_z2.3':
+        ds = TNG100_snap030
+    elif simID == 'TNG100_z0.0':
+        ds = TNG100_snap099
+    else:
+        # if 'RefL' in simID:
+        #     fn = 'static/data/'+simID+'/snapshot_028_z000p000/snap_028_z000p000.0.hdf5'
+        # if 'TNG' in simID:
+        #     fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
+        # print("loading" + str(fn))
+        print(fn)
+        ds = yt.load(fn)
+    ad = ds.all_data()
+    print(simID)
+
+    # import pdb; pdb.set_trace()
+
+    ## Check plot type ## 
+
+    # if plot_type == 'volume_rendering' or plot_type == 'all':
+        #https://yt-project.org/doc/visualizing/volume_rendering.html#annotated-examples
+    
+    if plot_type == 'overplot_streamlines' or plot_type == 'all':
+        #https://yt-project.org/doc/visualizing/callbacks.html#overplot-streamlines
+        
+        plot = yt.SlicePlot(ds, "z", ("gas", "density"), center=center_coord_mpc, width=(rvir, "Mpc"))
+        plot.set_zlim(("gas", "density"), 1e-30, 1e-25)
+        plot.annotate_streamlines(("gas", "velocity_x"), ("gas", "velocity_y"))
+        plot.save()
+        plot.save("static/slice.png")
+        # import pdb; pdb.set_trace()
+
+        with open('static/slice.png', 'rb') as f:
+            image_data = f.read()
+        socketio.sleep(0)
+
+        socketio.emit('plot_made', {'image_data': image_data}, namespace='/test')
+
+    
+    # if plot_type == 'slice' or plot_type == 'all':
+    #     #https://yt-project.org/doc/visualizing/plots.html#viewing-plots
+    #     plot = yt.SlicePlot(ds, "z", ("gas", "pressure"), center="c")
+    #     plot.save()
+    #     plot.zoom(30)
+    #     plot.save("zoom")
+    #     socketio.emit('plot_made', {'image_data': plot})
+
+
+    if plot_type == '2D_phase' or plot_type == 'all':
+
+        #set tick bars https://yt-project.org/doc/cookbook/custom_colorbar_tickmarks.html
+
+
+        # might be easier to start with
+        # zlim scaling 
+        #https://yt-project.org/doc/visualizing/plots.html#d-phase-plots
+        print(center_coord_mpc)
+        print(rvir)
+        center = ds.arr(center_coord_mpc,"Mpc")# ds.arr([64.0, 64.0, 64.0], "code_length")
+        rvir = ds.quan(rvir, "Mpc")
+        sph = ds.sphere(center, rvir)
+        units = {("gas", "density"): "g/cm**3", ("gas", "mass"): "Msun"}
+        extrema = {("gas", "density"): (1e-30, 1e-25), ("gas", "temperature"): (1, 1e7)}
+
+        profile = yt.create_profile(
+            sph,
+            [("gas", "density"), ("gas", "temperature")],
+            n_bins=[128, 128],
+            fields=[("gas", "mass")],
+            weight_field=None,
+            units=units,
+            extrema=extrema,
+        )
+
+        plot = yt.PhasePlot.from_profile(profile)
+        # plot.set_zlim(("gas", "density"), 1e-30, 1e-25)
+        # plot.annotate_scale()
+        plot.set_log(("gas", "density"), True)
+        plot.set_log(("gas", "mass"), True)
+        plot.set_log(("gas", "temperature"), True)
+        plot.set_font_size(36)
+        # plot.figure(facecolor='yellow')
+        plot.set_background_color(field='all',color=[0.0,1.0,0.1,0.1])
+
+        # for label in plot.xaxis.get_ticklabels():
+        #     label.set_color("red")
+        #     label.set_fontsize(16)
+        # import pdb; pdb.set_trace()
+
+        file_url = 'static/'+ simID + '_' + str(galaxyID) + 'phase.png'
+
+        plot.save(file_url)
+
+        convertWhiteToTransparent(file_url)
+        # with open(file_url, 'w+') as f:
+        #     image_data = f.read()
+        socketio.emit('plot_made', {'image_url': file_url}, namespace='/test')
+
+
+
+    # base64 encode (https://newbedev.com/how-to-stream-live-video-frames-from-client-to-flask-server-and-back-to-the-client)
+
+    # stringData = base64.b64encode(plot).decode('utf-8')
+    # b64_src = 'data:image/jpg;base64,'
+    # plot_image = b64_src + stringData
+
+    # emit the frame back
+
+    # return plot
 
 @socketio.on('simIDtoServer', namespace='/test')
 def updateSimID(simID):
@@ -1153,6 +1283,20 @@ def test_connect():
     print("connected")
     emit('my_response', {'data': 'Connected', 'count': 0})
 
+def convertWhiteToTransparent(image_path):    
+    img = Image.open(image_path)
+    img = img.convert("RGBA")
+    datas = img.getdata()
+
+    newData = []
+    for item in datas:
+        if item[0] == 255 and item[1] == 255 and item[2] == 255:
+            newData.append((255, 255, 255, 0))
+        else:
+            newData.append(item)
+
+    img.putdata(newData)
+    img.save(image_path, "PNG")
 
 if __name__ == '__main__':
     # socketio.run(app, debug=False)

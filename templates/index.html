@@ -460,6 +460,13 @@
                 createColumnDensityInfoPanel(msg)
             });
 
+            socket.on('plot_made',function(msg){
+                console.log(msg)
+                console.log('yt plots received')
+
+                receiveYTPlots(msg)
+            });
+
             socket.on('processingRay',function(msg){
                 idx = msg.index
                 buttonId = 'request-button-' + idx + ''
@@ -925,11 +932,14 @@
             
             <h3>Galaxy Filters</h3>
 
-            <div id="galaxy-filter-criteria">
+            <div id = "galaxy-filter-and-plots">
+                <div id="galaxy-filter-criteria"></div>
+                <div id = "YTPlots"></div>
             </div>
+            <caption> <h3>Galaxy Query Results</h3></caption>
+
             <div id="galaxy-filter-results">
                 <table>
-                    <caption> <h3>Galaxy Query Results</h3></caption>
                     <thead>
                         <tr>
                             <td> Galaxy ID</td> 
