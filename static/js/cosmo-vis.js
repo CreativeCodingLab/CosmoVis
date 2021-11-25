@@ -3043,7 +3043,7 @@ async function filterGalaxies(sim) {
                 anchor.href = "#";
                 anchor.innerText = parseFloat(filteredGalIds[i]);
 
-<<<<<<< HEAD
+
                 let elem = document.createElement("li");
                 elem.appendChild(anchor);
                 galIds_doc.appendChild(elem);
@@ -3054,15 +3054,22 @@ async function filterGalaxies(sim) {
                         filteredGalIds[i], filteredX[i], filteredY[i], filteredZ[i], filteredrh[i])
                     dl = (filteredrh[i] / 1000) / (width_Mpc)
                     // console.log(width_Mpc,dl)
-                    camera.zoom = 3.0
-
-                    if (sim == "RefL0100N1504") {
-                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 18)
+                    if (sim == "RefL0100N1504") {camera.zoom = 6.0}
+                    else {camera.zoom = 3.0}
+                 
+                    if (filteredrh[i] <= 300 && filteredrh[i] > 100){
+                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*7)
                     }
-                    else if (sim == "RefL0025N0376") {
-                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 7)
+                    else if (filteredrh[i] <= 500 && filteredrh[i] > 300){
+                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*3)
                     }
-                    else { goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 5) }
+                    else if (filteredrh[i] <= 100) {
+                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*20)
+                    }
+                    else {
+                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*2)
+                    }
+                    })
 
                     center_coord_mpc = [filteredX[i], filteredY[i], filteredZ[i]]
                     rvir = filteredrh[i] / 1000
@@ -3072,31 +3079,7 @@ async function filterGalaxies(sim) {
                     // goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)
                 })
             }
-=======
-        // takes you to galaxy whose ID you click on:
-        anchor.addEventListener('click', (e) => {
-        console.log('clicked on this galaxy:',
-        filteredGalIds[i],filteredX[i],filteredY[i],filteredZ[i],filteredrh[i])
-        dl = (filteredrh[i]/1000)/(width_Mpc)
 
-        if (sim == "RefL0100N1504") {camera.zoom = 6.0}
-        else {camera.zoom = 3.0}
-     
-        if (filteredrh[i] <= 300 && filteredrh[i] > 100){
-            goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*7)
-        }
-        else if (filteredrh[i] <= 500 && filteredrh[i] > 300){
-            goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*3)
-        }
-        else if (filteredrh[i] <= 100) {
-            goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*20)
-        }
-        else {
-            goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*2)
-        }
-        })
-    }
->>>>>>> bcad112a55ede7cce5d458670323a8e67118fc46
 
             for (var i in filteredHaloIds) {
 
