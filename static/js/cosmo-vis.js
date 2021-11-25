@@ -3069,7 +3069,6 @@ async function filterGalaxies(sim) {
                     else {
                         goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*2)
                     }
-                    })
 
                     center_coord_mpc = [filteredX[i], filteredY[i], filteredZ[i]]
                     rvir = filteredrh[i] / 1000
