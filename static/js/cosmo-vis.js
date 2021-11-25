@@ -133,18 +133,6 @@ let renderRequested = false
 //     console.log(galQueryData)}
 //     );
 
-// FH - for going back to full box view:
-window.addEventListener('dblclick', (e) => {
-// updateXYZDomain('x',0.0,1.0) 
-// updateXYZDomain('y',0.0,1.0) 
-// updateXYZDomain('z',0.0,1.0)
-// console.log('dblclk',width_Mpc/2)
-goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
-camera.zoom = 1.0
-camera.updateProjectionMatrix()
-updateUniforms() 
-})
-
 function storeSceneState() {
     sceneState = {}
     // simulation snapshot
@@ -2787,13 +2775,8 @@ var galaxyBrushHistory = {}
 //  .........FH create galaxy brush function.........
 async function createGalaxyFilteringBrushes(attr, field, sim) {
 
-
-    
-    let selection = document.getElementById("sim_size_select")
-
-    sim = selection.value
-
-    console.log('createGalaxyFilteringBrushes function',sim)
+    sim = document.getElementById("sim_size_select").value
+    console.log('createGalaxyFilteringBrushes function', sim)
 
     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
@@ -2801,17 +2784,35 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
     var check = document.createElement("INPUT");
     check.setAttribute("type", "checkbox");
     document.getElementById(attr + 'galaxy-brush-label').prepend(check)
-    
+
+
     // checkState determines if checkbox is clicked
     check.addEventListener('change', e => {
-    galaxyBrushHistory[attr].checkState = e.target.checked
-    console.log('new check',galaxyBrushHistory)
-    filterGalaxies(sim)
+        galaxyBrushHistory[attr].checkState = e.target.checked
+        console.log('new check', galaxyBrushHistory)
+        // console.log('new check 2',attr)
+        filterGalaxies(sim)
     })
 
+    // changing simulation changes the entire query
+    document.getElementById("sim_size_select").addEventListener('change', e => {
+        console.log('inside sim select event listener', sim)
+        galIds_doc.innerText = ''
+        haloIds_doc.innerText = ''
+
+        for (const attr in galaxyBrushHistory) {
+
+            const field = galaxyBrushHistory[attr].fieldName
+
+            prop_doc = document.getElementById(field)
+
+            prop_doc.innerText = ''
+        }
+        filterGalaxies(sim)
+    })
 
     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
-    let width = 350,
+    let width = 300,
         height = 40
     let axis = svg.append('g');
     let brush = svg.append("g")
@@ -2819,29 +2820,34 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     let minAttrScale, maxAttrScale
 
+    let haloids, galids, quantity
+
     if (sim) {
 
-    const data = await d3.json('static/data/RefL0100N1504/galaxies_RefL0100N1504.json')
+        const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
+        // console.log(data,'json response')
 
         if (data) {
 
-        console.log('eagle 100 data',data)
+            console.log('eagle data', data)
 
-        // set the min and max:
-        const data_length = data.length
-        var max = 0
-        var min = data[0][field]
-        for (i = 0; i < data_length; i++) {
-            val = data[i][field]
-            max = val > max ? val : max
-            min = val < min ? val : min  // === 0 ? val : min_ms
-        }
-        minAttrScale = min === 0 ? 0.0001 : min  // to prevent undefined values
-        maxAttrScale = max
+            // set the min and max:
+            const data_length = data.length
+            var max = 0
+            var min = data[0][field]
+            for (i = 0; i < data_length; i++) {
+                val = data[i][field]
+                max = val > max ? val : max
+                min = val < min ? val : min  // === 0 ? val : min_ms
+            }
+            //         console.log(min,max,'min and max here')
+            minAttrScale = min === 0 ? 0.0001 : min  // to prevent undefined values
+            maxAttrScale = max
         }
     }
 
-    console.log(minAttrScale,maxAttrScale,'these are the attr')
+    console.log(minAttrScale, maxAttrScale, 'these are the attr')
+    console.log(haloids, galids, quantity, 'map, filter, etc.')
 
     var attrScale = d3.scaleLog()
         .domain([minAttrScale, maxAttrScale])
@@ -2915,14 +2921,18 @@ async function filterGalaxies(sim) {
 
     console.log('filterGalaxies function', sim)
 
-//     allGalData_doc = document.getElementById('galdata')
+
+
+    allGalData_doc = document.getElementById('galdata')
     galIds_doc = document.getElementById('galid')
     haloIds_doc = document.getElementById('haloid')
+    // prop_doc.innerText = ''
 
     const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
 
     var filteredData = data.slice() //slice of data
 
+    // var filteredData = galQueryData.slice() //slice of galquerydata
 
     console.log('new brush history', galaxyBrushHistory)
 
@@ -2931,9 +2941,22 @@ async function filterGalaxies(sim) {
         const range = galaxyBrushHistory[attr].ranges
         const field = galaxyBrushHistory[attr].fieldName
 
+        // prop_doc = document.getElementById(field)
+
+        // document.getElementById("sim_size_select").addEventListener('change', e => {
+        // console.log('inside sim select event listener',sim)
+        // galIds_doc.innerText = '' 
+        // haloIds_doc.innerText = ''
+        // prop_doc.innerText = ''
+        // }) 
+
         if (galaxyBrushHistory[attr].checkState == true) {
-        
-        var filteredData = filteredData.filter(d => d[field] >= range[0] && d[field] <= range[1])
+
+            // console.log('just the range',range)
+
+            var filteredData = filteredData.filter(d => d[field] >= range[0] && d[field] <= range[1])
+            // console.log('filtering in loop',field)
+            // filteredData.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
         }
     }
@@ -2968,7 +2991,6 @@ async function filterGalaxies(sim) {
                 anchor.href = "#";
                 anchor.innerText = parseFloat(filteredGalIds[i]);
 
-
                 let elem = document.createElement("li");
                 elem.appendChild(anchor);
                 galIds_doc.appendChild(elem);
@@ -2979,21 +3001,15 @@ async function filterGalaxies(sim) {
                         filteredGalIds[i], filteredX[i], filteredY[i], filteredZ[i], filteredrh[i])
                     dl = (filteredrh[i] / 1000) / (width_Mpc)
                     // console.log(width_Mpc,dl)
-                    if (sim == "RefL0100N1504") {camera.zoom = 6.0}
-                    else {camera.zoom = 3.0}
-                 
-                    if (filteredrh[i] <= 300 && filteredrh[i] > 100){
-                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*7)
+                    camera.zoom = 3.0
+
+                    if (sim == "RefL0100N1504") {
+                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 18)
                     }
-                    else if (filteredrh[i] <= 500 && filteredrh[i] > 300){
-                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*3)
+                    else if (sim == "RefL0025N0376") {
+                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 7)
                     }
-                    else if (filteredrh[i] <= 100) {
-                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*20)
-                    }
-                    else {
-                        goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*2)
-                    }
+                    else { goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 5) }
 
                     center_coord_mpc = [filteredX[i], filteredY[i], filteredZ[i]]
                     rvir = filteredrh[i] / 1000
@@ -3003,7 +3019,6 @@ async function filterGalaxies(sim) {
                     // goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)
                 })
             }
-
 
             for (var i in filteredHaloIds) {
 
@@ -3191,25 +3206,6 @@ function checkSelectedSimID() {
             $("#star_select").empty();
             $("#bh_select").empty();
         }
-        
-        // FH - changing simulation changes the entire galaxy query:
-        console.log('in checkSelectedSimID',oldSimID,simID)
-        galIds_doc = document.getElementById('galid')
-        haloIds_doc = document.getElementById('haloid')
-        galIds_doc.innerText = '' 
-        haloIds_doc.innerText = ''
-
-        for (const attr in galaxyBrushHistory) {
-
-            const field = galaxyBrushHistory[attr].fieldName
-
-            prop_doc = document.getElementById(field)
-
-            prop_doc.innerText = ''
-
-        }
-
-        filterGalaxies(simID)
     }
 
     function createAttributeSelectors(field_list) {
