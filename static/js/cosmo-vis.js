@@ -2833,7 +2833,9 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     if (sim) {
 
-        const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
+       // need the big 100 Mpc box here!!
+        const data = await d3.json('static/data/RefL0100N1504/galaxies_RefL0100N1504.json')
+
         // console.log(data,'json response')
 
         if (data) {
