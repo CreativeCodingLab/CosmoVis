@@ -1646,6 +1646,15 @@ function goToPoint(x, y, z, delta = 0.1) {
     updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
     updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
 
+    
+     /////////////// forcing the domains to be within the voxelized volume!
+    /// - to remove edge effects for example
+
+    domainXYZ[1] = Math.min(domainXYZ[1],1)
+    domainXYZ[3] = Math.min(domainXYZ[3],1)
+    domainXYZ[5] = Math.min(domainXYZ[5],1)
+ 
+    ////////////////
 
 
     m = gridsize / width_Mpc
@@ -2913,6 +2922,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
 }
 
+var propList = {} // for plotting galaxy properties 
 
 // FH galaxy function #2 - actual querying in table:
 async function filterGalaxies(sim) {
@@ -2920,8 +2930,6 @@ async function filterGalaxies(sim) {
     sim = document.getElementById("sim_size_select").value
 
     console.log('filterGalaxies function', sim)
-
-
 
     allGalData_doc = document.getElementById('galdata')
     galIds_doc = document.getElementById('galid')
@@ -2941,18 +2949,7 @@ async function filterGalaxies(sim) {
         const range = galaxyBrushHistory[attr].ranges
         const field = galaxyBrushHistory[attr].fieldName
 
-        // prop_doc = document.getElementById(field)
-
-        // document.getElementById("sim_size_select").addEventListener('change', e => {
-        // console.log('inside sim select event listener',sim)
-        // galIds_doc.innerText = '' 
-        // haloIds_doc.innerText = ''
-        // prop_doc.innerText = ''
-        // }) 
-
         if (galaxyBrushHistory[attr].checkState == true) {
-
-            // console.log('just the range',range)
 
             var filteredData = filteredData.filter(d => d[field] >= range[0] && d[field] <= range[1])
             // console.log('filtering in loop',field)
@@ -2967,6 +2964,8 @@ async function filterGalaxies(sim) {
 
         if (galaxyBrushHistory[attr].checkState == true) {
 
+            propList[attr] = []
+
             galIds_doc.innerText = ''  // clears any existing lists
             haloIds_doc.innerText = ''
 
@@ -2979,6 +2978,8 @@ async function filterGalaxies(sim) {
             var filteredGalIds = filteredData.map(d => d.galID)
             var filteredHaloIds = filteredData.map(d => d.haloID)
             var filteredProps = filteredData.map(d => d[field])
+            
+            filteredProps.forEach(e => propList[attr].push(e)) //append to list for plotting
 
             var filteredX = filteredData.map(d => d['gal_x'])
             var filteredY = filteredData.map(d => d['gal_y'])
@@ -3035,6 +3036,229 @@ async function filterGalaxies(sim) {
             }
 
         }
+    }
+    
+    plotProps(propList)
+
+
+}
+
+
+//  FH function to plot some galaxy properties against each other
+function plotProps(alldata) {
+
+    console.log('in plotting fn',alldata)
+    
+    // remove old dropdowns:
+    d3.select('#galPropX').selectAll("*").remove()
+    d3.select('#galPropY').selectAll("*").remove()
+
+    // create new dropdowns:
+    dvx = document.getElementById('galPropX')
+    dvy = document.getElementById('galPropY')
+
+    dropdown_elements = ['halo mass','stellar mass', 'sfr', 'gas mass']
+
+    var selectX = document.createElement("select")
+    selectX.name = 'galaxy-prop-x'
+    selectX.id = 'galaxy-prop-x'
+
+    var selectY = document.createElement("select")
+    selectY.name = 'galaxy-prop-y'
+    selectY.id = 'galaxy-prop-y'
+
+    for (const el of dropdown_elements) {
+        var option = document.createElement("option")
+        option.value = el
+        option.text = el
+        selectX.appendChild(option)
+    }
+
+    for (const el of dropdown_elements) {
+        var option = document.createElement("option")
+        option.value = el
+        option.text = el
+        selectY.appendChild(option)
+    }
+
+    document.createElement("br")
+
+    var label = document.createElement("label")
+    label.innerHTML = "Choose plot variables:"
+    label.htmlfor = 'galaxy-prop-plot'
+
+    dvx.appendChild(label).appendChild(selectX).append("br")
+    dvy.appendChild(label).appendChild(selectY).append("br")
+
+    sx = document.getElementById('galaxy-prop-x')
+    sy = document.getElementById('galaxy-prop-y')
+
+    //make plots at change of dropdown option:
+
+    sx.onchange = function() {
+
+        attrx = sx.value
+        attry = sy.value
+
+        // remove old plot:
+        d3.select('#galPropPlot').selectAll(".graph").remove()
+
+        // make new plot:
+
+        let minXScale, maxXScale, minYScale, maxYScale
+
+        var margin = { top: 15, right: 25, bottom: 15, left: 85 },
+        width = 400 - margin.left - margin.right,
+        height = 200 - margin.top - margin.bottom;
+       
+        datax = alldata[sx.value]
+        datay = alldata[sy.value]
+
+        console.log('plot data',datax,datay)
+
+        data = []
+
+        for (i = 0; i < datax.length; i++) {
+            data[i] = { 'x': datax[i], 'y': datay[i] }
+        }
+
+        const x_length = datax.length
+        const y_length = datay.length
+        
+        minXScale = d3.min(datax) -  (0.1*d3.min(datax))  // just giving the axis limits a little wiggle room
+        maxXScale = d3.max(datax) +  (0.1*d3.max(datax))
+
+        minYScale = d3.min(datay) -  (0.1*d3.min(datay))
+        maxYScale = d3.max(datay) +  (0.1*d3.max(datay))
+
+        var svg = d3.select('#galPropPlot')
+        .append("svg")
+        .attr("class", "graph")
+        .attr("width", width + margin.right)
+        .attr("height", height + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+        // Set x and y-axis scales
+        var xScale = d3.scaleLog()
+            .domain([minXScale,maxXScale])
+            .range([0, width + margin.left + margin.right])
+
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(xScale).ticks(4));
+        svg.append("text")
+            .attr("transform", "translate(" + (width / 2 + 50) + " ," + (height + margin.top + 20) + ")")
+            .style("text-anchor", "middle")
+            .text(attrx)
+
+        var yScale = d3.scaleLog()
+            .domain([minYScale,maxYScale])
+            .range([height, 0])
+
+        svg.append("g")
+            .call(d3.axisLeft(yScale).ticks(4));
+
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left + 35)
+            .attr("x", 0 - (height / 2))
+            .style("text-anchor", "middle")
+            .text(attry);
+
+        svg.append('g')
+            .selectAll("dot")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", (d) => xScale(d.x))
+            .attr("cy", (d) => yScale(d.y))
+            .attr("r", 3)
+            .style("fill", "#CC0000");
+
+    }
+
+    sy.onchange = function() {
+
+        attrx = sx.value
+        attry = sy.value
+
+        // remove old plot:
+        d3.select('#galPropPlot').selectAll(".graph").remove()
+
+        // make new plot:
+
+        let minXScale, maxXScale, minYScale, maxYScale
+
+        var margin = { top: 15, right: 25, bottom: 15, left: 85 },
+        width = 400 - margin.left - margin.right,
+        height = 200 - margin.top - margin.bottom;
+       
+        datax = alldata[sx.value]
+        datay = alldata[sy.value]
+
+        console.log('plot data',datax,datay)
+
+        data = []
+
+        for (i = 0; i < datax.length; i++) {
+            data[i] = { 'x': datax[i], 'y': datay[i] }
+        }
+
+        const x_length = datax.length
+        const y_length = datay.length
+
+        minXScale = d3.min(datax) -  (0.1*d3.min(datax))  // just giving the axis limits a little wiggle room
+        maxXScale = d3.max(datax) +  (0.1*d3.max(datax))
+
+        minYScale = d3.min(datay) -  (0.1*d3.min(datay))
+        maxYScale = d3.max(datay) +  (0.1*d3.max(datay))
+
+        var svg = d3.select('#galPropPlot')
+        .append("svg")
+        .attr("class", "graph")
+        .attr("width", width + margin.right)
+        .attr("height", height + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+        // Set x and y-axis scales
+        var xScale = d3.scaleLog()
+            .domain([minXScale,maxXScale])
+            .range([0, width + margin.left + margin.right])
+
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(xScale).ticks(4));
+        svg.append("text")
+            .attr("transform", "translate(" + (width / 2 + 50) + " ," + (height + margin.top + 20) + ")")
+            .style("text-anchor", "middle")
+            .text(attrx)
+
+        var yScale = d3.scaleLog()
+            .domain([minYScale,maxYScale])
+            .range([height, 0])
+
+        svg.append("g")
+            .call(d3.axisLeft(yScale).ticks(4));
+
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left + 35)
+            .attr("x", 0 - (height / 2))
+            .style("text-anchor", "middle")
+            .text(attry);
+
+        svg.append('g')
+            .selectAll("dot")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", (d) => xScale(d.x))
+            .attr("cy", (d) => yScale(d.y))
+            .attr("r", 3)
+            .style("fill", "#CC0000");
+
     }
 
 }
@@ -3367,15 +3591,15 @@ function init() {
         camera.updateProjectionMatrix();
     })
 
-    // for going back to full box view:
-    window.addEventListener('dblclick', (e) => {
-        // updateXYZDomain('x',0.0,1.0) 
-        // updateXYZDomain('y',0.0,1.0) 
-        // updateXYZDomain('z',0.0,1.0)
-        // console.log('dblclk',width_Mpc/2)
-        goToPoint(width_Mpc / 2, width_Mpc / 2, width_Mpc / 2, 0.5)
-        camera.zoom = 1.0
-    })
+// for going back to full box view:
+//     window.addEventListener('dblclick', (e) => {
+//         // updateXYZDomain('x',0.0,1.0) 
+//         // updateXYZDomain('y',0.0,1.0) 
+//         // updateXYZDomain('z',0.0,1.0)
+//         // console.log('dblclk',width_Mpc/2)
+//         goToPoint(width_Mpc / 2, width_Mpc / 2, width_Mpc / 2, 0.5)
+//         camera.zoom = 1.0
+//     })
     
 
     // document.onkeydown = onKeyDown
