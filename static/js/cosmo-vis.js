@@ -3314,15 +3314,15 @@ function createXYZBrush(xyz) {
 
         x.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(x).ticks(6))
+            .call(d3.axisBottom(x).ticks(11))
 
         y.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(y).ticks(6))
+            .call(d3.axisBottom(y).ticks(11))
 
         z.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(z).ticks(6))
+            .call(d3.axisBottom(z).ticks(11))
 
     }
 
