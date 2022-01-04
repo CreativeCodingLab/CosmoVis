@@ -7,6 +7,8 @@ of large-scale hydrodynamic cosmological simulation datasets. CosmoVis enables a
 
 A live demo can be found here: [CosmoVis](http://cosmovis.nrp-nautilus.io)
 
+A dev demo with experimental features can be found here: [CosmoVis](http://cosmovis-dev.nrp-nautilus.io)
+
 Here is a video that outlines a scientific use case from CosmoVis: [link](https://drive.google.com/file/d/1CPoEFf4xyQHr0zxEZMu_VgkT2a0_Nfme/view?usp=sharing)
 
 ## Installation Instructions
