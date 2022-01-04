@@ -1,5 +1,6 @@
+celery==4.4.7
 eagleSqlTools==2.0.0
-eventlet==0.25.0
+eventlet==0.25.2
 Flask==1.1.2
 flask_compress
 Flask-SocketIO==4.3.0

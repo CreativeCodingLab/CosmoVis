@@ -1,0 +1,3 @@
+[Trident]
+ion_table_dir = /root/.trident
+ion_table_file = hm2012_hr.h5
