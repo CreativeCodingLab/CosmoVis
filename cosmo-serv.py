@@ -1,3 +1,6 @@
+#Start celery_tasks.py first: `celery worker -A celery_tasks.celery --loglevel=info`
+#Then run this: python cosmo-serv.py in a different terminal window
+
 import eventlet
 eventlet.monkey_patch(os=False)
 from flask import Flask, jsonify, request, render_template, session, copy_current_request_context

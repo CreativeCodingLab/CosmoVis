@@ -1,3 +1,5 @@
+#start this script with this command: celery worker -A celery_tasks.celery --loglevel=info -P eventlet
+
 import eventlet
 eventlet.monkey_patch(os=False)
 import multiprocessing
