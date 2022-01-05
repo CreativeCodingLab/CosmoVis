@@ -94,6 +94,9 @@ var galaxy_centers
 const times = [];
 let fps;
 
+var galaxyBrushHistory = {}
+
+
 function refreshLoop() {
     window.requestAnimationFrame(() => {
         const now = performance.now();
@@ -2734,7 +2737,7 @@ function receiveYTPlots(msg){
 
 
 // FH galaxy brush history global object:
-var galaxyBrushHistory = {}
+// var galaxyBrushHistory = {}
 
 //  .........FH create galaxy brush function.........
 async function createGalaxyFilteringBrushes(attr, field, sim) {
@@ -2995,6 +2998,7 @@ async function filterGalaxies(sim) {
         }
     }
     
+    console.log(propList)
     plotProps(propList)
 
 
