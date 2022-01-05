@@ -1,4 +1,4 @@
-#Start celery_tasks.py first: `celery worker -A celery_tasks.celery --loglevel=info`
+#Start celery_tasks.py first: `celery worker -A celery_tasks.celery --loglevel=info -P eventlet` 
 #Then run this: python cosmo-serv.py in a different terminal window
 
 import eventlet
@@ -27,7 +27,6 @@ Compress(app)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
 app.config['SECRET_KEY'] = 'secret!'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-<<<<<<< HEAD
 #Configure message queue backend
 app.config.update(
     broker_url='amqp://cosmovis:sivomsoc@localhost:5672',
@@ -43,61 +42,6 @@ async_mode = 'eventlet'
 # amqp://cosmovis:sivomsoc@localhost:5672//
 socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
 # socketio = SocketIO(app,cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
-=======
-Compress(app)
-# socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
-
-socketio = SocketIO(app,cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
-# thread = None
-# thread_lock = Lock()
-multiprocessing.set_start_method('spawn')
-
-yt.enable_parallelism()
-sgs = []
-rpts = {}
-
-spectrum_hdul = fits.HDUList()
-
-try:
-    EAGLE_12Mpc = yt.load('static/data/RefL0012N0188/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
-    EAGLE_12Mpc_ad = EAGLE_12Mpc.all_data()
-
-except Exception as e:
-    print('error: '+ str( e ))
-    exc_type, exc_obj, exc_tb = sys.exc_info()
-    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-    print(exc_type, fname, exc_tb.tb_lineno) 
-
-try:
-    EAGLE_25Mpc = yt.load('static/data/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
-    #EAGLE_25Mpc = yt.load('/cv-vol/EAGLE25_z0_0/RefL0025N0376/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
-    EAGLE_25Mpc_ad = EAGLE_25Mpc.all_data()
-except Exception as e:
-    print('error: '+ str( e ))
-    exc_type, exc_obj, exc_tb = sys.exc_info()
-    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-    print(exc_type, fname, exc_tb.tb_lineno) 
-
-try:
-    EAGLE_100Mpc = yt.load('static/data/RefL0100N1504/snapshot/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
-    # EAGLE_100Mpc = yt.load('/cv-vol/EAGLE100_z0_0/RefL0100N1504/snapshot_028_z000p000/snap_028_z000p000.0.hdf5')
-    EAGLE_100Mpc_ad = EAGLE_100Mpc.all_data()
-except Exception as e:
-    print('error: '+ str( e ))
-    exc_type, exc_obj, exc_tb = sys.exc_info()
-    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-    print(exc_type, fname, exc_tb.tb_lineno)
-
-try:
-    TNG100_snap030 = yt.load('static/data/TNG100_z2.3/snapshot/snap_030.0.hdf5')
-    # TNG100_snap030 = yt.load('/cv-vol/TNG100_z2_3/snap_030.0.hdf5')
-    TNG100_snap030_ad = TNG100_snap030.all_data()
-except Exception as e:
-    print('error: '+ str( e ))
-    exc_type, exc_obj, exc_tb = sys.exc_info()
-    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-    print(exc_type, fname, exc_tb.tb_lineno) 
->>>>>>> d5d7d23a44042206203741ed061831dfa24abebd
 
 # import pdb; pdb.set_trace()
 
