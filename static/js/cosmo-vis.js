@@ -226,44 +226,6 @@ function restoreSceneState() {
     input.click();
 }
 
-
-
-
-// // load sceneState
-// var file = document.getElementById('file').files[0];
-// if(file){
-//     var reader = new FileReader();
-
-//     // Read file into memory as UTF-16
-//     reader.readAsText(file, "UTF-16");
-
-//     // Handle progress, success, and errors
-//     reader.onload = loaded;
-//     reader.onerror = errorHandler;
-
-// }
-
-// function loaded(evt) {
-//     // Obtain the read file data
-//     var newSceneState = evt.target.result;
-
-//     simID = newSceneState.simID
-//     volMaterial.uniforms["u_gasVisibility"].value  = newSceneState.gas
-//     volMaterial.uniforms["u_dmVisibility"].value   = newSceneState.dm
-//     volMaterial.uniforms["u_starVisibility"].value = newSceneState.stars
-
-//     camera = newSceneState.camera
-
-//     domainXYZ = newSceneState.domainXYZ
-// }
-
-// function errorHandler(evt) {
-//     if(evt.target.error.name == "NotReadableError") {
-//         // The file could not be read
-//     }
-// }      
-// }
-
 function clearThree(obj) {
     /**
      * * removes THREE.js objects and materials from memory more efficiently than just by setting `scene = []`
@@ -321,7 +283,6 @@ function clearLayer(l) {
 
 }
 
-
 async function updateSize() {
     s = document.getElementById("size_select").value
     //check to see if selected size is different than the current configuration
@@ -352,7 +313,6 @@ async function updateSize() {
         controls.update()
     }
 }
-
 
 function toggleGrid() {
     let div = (document.getElementById("grid-check")).checked
@@ -1026,13 +986,8 @@ function loadGas(size, attr, resolution_bool) {
             }
             climGasLimits = [min, max]
 
-
-
-
-
             volMaterial.uniforms["u_gasUnpackDomain"].value.set(gasUnpackDomain[0], gasUnpackDomain[1])
             // if(elements.includes(attr)){
-
 
             // min = 4.5
             // minval.value = 4.5
@@ -1353,7 +1308,7 @@ function loadStars() {
             n = Object.keys(d).length
             // console.log(d[0])
             console.log(n)
-            m = gridsize / (edges.right_edge[0] - edges.left_edge[0])
+            m = gridsize / (edges.right_edge[0] - edges.left_edge[0]) //take into account other dimensions
             var starGeometry = new THREE.BufferGeometry();
             var starPositions = new Float32Array(n * 3)
             if (Object.keys(d).length > 0) {
@@ -3925,21 +3880,13 @@ function exportData(name, text) {
  */
 
 $(document).ready(function () {
-
-
     $(".container").hover(function () {
         container_hover = true;
     }, function () {
         container_hover = false;
     });
-
-
-
     init()
     animate()
     render()
     // asyncCall(false)
-    // 
-
-
 })
