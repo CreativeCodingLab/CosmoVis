@@ -1047,12 +1047,12 @@ def make_synthetic_spectrum(simID,idx,start,end):
 
     spec = {'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}
     socketio.sleep()
-    with open('static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json', 'w') as file:
-        json.dump(spec, file)
-    socketio.sleep(0)
-    socketio.emit( 'synthetic_spectrum_saved', {'index': 'static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json'}, namespace = '/test' )
-    socketio.sleep(0)
-    print("spectrum saved")
+    # with open('static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json', 'w') as file:
+    #     json.dump(spec, file)
+    # socketio.sleep(0)
+    # socketio.emit( 'synthetic_spectrum_saved', {'index': 'static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json'}, namespace = '/test' )
+    # socketio.sleep(0)
+    # print("spectrum saved")
     return {'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}
 
 @celery.task()

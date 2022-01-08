@@ -184,7 +184,7 @@ THREE.VolumeRenderShader1 = {
 		"		uniform float u_distModI;",
 		"		uniform float u_valModI;",
 
-		"		uniform usampler3D u_density;",
+		"		uniform highp usampler3D u_density;",
 
 		"		uniform sampler2D u_cmdata;",
 		"		uniform sampler2D u_cmGasData;",
@@ -223,7 +223,7 @@ THREE.VolumeRenderShader1 = {
 		"		vec2 ray_AABB_intersection(vec3 rp, vec3 rd, vec3 c_lo, vec3 c_hi);",
 		"		void cast_raymarching();",
 		"		float rnd(vec2 x);",
-		"		vec3 sampleData(sampler3D data, vec3 texcoords);",
+		"		vec3 sampleData(highp sampler3D data, vec3 texcoords);",
 		"		vec4 get_emitted_L_gas(float gas_val, float density_val);",
 		"		vec4 get_emitted_L_darkmatter(float dm_val, float density_val);",
 		"		vec3 grayscale(vec3 inputColor);",
@@ -388,7 +388,7 @@ THREE.VolumeRenderShader1 = {
 		"		}",
 
 		`
-				vec3 sampleData(sampler3D data, vec3 texcoords) {
+				vec3 sampleData(highp sampler3D data, vec3 texcoords) {
 						/* Sample float value from a 3D texture. Assumes intensity data. */
 						return texture(data, texcoords.xyz/u_size).rgb;
 				}

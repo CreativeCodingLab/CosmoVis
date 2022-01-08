@@ -29,10 +29,10 @@ RUN ./install_rabbitMQ.sh
 
 ##Create RabbitMQ user with permissions, which is used by Flask-SocketIO and Celery
 ##TODO: move the following commands to a startup script that runs when the container first starts?
-RUN systemctl start rabbitmq-server
-RUN rabbitmqctl add_user cosmovis sivomsoc
-RUN rabbitmqctl set_user_tags cosmovis administrator
-RUN rabbitmqctl set_permissions -p / cosmovis ".*" ".*" ".*"
+# RUN systemctl start rabbitmq-server
+# RUN rabbitmqctl add_user cosmovis sivomsoc
+# RUN rabbitmqctl set_user_tags cosmovis administrator
+# RUN rabbitmqctl set_permissions -p / cosmovis ".*" ".*" ".*"
 
 ##Install required Python packages
 RUN python -m pip install --upgrade pip
@@ -58,4 +58,7 @@ RUN systemctl enable cosmovis
 
 EXPOSE 5000 4369 5671 5672 15691 15692 25672
 
-CMD [ "python", "./cosmo-serv.py" ]
+# CMD [ "python", "./cosmo-serv.py" ]
+
+COPY container_startup.sh /
+CMD [ "bash", "./container_startup.sh" ]
