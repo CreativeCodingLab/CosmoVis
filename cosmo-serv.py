@@ -40,8 +40,8 @@ app.config.update(
 #Start SocketIO
 async_mode = 'eventlet'
 # amqp://cosmovis:sivomsoc@localhost:5672//
-socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
-# socketio = SocketIO(app,message_queue='amqp://cosmovis:sivomsoc@localhost:5672',cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+# socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
+socketio = SocketIO(app,message_queue='amqp://cosmovis:sivomsoc@localhost:5672',cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 
 # import pdb; pdb.set_trace()
 
