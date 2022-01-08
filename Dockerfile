@@ -25,7 +25,7 @@ RUN apt install -y apt-transport-https
 
 COPY install_rabbitMQ.sh /
 RUN chmod +x install_rabbitMQ.sh
-RUN ./install_rabbitMQ.sh
+RUN bash ./install_rabbitMQ.sh
 
 ##Create RabbitMQ user with permissions, which is used by Flask-SocketIO and Celery
 ##TODO: move the following commands to a startup script that runs when the container first starts?
@@ -42,9 +42,9 @@ RUN pip install -r requirements.txt
 ##Try to automate Trident install (needs work)
 COPY hm2012_hr.h5.gz ./
 RUN gzip -d hm2012_hr.h5.gz
-RUN mkdir ~/.trident
-COPY scripts/config.tri ~/.trident
-RUN mv hm2012_hr.h5 ~/.trident
+RUN mkdir ~./trident
+COPY scripts/config.tri ~./trident
+RUN mv hm2012_hr.h5 ~./trident
 
 ##Copy configuration scripts for NGINX and CosmoVis gunicorn service
 COPY scripts/default /etc/nginx/sites-enabled/
