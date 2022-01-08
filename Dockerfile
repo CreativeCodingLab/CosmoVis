@@ -29,7 +29,7 @@ RUN bash ./install_rabbitMQ.sh
 
 ##Create RabbitMQ user with permissions, which is used by Flask-SocketIO and Celery
 ##TODO: move the following commands to a startup script that runs when the container first starts?
-# RUN systemctl start rabbitmq-server
+RUN systemctl enable rabbitmq-server
 # RUN rabbitmqctl add_user cosmovis sivomsoc
 # RUN rabbitmqctl set_user_tags cosmovis administrator
 # RUN rabbitmqctl set_permissions -p / cosmovis ".*" ".*" ".*"
@@ -40,20 +40,20 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
 ##Try to automate Trident install (needs work)
-COPY hm2012_hr.h5.gz ./
-RUN gzip -d hm2012_hr.h5.gz
-RUN mkdir ~./trident
-COPY scripts/config.tri ~./trident
-RUN mv hm2012_hr.h5 ~./trident
+# COPY hm2012_hr.h5.gz ./
+# RUN gzip -d hm2012_hr.h5.gz
+# RUN mkdir /~/.trident
+# COPY scripts/config.tri /~/.trident
+# RUN mv hm2012_hr.h5 /~/.trident
 
 ##Copy configuration scripts for NGINX and CosmoVis gunicorn service
 COPY scripts/default /etc/nginx/sites-enabled/
 COPY scripts/cosmovis.service /etc/systemd/system/
 
-WORKDIR /cv-docker
 
-RUN systemctl restart nginx
+WORKDIR /cv-docker
 RUN systemctl daemon-reload
+RUN systemctl restart nginx
 RUN systemctl enable cosmovis
 
 EXPOSE 5000 4369 5671 5672 15691 15692 25672
