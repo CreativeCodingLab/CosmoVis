@@ -5,9 +5,9 @@ After=network.target
 [Service]
 User=root
 Group=www-data
-WorkingDirectory=/cv-vol/dev-repo/CosmoVis
+WorkingDirectory=/cv-vol/main-repo/CosmoVis
 ExecStartPre=/bin/bash update.sh
-ExecStart=/usr/local/bin/gunicorn -t 2400 --preload --graceful-timeout 2400 --workers 12 -k eventlet --log-level debug --bind unix:cosmovis.sock -m 007 cosmo-serv:app
+ExecStart=/usr/local/bin/gunicorn -t 2400 --preload --graceful-timeout 2400 --workers 1 -k eventlet --log-level debug --bind unix:cosmovis.sock -m 007 cosmo-serv:app
 
 [Install]
 WantedBy=multi-user.target
