@@ -1,3 +1,7 @@
+cd /cv-vol/dev-repo/src/yt
+python setup.py develop
+pip install yt_astro_analysis
+
 #import trident for the first time -- initialization automation
 echo -e "y\n\n2\n" | python install_trident.py
 
