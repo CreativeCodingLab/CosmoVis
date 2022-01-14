@@ -1650,6 +1650,10 @@ function goToPoint(x, y, z, delta = 0.1) {
      /////////////// forcing the domains to be within the voxelized volume!
     /// - to remove edge effects for example
 
+    domainXYZ[0] = Math.max(domainXYZ[0],0)
+    domainXYZ[2] = Math.max(domainXYZ[2],0)
+    domainXYZ[4] = Math.max(domainXYZ[4],0)
+    
     domainXYZ[1] = Math.min(domainXYZ[1],1)
     domainXYZ[3] = Math.min(domainXYZ[3],1)
     domainXYZ[5] = Math.min(domainXYZ[5],1)
