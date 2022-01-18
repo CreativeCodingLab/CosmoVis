@@ -58,3 +58,146 @@ Alternatively, one can use the included requirements.txt file to install Python 
 ## Usage
 - CosmoVis enables real time volume rendering in the web browser. Try it out by clicking and dragging within the visualization. Use your mouse or trackpad scrolling to zoom in and out of the simulation.
 - On the right, click on the "data selection" to open a panel that allows for switching between simulations, changing the resolution, and slicing the volume.
+
+## Available Cosmological Simulation Particle Types and Fields
+
+Example particle types and fields made available in cosmological simulation snapshots that can be retrieved and plotted using CosmoVis. Simulation datasets typically organize their data in terms of differentparticle types (gas, dark matter, stars, and black holes), each expressinga variety of physical quantity fields.
+
+| Particle Type  | Fields                                            | Illustris (2013) | EAGLE (2017) | IllustrisTNG (2018) |
+| -------------- | ------------------------------------------------- | ---------------- | ------------ | ------------------- |
+| Gas            | AGN Radiation (Bolometric intensity)              | x                |              | x                   |
+|                | Center Of Mass                                    |                  |              | x                   |
+|                | Cooling Rate                                      | x                |              | x                   |
+|                | Coordinates                                       | x                | x            | x                   |
+|                | Density                                           | x                | x            | x                   |
+|                | Electron Abundance                                | x                |              | x                   |
+|                | Element/Metal Abundances                          |                  | x            | x                   |
+|                | Energy Dissipation                                |                  |              | x                   |
+|                | Entropy                                           |                  | x            |                     |
+|                | Expansion Factor at Maximum Temperature           |                  | x            |                     |
+|                | Gravitational Potential Energy                    | x                |              | x                   |
+|                | Host Halo Mass                                    |                  | x            | x                   |
+|                | GroupNumber                                       |                  | x            |                     |
+|                | Host Halo TVir Mass                               |                  | x            |                     |
+|                | Internal Energy                                   | x                | x            | x                   |
+|                | InternalEnergyOld                                 |                  |              | x                   |
+|                | Iron Mass Frac From SNIa                          |                  | x            |                     |
+|                | Mach Number                                       |                  |              | x                   |
+|                | Magnetic Field                                    |                  |              | x                   |
+|                | Magnetic Field Divergence                         |                  |              | x                   |
+|                | Mass                                              | x                | x            | x                   |
+|                | Maximum Temperature                               |                  | x            |                     |
+|                | Metal Mass Frac From AGB, SNII and SNIa Stars     |                  | x            |                     |
+|                | Metallicity                                       | x                | x            | x                   |
+|                | Metals                                            |                  |              | x                   |
+|                | Metals Tagged                                     |                  |              | x                   |
+|                | Metal Mass Frac From SNII                         |                  | x            |                     |
+|                | Metal Mass Frac From SNIa                         |                  | x            |                     |
+|                | Neutral Hydrogen Abundance                        | x                |              | x                   |
+|                | NumTracers                                        | x                |              |                     |
+|                | OnEquationOfState                                 |                  | x            |                     |
+|                | ParticleIDs                                       | x                | x            | x                   |
+|                | Smoothed Element Abundance                        |                  | x            |                     |
+|                | Smoothed Iron Mass Frac From SNIa                 |                  | x            |                     |
+|                | Smoothed Metallicity                              |                  | x            |                     |
+|                | SmoothingLength                                   | x                | x            |                     |
+|                | Star Formation Rate                               | x                | x            | x                   |
+|                | Subfind DM Density                                |                  |              | x                   |
+|                | Subfind Density                                   | x                |              | x                   |
+|                | Subfind Hsml                                      | x                |              | x                   |
+|                | Subfind Vel Disp                                  | x                |              | x                   |
+|                | Sub Group Number                                  |                  | x            |                     |
+|                | Temperature                                       |                  | x            |                     |
+|                | Total Mass From AGB, SNII and SNIa Stars          |                  | x            |                     |
+|                | Total Mass From SNII                              |                  | x            |                     |
+|                | Total Mass From SNIa                              |                  | x            |                     |
+|                | Velocity                                          | x                | x            | x                   |
+|                | Volume                                            | x                |              |                     |
+|                | Wind Dark Matter Velocity Dispersion              | x                |              | x                   |
+| Dark matter    | Coordinates                                       | x                | x            | x                   |
+|                | GroupNumber                                       |                  | x            |                     |
+|                | ParticleIDs                                       | x                | x            | x                   |
+|                | Potential                                         | x                |              | x                   |
+|                | Subfind DM Density                                |                  |              | x                   |
+|                | Subfind Density                                   | x                |              | x                   |
+|                | Subfind Hsml                                      | x                |              | x                   |
+|                | Subfind Vel Disp                                  | x                |              | x                   |
+|                | SubGroupNumber                                    |                  | x            |                     |
+|                | Velocity                                          | x                | x            | x                   |
+| Star particles | Birth Density                                     |                  | x            |                     |
+|                | Birth Position                                    |                  |              | x                   |
+|                | Birth Velocity                                    |                  |              | x                   |
+|                | Coordinates                                       | x                | x            | x                   |
+|                | Element/Metal Abundances                          |                  | x            | x                   |
+|                | Expansion Factor at Maximum Temperature           |                  | x            |                     |
+|                | Feedback Energy Fraction                          |                  | x            |                     |
+|                | GroupNumber                                       |                  | x            |                     |
+|                | Host Halo TVir Mass                               |                  | x            |                     |
+|                | Initial Mass                                      | x                | x            | x                   |
+|                | Iron Mass Frac From SNIa                          |                  | x            |                     |
+|                | Mass                                              | x                | x            | x                   |
+|                | Maximum Temperature                               |                  | x            |                     |
+|                | Metal Mass Frac From AGB, SNII and SNIa Stars     |                  | x            |                     |
+|                | Metal Mass Frac From SNII                         |                  | x            |                     |
+|                | Metal Mass Frac From SNIa                         |                  | x            |                     |
+|                | Metallicity                                       | x                | x            | x                   |
+|                | Metals                                            |                  |              | x                   |
+|                | Metals Tagged                                     |                  |              | x                   |
+|                | Number of Tracers                                 | x                |              |                     |
+|                | ParticleIDs                                       | x                |              | x                   |
+|                | Potential                                         | x                |              | x                   |
+|                | Previous Stellar Enrichment                       |                  | x            |                     |
+|                | Smoothed Element Abundance                        |                  | x            |                     |
+|                | Smoothed Iron Mass Frac From SNIa                 |                  | x            |                     |
+|                | Smoothed Metallicity                              |                  | x            |                     |
+|                | Smoothing Length                                  |                  | x            |                     |
+|                | Stellar Enrichment Counter                        |                  | x            |                     |
+|                | Stellar Formation Time                            | x                | x            | x                   |
+|                | Stellar Photometrics                              | x                |              | x                   |
+|                | Stellar Hsml                                      |                  |              | x                   |
+|                | Subfind DM Density                                |                  |              | x                   |
+|                | Subfind Density                                   | x                |              | x                   |
+|                | Subfind Hsml                                      | x                |              | x                   |
+|                | Subfind Vel Disp                                  | x                |              | x                   |
+|                | SubGroupNumber                                    |                  | x            |                     |
+|                | Total Mass From AGB, SNII and SNIa Stars          |                  | x            |                     |
+|                | Total Mass From SNII                              |                  | x            |                     |
+|                | Total Mass From SNIa                              |                  | x            |                     |
+|                | Velocity                                          | x                | x            | x                   |
+| Black holes    | Black Hole Mass                                   | x                | x            | x                   |
+|                | Black Hole Mass Accretion Rate                    | x                | x            | x                   |
+|                | Bondi Accretion Rate                              |                  |              | x                   |
+|                | Coordinates                                       | x                | x            | x                   |
+|                | Cumulative Thermal/Kinetic AGN Energy Injection   | x                |              | x                   |
+|                | BH_CumEgyInjection_RM                             |                  |              | x                   |
+|                | Cumulative Accreted Mass                          | x                | x            | x                   |
+|                | Cumulative Number of BH Seeds Swallowed           |                  | x            |                     |
+|                | BH_CumMassGrowth_QM                               | x                |              | x                   |
+|                | BH_CumMassGrowth_RM                               |                  |              | x                   |
+|                | Density                                           | x                | x            | x                   |
+|                | Eddington Accretion Rate                          |                  |              | x                   |
+|                | Expansion Factor When BH last accreted another BH |                  | x            |                     |
+|                | Formation Time                                    |                  | x            |                     |
+|                | Gravitational Potential                           | x                |              | x                   |
+|                | Host Halo Mass                                    | x                | x            | x                   |
+|                | BH_Hsml                                           | x                |              | x                   |
+|                | BH_Mass_bubbles                                   | x                |              |                     |
+|                | BH_Mass_ini                                       | x                |              |                     |
+|                | BH MostMassiveProgenitorID                        |                  | x            |                     |
+|                | Mass                                              | x                | x            | x                   |
+|                | Mean Magnetic Pressure                            |                  |              | x                   |
+|                | Number of Black Hole Mergers                      | x                |              | x                   |
+|                | Number of Tracers                                 | x                |              |                     |
+|                | Pressure                                          | x                | x            | x                   |
+|                | Sound Speed                                       |                  | x            |                     |
+|                | Surrounding Gas Velocity                          |                  | x            |                     |
+|                | GroupNumber                                       |                  | x            |                     |
+|                | ParticleIDs                                       | x                | x            | x                   |
+|                | Smoothing Length                                  |                  | x            |                     |
+|                | Subfind DM Density                                |                  |              | x                   |
+|                | Subfind Density                                   | x                |              | x                   |
+|                | Subfind Hsml                                      | x                |              | x                   |
+|                | Subfind Vel Disp                                  | x                |              | x                   |
+|                | Thermal Energy in QSO-Heated Bubbles              | x                |              | x                   |
+|                | SubGroupNumber                                    |                  | x            |                     |
+|                | Velocity                                          | x                | x            | x                   |
