@@ -1,5 +1,5 @@
 #import trident for the first time -- initialization automation
-cd /cv-vol/dev-repo/src/yt
+cd /cv-vol/dev-repo/CosmoVis/src/yt
 python setup.py develop
 pip install yt_astro_analysis
 # cd /cv-vol/dev-repo/src/yt-astro-analysis
