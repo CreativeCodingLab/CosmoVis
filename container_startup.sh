@@ -1,9 +1,10 @@
-cd /cv-vol/dev-repo/src/yt
+cd /cv-vol/main-repo/CosmoVis/src/yt
 python setup.py develop
 pip install yt_astro_analysis
+# cd /cv-vol/dev-repo/src/yt-astro-analysis
+# pip install -e .
 
-#import trident for the first time -- initialization automation
-echo -e "y\n\n2\n" | python install_trident.py
+echo -e "y\n\n2\n" | python install_trident.py &
 
 #start message broker
 systemctl start rabbitmq-server
@@ -17,7 +18,7 @@ rabbitmqctl set_permissions -p / cosmovis ".*" ".*" ".*"
 systemctl daemon-reload
 
 #start celery worker
-cd /cv-vol/dev-repo/CosmoVis/
+cd /cv-vol/main-repo/CosmoVis/
 celery worker -A celery_tasks.celery --loglevel=info -P eventlet &
 systemctl restart nginx
 #start Flask application
