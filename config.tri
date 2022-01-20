@@ -1,3 +1,3 @@
 [Trident]
-ion_table_dir = /cv-vol/dev-repo/CosmoVis/owls_ion_data
+ion_table_dir = /cv-vol/dev-repo/CosmoVis/
 ion_table_file = hm2012_hr.h5
