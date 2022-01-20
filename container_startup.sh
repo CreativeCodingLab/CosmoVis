@@ -1,5 +1,12 @@
 #import trident for the first time -- initialization automation
-echo -e "y\n\n2\n" | python install_trident.py
+cd /cv-vol/dev-repo/CosmoVis/src/yt
+python setup.py develop
+pip install yt_astro_analysis
+# cd /cv-vol/dev-repo/src/yt-astro-analysis
+# pip install -e .
+cd ..
+cd ..
+echo -e "y\n\n2\n" | python install_trident.py &
 
 #start message broker
 systemctl start rabbitmq-server
