@@ -1,4 +1,10 @@
 #import trident for the first time -- initialization automation
+cd /cv-vol/dev-repo/src/yt
+python setup.py develop
+pip install yt_astro_analysis
+# cd /cv-vol/dev-repo/src/yt-astro-analysis
+# pip install -e .
+
 echo -e "y\n\n2\n" | python install_trident.py
 
 #start message broker
