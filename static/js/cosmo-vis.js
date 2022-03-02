@@ -2178,7 +2178,12 @@ function createColumnDensityInfoPanel(msg) {
     div.appendChild(dwnld_btn)
     div.appendChild(document.createElement("br"))
 
-    dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
+    // Lists for plotting (FH)
+    quanName = ['T', 'n_H', 'K', 'Z','v_los', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
+    unitName = ['K', 'cm^-3', 'keV cm^2', 'Zsun','km/s', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'N(N VII)', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2','cm^-2', 'cm^-2','cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2','cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2']
+    //
+    
+    dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity', 'LOS velocity','N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
     var select = document.createElement("select")
     select.name = 'simple-line-results-' + idx + ''
     select.id = 'simple-line-results-' + idx + ''
@@ -2290,7 +2295,36 @@ function createColumnDensityInfoPanel(msg) {
             for (i = 0; i < msg.i_l.length; i++) {
                 scaled_data[i] = { 'l': (msg.i_l[i] - i_min_l) / (i_max_l - i_min_l), 'c': (Math.log10(msg["i_" + s.value][i]) - i_min_val) / (i_max_val - i_min_val) }
             }
-        } else {
+        } 
+        
+   ////////  FH: LOS velocity below    
+        else if (s.value == 'LOS velocity') {
+
+            // DATA FOR GRAPH
+            min_l = d3.min(msg.l)
+            max_l = d3.max(msg.l)
+            
+            min_val = d3.min(msg[s.value])
+            max_val = d3.max(msg[s.value])
+
+            for (i = 0; i < msg.l.length; i++) {
+                data[i] = { 'l': msg.l[i], 'c': msg[s.value][i] }
+            }
+
+            // INTERPOLATED DATA FOR SKEWERS
+            i_min_l = d3.min(msg.i_l)
+            i_max_l = d3.max(msg.i_l)
+
+            i_min_val = d3.min(msg["i_" + s.value])
+            i_max_val = d3.max(msg["i_" + s.value])
+
+            for (i = 0; i < msg.i_l.length; i++) {
+                scaled_data[i] = { 'l': (msg.i_l[i] - i_min_l) / (i_max_l - i_min_l), 'c': (msg["i_" + s.value][i] - i_min_val) / (i_max_val - i_min_val) }
+            }
+        }
+  //////// 
+        
+        else {
 
             // DATA FOR GRAPH
             min_l = d3.min(msg.l)
@@ -2345,32 +2379,56 @@ function createColumnDensityInfoPanel(msg) {
         var xScale = d3.scaleLinear()
             .range([0, width + margin.left + margin.right])
             .domain(domainL);
+        
+// FH - edits below:
+        
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(xScale).ticks(6));
+            .call(d3.axisBottom(xScale).ticks(8));
+
         svg.append("text")
             .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 30) + ")")
             .style("text-anchor", "middle")
             .text("Distance (kpc)")
+
+        if (s.value == 'LOS velocity') {
 
         var yScale = d3.scaleLinear()
             .range([height, 0])
             .domain([min_val, max_val]);
         svg.append("g")
             .call(d3.axisLeft(yScale)
-                .tickFormat(d3.format("1")));
+                .tickFormat(d3.format("1")))
         svg.append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", 0 - margin.left - 5)
             .attr("x", 0 - (height / 2))
             .attr("dy", "0.9em")
             .style("text-anchor", "middle")
-            .text("log(" + s.value + ")");
+            .text(quanName[s.selectedIndex] + "(" + unitName[s.selectedIndex] + ")")
+        }
+        else {
+        
+            var yScale = d3.scaleLinear()
+                .range([height, 0])
+                .domain([min_val, max_val]);
+            svg.append("g")
+                .call(d3.axisLeft(yScale)
+                    .tickFormat(d3.format("1")))
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left - 5)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "0.9em")
+                .style("text-anchor", "middle")
+                .text("log(" + quanName[s.selectedIndex] + "/" + unitName[s.selectedIndex] + ")")
+    
+            }
 
         var line = d3.line()
             .x(d => xScale(d.l))
             .y(d => yScale(d.c))
-        // console.log(line)    
+
         svg.append("path")
             .datum(data)
             .attr("class", "line")
@@ -2802,14 +2860,14 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
     // checkState determines if checkbox is clicked
     check.addEventListener('change', e => {
         galaxyBrushHistory[attr].checkState = e.target.checked
-        console.log('new check', galaxyBrushHistory)
+//         console.log('new check', galaxyBrushHistory)
         // console.log('new check 2',attr)
         filterGalaxies(sim)
     })
 
     // changing simulation changes the entire query
     document.getElementById("sim_size_select").addEventListener('change', e => {
-        console.log('inside sim select event listener', sim)
+//         console.log('inside sim select event listener', sim)
         galIds_doc.innerText = ''
         haloIds_doc.innerText = ''
 
@@ -2844,7 +2902,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
         if (data) {
 
-            console.log('eagle data', data)
+//             console.log('eagle data', data)
 
             // set the min and max:
             const data_length = data.length
@@ -2861,8 +2919,6 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
         }
     }
 
-    console.log(minAttrScale, maxAttrScale, 'these are the attr')
-    console.log(haloids, galids, quantity, 'map, filter, etc.')
 
     var attrScale = d3.scaleLog()
         .domain([minAttrScale, maxAttrScale])
@@ -2920,7 +2976,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
             galaxyBrushHistory[attr].ranges = ret.slice()
 
-            console.log('brush history', galaxyBrushHistory)
+//             console.log('brush history', galaxyBrushHistory)
             filterGalaxies(sim)
         }
 
@@ -2964,7 +3020,7 @@ async function filterGalaxies(sim) {
         }
     }
 
-    console.log('after filtering properly', filteredData)
+//     console.log('after filtering properly', filteredData)
 
     for (const attr in galaxyBrushHistory) {
 
@@ -3005,18 +3061,18 @@ async function filterGalaxies(sim) {
                 // takes you to galaxy whose ID you click on:
                 anchor.addEventListener('click', (e) => {
                     console.log('clicked on this galaxy:',
-                        filteredGalIds[i], filteredX[i], filteredY[i], filteredZ[i], filteredrh[i])
+                       'ID: ', filteredGalIds[i], 'X Y Z: ', filteredX[i], filteredY[i], filteredZ[i], 'virial radius: ', filteredrh[i])
                     dl = (filteredrh[i] / 1000) / (width_Mpc)
                     // console.log(width_Mpc,dl)
                     camera.zoom = 3.0
 
                     if (sim == "RefL0100N1504") {
-                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 18)
+                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 15)
                     }
                     else if (sim == "RefL0025N0376") {
-                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 7)
+                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 4)
                     }
-                    else { goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 5) }
+                    else { goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 2) }
 
                     center_coord_mpc = [filteredX[i], filteredY[i], filteredZ[i]]
                     rvir = filteredrh[i] / 1000
@@ -3120,7 +3176,7 @@ function plotProps(alldata) {
         datax = alldata[sx.value]
         datay = alldata[sy.value]
 
-        console.log('plot data',datax,datay)
+//         console.log('plot data',datax,datay)
 
         data = []
 
@@ -3203,7 +3259,7 @@ function plotProps(alldata) {
         datax = alldata[sx.value]
         datay = alldata[sy.value]
 
-        console.log('plot data',datax,datay)
+//         console.log('plot data',datax,datay)
 
         data = []
 
@@ -3650,9 +3706,9 @@ function init() {
     camPos = camera.position
 
 
-    createGalaxyFilteringBrushes('sfr', 'sfr')
-    createGalaxyFilteringBrushes('stellar mass', 'ms')
     createGalaxyFilteringBrushes('halo mass', 'mh')
+    createGalaxyFilteringBrushes('stellar mass', 'ms')
+    createGalaxyFilteringBrushes('sfr', 'sfr')
     createGalaxyFilteringBrushes('gas mass', 'mg')
 
 
