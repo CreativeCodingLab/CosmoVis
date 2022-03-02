@@ -796,6 +796,12 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         i_metallicity   = interpol8(l,ray.r[('gas', 'metallicity')].to('Zsun'),dx)[1]
         i_l, i_temperature = interpol8(l,ray.r[('gas', 'temperature')],dx)
 
+        ########## VELOCITY ###########
+
+        v_los = (ray.r[('gas', 'velocity_los')].to('km/s')).tolist() 
+        i_v_los = interpol8(l,ray.r[('gas', 'velocity_los')].to('km/s'),dx)[1]
+
+        ########## VELOCITY ###########
 
         socketio.sleep(0)
         socketio.emit('simple_line_data',{  'index':         idx,
@@ -850,6 +856,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
                                          'entropy':       entropy,
                                          'metallicity':   metallicity,
                                          'temperature':   temperature,
+                                         'LOS velocity':  v_los,           
+                                         'i_LOS velocity': i_v_los,  
                                          'i_l':           i_l,
                                          'i_N(H I)':      i_H_I,
                                          'i_N(H II)':     i_H_II,
