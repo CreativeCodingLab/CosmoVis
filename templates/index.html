@@ -1,0 +1,1388 @@
+<!doctype html>
+<html>
+    <head>
+        <title>cosmovis</title>
+        <link rel="stylesheet" href="/static/style.css">
+
+        <!-- load libraries -->
+        
+        <!-- <link src="{{ url_for('static', filename='styles/style.css') }}" rel="stylesheet" type="text/css"> -->
+        <!-- <script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script> -->
+        
+        <link href="https://fonts.googleapis.com/css?family=Odibee+Sans&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://use.typekit.net/efx5ycv.css">
+        <link rel="stylesheet" href="https://use.typekit.net/qnm2bha.css">
+        <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/jQuery.min.js') }}"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/dat.gui.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/d3.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/three.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineSegmentsGeometry.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineGeometry.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineMaterial.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/LineSegments2.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='libs/Line2.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='shaders/VolumeShader.js') }}"></script>
+        
+
+        <!-- DOM manipulation -- makes containers dragable -->
+        <script>
+            $( function() {
+                $( "#galaxylist" ).draggable();
+            } );
+            $( function() {
+                $( "#data_layers" ).draggable();
+            } );
+            $( function() {
+                $( "#raySelection" ).draggable();
+            } );
+            // $( function() {
+            //     $( "#my-gui-container" ).draggable();
+            // } );
+            $( function() {
+                $( "#spectrum" ).draggable();
+            } );
+            $( function() {
+                $( "#terminal" ).draggable();
+            } );
+
+            $( function() {
+                $( "#welcome-container" ).draggable();
+            } );
+            // $( function() {
+            //     $( ".icon" ).draggable();
+            // } );
+        </script>
+        
+        
+       <!-- shader code for the stars and skewers -->
+
+        <script type="x-shader/x-vertex" id="vertexshader-star">
+            
+            uniform vec4 Col;
+            varying vec4 vCol;
+
+            uniform vec3 u_xyzMin;
+            uniform vec3 u_xyzMax;
+            uniform float u_gridsize;
+            uniform float u_starSize;
+
+            void main() {
+                vCol = Col;
+
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                
+                gl_PointSize = u_starSize;
+
+                gl_Position = projectionMatrix * mvPosition;
+                vec3 vPosition = position.xyz/u_gridsize;
+                if( (vPosition.x < u_xyzMin.x) || (vPosition.x >= u_xyzMax.x ) || ( vPosition.y < u_xyzMin.y ) || (vPosition.y>=u_xyzMax.y ) || ( vPosition.z<u_xyzMin.z ) || ( vPosition.z>=u_xyzMax.z )){
+                    gl_Position.w = 0.0;
+                }
+                
+            }
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-star">
+            
+            
+            //varying float vStarAttribute;
+            varying vec4 vCol;
+            // varying vec3 vPosition;
+            //varying vec4 vMaxCol;
+            uniform float u_gridsize;
+
+            highp float rand(vec2 co)
+            {
+                highp float a = 12.9898;
+                highp float b = 78.233;
+                highp float c = 43758.5453;
+                highp float dt= dot(co.xy ,vec2(a,b));
+                highp float sn= mod(dt,3.14);
+                return fract(sin(sn) * c);
+            }
+
+            void main() {
+                float distance = length(4.0 * gl_PointCoord - 2.0);
+                if (distance > 2.0) {
+                    discard;
+                }
+    
+                //gl_FragColor = vec4(0.8*vStarAttribute,0.8*vStarAttribute,0.2*vStarAttribute,0.2);//* texture2D( texture, gl_PointCoord );
+                //gl_FragColor = mix( vMinCol,vMaxCol,vStarAttribute );
+                
+                // gl_FragColor = vec4(gl_FragCoord.z,gl_FragCoord.z,gl_FragCoord.z,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+
+                gl_FragColor = vec4(vCol.r,vCol.g,vCol.b,1.0);//rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+                //gl_FragColor.a *= 1.0/pow( gl_FragCoord.z, 2.0 );
+                //gl_FragColor.a *= pow( gl_FragCoord.z, 0.1 );
+    
+            }
+        </script>
+
+        <script type="x-shader/x-vertex" id="vertexshader-skewer">
+            
+            uniform vec4 Col;
+            varying vec4 vCol;
+
+            uniform vec3 u_xyzMin;
+            uniform vec3 u_xyzMax;
+            uniform float u_gridsize;
+            varying vec3 vPosition;
+            varying vec2 vUv;
+            // varying vec3 vWorldPosition;
+
+            void main() {
+                vCol = vec4( position/u_gridsize, 1.0 );
+                vUv = uv;
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                gl_Position = projectionMatrix * mvPosition;
+
+                vec3 vPosition = position.xyz/u_gridsize;
+            }
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-skewer">
+            
+            varying vec4 vCol;
+            uniform vec4 u_low_col;
+            uniform vec4 u_high_col;
+            uniform vec3 u_xyzMin;
+            uniform vec3 u_xyzMax;
+            varying vec3 vPosition;
+            varying vec2 vUv;
+            uniform sampler2D skewer_tex;
+
+            highp float rand(vec2 co)
+            {
+                highp float a = 12.9898;
+                highp float b = 78.233;
+                highp float c = 43758.5453;
+                highp float dt= dot(co.xy ,vec2(a,b));
+                highp float sn= mod(dt,3.14);
+                return fract(sin(sn) * c);
+            }
+
+            void main() {
+                vec3 tex = texture2D(skewer_tex, vec2(vUv)).rgb;
+                //if( (vPosition.x < u_xyzMin.x) || (vPosition.x >= u_xyzMax.x ) || ( vPosition.y < u_xyzMin.y ) || (vPosition.y>=u_xyzMax.y ) || ( vPosition.z<u_xyzMin.z ) || ( vPosition.z>=u_xyzMax.z )){
+                //    gl_FragColor = vec4(0.0,0.0,0.0,0.0);
+                //}
+                //else{
+
+                gl_FragColor = mix(u_low_col,u_high_col,tex.r); //vec4(tex.r,tex.g,tex.b,1.0);  //rand(vec2(0.0,1.0))*//* texture2D( texture, gl_PointCoord ); 
+                //}
+            }
+    
+        </script>
+
+        <script type="x-shader/x-vertex" id="vertexshader-volume">
+            
+            void main() {
+            
+                
+            }
+        
+        </script>
+        
+        <script type="x-shader/x-fragment" id="fragmentshader-volume">
+
+            void main() {
+
+                float a= tex3D(texCoord,dataTex);
+                color = a * emissiveColor;
+            }
+        </script>
+    
+        <!-- <script type="x-shader/x-vertex" id="vertexshader-235">
+            attribute float density;
+            attribute float temperature;
+            //uniform float spin;
+            varying float vColor;
+            //varying float vRotation;
+            void main() {
+                //vRotation = spin;
+                vColor = temperature;
+                vec4 mvPosition = modelViewMatrix * vec4( position.x, position.y, -temperature*8.47, 1.0 );
+                gl_PointSize = 1.4;// * ( 300.0 / -mvPosition.z );
+                gl_Position = projectionMatrix * mvPosition;
+                
+            }
+        </script>
+    
+        <script type="x-shader/x-fragment" id="fragmentshader-235">
+            
+            //varying float vRotation;
+            varying float vColor;
+            uniform sampler2D texture;
+            void main() {
+    
+                //float mid = 0.5;
+                //vec2 rotated = vec2(cos(vRotation) * (gl_PointCoord.x - mid) + sin(vRotation) * (gl_PointCoord.y - mid) + mid,
+                                    //cos(vRotation) * (gl_PointCoord.y - mid) - sin(vRotation) * (gl_PointCoord.x - mid) + mid);
+                //vec4 rotatedTexture = texture2D( texture,  rotated);
+                gl_FragColor = vec4(vColor,vColor,vColor,0.95);// * texture2D( texture, gl_PointCoord );
+                //gl_FragColor.a *= 1/pow( gl_FragCoord.z, 2.0 );
+    
+            }
+        </script> -->
+
+
+        <!-- Mostly listeners/event handlers from backend  -->
+        <script>
+
+
+        var skewerData = []
+        var domainLambda = []
+        var xScale
+
+
+        
+        $(document).ready(function(){
+
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'I\'m connected!'});
+            });
+
+
+            // populates dropdown menu for gas data
+            socket.on('field_list', function(msg) {
+                if(!field_list){
+                    field_list = msg.data
+                    clearDropDowns()
+                
+                    createAttributeSelectors(field_list)
+                    
+                    function clearDropDowns(){
+                        $("#gas_select").empty();
+                        // $("#dm_select").empty();
+                        // $("#star_select").empty();
+                        // $("#bh_select").empty();
+                    }
+                }
+                
+                
+                function createAttributeSelectors(field_list){
+                    var select = document.getElementById("gas_select"); 
+                    var option = document.createElement("option");
+                    option.disabled = "disabled"
+                    option.selected = "selected"
+                    option.text = "Select an attribute"
+                    select.add(option);
+
+                    var select = document.getElementById("bh_select"); 
+                    var option = document.createElement("option");
+                    option.disabled = "disabled"
+                    option.selected = "selected"
+                    option.text = "Select an attribute"
+                    select.add(option);
+
+                    for(i = 0; i < field_list.length; i++){
+                        if(field_list[i][0] == 'PartType0'){
+                            console.log(field_list[i])
+                            if( (field_list[i][1] == 'Temperature') ||
+                                (field_list[i][1] == 'Entropy') || 
+                                (field_list[i][1] == 'Metallicity') ||
+                                (field_list[i][1] == 'Density') ||
+                                (field_list[i][1] == 'Carbon') ||
+                                (field_list[i][1] == 'Oxygen') ){
+                                var select = document.getElementById("gas_select"); 
+                                var option = document.createElement("option");
+                                option.text = field_list[i][1];
+                                select.add(option);
+                            }
+                            else if(simID == "TNG100_z2.3"){
+                                var select = document.getElementById("gas_select"); 
+                                var option = document.createElement("option");
+                                option.text = field_list[i][1];
+                                select.add(option);
+                            }
+                        }
+                        // if(field_list[i][0] == 'PartType1'){
+                        //     var select = document.getElementById("dm_select"); 
+                        //     var option = document.createElement("option");
+                        //     option.text = field_list[i][1];
+                        //     select.add(option);
+                        // }
+                        // if(field_list[i][0] == 'PartType4'){
+                        //     var select = document.getElementById("star_select"); 
+                        //     var option = document.createElement("option");
+                        //     option.text = field_list[i][1];
+                        //     select.add(option);
+                        // }
+                        if(field_list[i][0] == 'PartType5'){
+                            var select = document.getElementById("bh_select");
+                            var option = document.createElement("option");
+                            option.text = field_list[i][1];
+                            select.add(option);
+                        }
+                    }
+                }
+            });
+
+            // get domain edges in physical uynits
+            socket.on('domain_edges', function(data){
+                if(!edges){
+                    console.log(data.left_edge);
+                    edges = data
+                    // camera.position.set(edges.right_edge[0]-edges.left_edge[0], edges.right_edge[1]-edges.left_edge[1], edges.right_edge[2]-edges.left_edge[2])
+                    // controls.target.set( (edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2 );
+
+                    var geometry = new THREE.BoxBufferGeometry( data.right_edge[0]-data.left_edge[0], data.right_edge[1]-data.left_edge[1], data.right_edge[2]-data.left_edge[2] );
+                    var material = new THREE.MeshBasicMaterial( {color: 0x000000, wireframe: true, transparent: true, opacity: 0.0} );
+                    cube = new THREE.Mesh( geometry, material );
+                    cube.position.set((edges.right_edge[0]-edges.left_edge[0])/2, (edges.right_edge[1]-edges.left_edge[1])/2, (edges.right_edge[2]-edges.left_edge[2])/2)
+                    // scene.add( cube );
+                }
+                
+            });
+
+
+            // I don't think this does anything useful
+            socket.on('my_response', function(msg, cb) {
+                console.log('Received #' + msg.count + ': ' + msg.data);
+                if (cb)
+                    cb();
+            });
+
+
+            // socket.on('positionData',function(msg){
+            //     ptype = msg.particle_type
+            //     if(ptype == 'PartType0'){
+            //         gasCoordLookup.push(msg.data)
+            //         let gas = document.getElementById("gas_progress")
+            //         gas.value = msg.i
+            //         if(msg.i == 100){plotPoints()}
+            //     }
+            //     if(ptype == 'PartType1'){
+            //         dmCoordLookup.push(msg.data)
+            //         let dm = document.getElementById("dm_progress")
+            //         dm.value = msg.i
+            //         if(msg.i == 100){plotPoints()}
+            //     }
+            //     if(ptype == 'PartType4'){
+            //         starCoordLookup.push(msg.data)
+            //         starParticles.push(msg)
+            //         let star = document.getElementById("star_progress")
+            //         star.value = msg.i*10
+            //     }
+            //     if(ptype == 'PartType5'){
+            //         bhCoordLookup.push(msg.data)
+            //         let bh = document.getElementById("bh_progress")
+            //         bh.value = msg.i*10
+            //     }
+
+            // });
+
+            // socket.on('dataSentMsg',function(msg){
+            //     if(msg.particle_type == "PartType0"){
+            //         let gas = document.getElementById("gas_progress_sent")
+            //         gas.value = (msg.value/renderCount)*100
+            //     }
+            //     if(msg.particle_type == "PartType5"){
+            //         let bh = document.getElementById("bh_progress_sent")
+            //         bh.value = (msg.value/renderCount)*100
+            //     }
+            // });
+
+            // socket.on('pointData',function(msg) {
+            //     console.log(msg);
+            //     // let found = field_list.find(element => element[0] == msg.particle_type && element[1] == msg.attribute)
+            //     // let index = field_list.indexOf(found)
+            //     // if(field_list[index].length == 2){
+            //     //     field_list[index].push(data=[])
+            //     // }
+
+            //     // field_list[index][2].push([msg.data])
+            //     particles.push(msg)
+
+            //     if(msg.particle_type == "PartType0"){
+            //         gasParticles.push(msg)
+            //         let gas = document.getElementById("gas_progress")
+            //         gas.value = (msg.i/renderCount)*100
+            //         // if(msg.i+1 == renderCount){
+            //         col = document.getElementById('gas-minval-input')
+            //         col.value=msg.min
+            //         materialGas.uniforms.min.value = msg.min
+            //         col = document.getElementById('gas-maxval-input')
+            //         col.value=msg.max
+            //         materialGas.uniforms.max.value = msg.max
+            //         // }
+            //     }
+            //     if(msg.particle_type == "PartType1"){
+            //         dmParticles.push(msg)
+            //         let dm = document.getElementById("dm_progress")
+            //         dm.value = msg.i*renderCount
+            //     }
+            //     if(msg.particle_type == "PartType4"){
+            //         starParticles.push(msg)
+            //         let star = document.getElementById("star_progress")
+            //         star.value = msg.i*renderCount
+            //     }
+            //     if(msg.particle_type == "PartType5"){
+            //         bhParticles.push(msg)
+            //         let bh = document.getElementById("bh_progress")
+            //         bh.value = (msg.i/renderCount)*100
+            //         // if(msg.i == 10){
+            //         col = document.getElementById('bh-minval-input')
+            //         col.value=msg.min
+            //         materialGas.uniforms.min.value = msg.min
+            //         col = document.getElementById('bh-maxval-input')
+            //         col.value=msg.max
+            //         materialBlackHole.uniforms.max.value = msg.max
+            //         // }
+            //     }
+            //     updateUnits(msg.particle_type, msg.units)
+                
+            //     if(msg.i >= renderCount){
+            //         plotPoints()
+            //     }
+            // });
+
+
+
+            // these listeners wait for spectra data from the backend
+
+            socket.on('retrievingLineData',function(msg){
+                idx = msg.idx
+
+                //TODO: connect to DIV indicator
+            });
+
+            socket.on('simple_line_data',function(msg){
+                console.log(msg)
+                buttonId = 'simple-line-request-button-' + msg.index + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'attributes received'
+
+                createColumnDensityInfoPanel(msg)
+            });
+
+            socket.on('plot_made',function(msg){
+                console.log(msg)
+                console.log('yt plots received')
+
+                receiveYTPlots(msg)
+            });
+
+            socket.on('processingRay',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'generating spectrum . . . '
+            });
+
+            socket.on('sentRay',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'sending spectrum . . . '
+            });
+
+            socket.on('synthetic_spectrum', function(msg) {
+                console.log(msg)
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                if(div){
+                    div.innerText = 'spectrum received!' 
+                }
+                plotSyntheticSpectrum(msg);
+            });
+
+            socket.on('synthetic_spectrum_saved', function(msg) {
+                console.log(msg)
+                d3.json(msg.index).then(function(d){
+                    plotSyntheticSpectrum(d);
+                })
+            });
+
+            socket.on('spectrumError',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'Network timeout, retrying . . . '
+                requestSpectrum(idx)
+            });      
+
+            socket.on('spectrumError',function(msg){
+                idx = msg.index
+                buttonId = 'request-button-' + idx + ''
+                div = document.getElementById(buttonId)
+                div.innerText = 'Network timeout, retrying . . . '
+                requestSpectrum(idx)
+            });        
+        });
+
+        </script>
+    </head>
+    <body>
+   
+        <!-- load scripts -->
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/Tween.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/OrbitControls.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/TrackballControls.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/cosmo-vis.js') }}"></script>
+    <script>
+
+        function toggleLayer( l ){
+            
+            if(l==0){
+                // if(!gasMesh){
+                //     // loadAttribute(gridsize,'PartType0','Temperature',false)
+                //     visible = true
+                // }
+                // else{
+                //     visible = !gasMesh.layers.test( camera.layers );
+                //     camera.layers.toggle( l )
+                // }
+                if((document.getElementById("gas-eye-open")).style.display != "inline-block"){
+                    var x = document.getElementById("gas-eye-open");
+                    x.style.display = "inline-block";
+                    var y = document.getElementById("gas-eye-closed");
+                    y.style.display = "none";
+                    volMaterial.uniforms["u_gasVisibility"].value = true;
+
+                }
+                else{
+                    var x = document.getElementById("gas-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("gas-eye-closed");
+                    y.style.display = "inline-block";
+                    volMaterial.uniforms["u_gasVisibility"].value = false;
+
+
+                }
+            }
+            if(l==1){
+                // if(!dmMesh){
+                //     // loadAttribute(gridsize,'PartType1','density',false)
+                //     visible = true
+                // }
+                // else{
+                //     visible = !dmMesh.layers.test( camera.layers )
+                //     camera.layers.toggle( l )
+                // }
+                if((document.getElementById("dm-eye-open")).style.display != "inline-block"){
+                    var x = document.getElementById("dm-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("dm-eye-closed");
+                    y.style.display = "none";
+                    volMaterial.uniforms["u_dmVisibility"].value = true;
+                }
+                else{
+                    var x = document.getElementById("dm-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("dm-eye-closed");
+                    y.style.display = "inline-block";
+                    volMaterial.uniforms["u_dmVisibility"].value = false;
+                }
+            }
+            if(l==2){
+                // if(!starMesh){
+                //     // loadAttribute(gridsize,'PartType4','density',false)
+                //     visible = true
+                // }
+                // else{
+                //     var visible = !starMesh.layers.test( camera.layers );
+                //     camera.layers.toggle( l )
+                // }
+                if((document.getElementById("star-eye-open")).style.display != "inline-block"){
+                    var x = document.getElementById("star-eye-open");
+                    x.style.display = "inline-block";
+                    var y = document.getElementById("star-eye-closed");
+                    y.style.display = "none";
+                    volMaterial.uniforms[ "u_starVisibility" ].value = true
+
+                }
+                else{
+                    var x = document.getElementById("star-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("star-eye-closed");
+                    y.style.display = "inline-block";
+                    volMaterial.uniforms[ "u_starVisibility" ].value = false
+                }
+            }
+            if(l==3){
+                var visible = !bhMesh.layers.test( camera.layers );
+                if(visible){
+                    var x = document.getElementById("bh-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("bh-eye-closed");
+                    y.style.display = "none";
+
+                }
+                else{
+                    var x = document.getElementById("bh-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("bh-eye-closed");
+                    y.style.display = "inline-block";
+
+                }
+            }
+            if(l==4){
+                var visible = !lines[0].layers.test( camera.layers );
+                camera.layers.toggle( l )
+                if(visible){
+                    var x = document.getElementById("skewer-eye-open");
+                    x.style.display = "inline-block";
+
+                    var y = document.getElementById("skewer-eye-closed");
+                    y.style.display = "none";
+
+                    volMaterial.uniforms[ "u_skewerVisibility" ].value = true
+
+                }
+
+                else{
+                    var x = document.getElementById("skewer-eye-open");
+                    x.style.display = "none";
+                    var y = document.getElementById("skewer-eye-closed");
+                    y.style.display = "inline-block";
+
+                    volMaterial.uniforms[ "u_skewerVisibility" ].value = false
+
+                }
+            }
+            updateUniforms()
+        }
+
+        async function requestPoints(size,type,attr){
+            if(attr != 'Select an attribute'){
+                if(type == 'PartType0'){
+                    var gas = await loadGas(size,attr,false)
+                    var update = await update3dDataTexture()
+                }
+            }
+        }
+        
+        function galaxylist(){ 
+            var x = document.getElementById("galaxylist");
+            if (x.style.display === "block") {
+                x.style.display = "none";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter ="";
+
+            } else {
+                x.style.display = "block";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
+            }    
+        }
+
+        function data_layers(){ 
+            var x = document.getElementById("data_layers");
+            if (x.style.display === "block") {
+                x.style.display = "none";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter ="";
+
+            } else {
+                x.style.display = "block";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
+            }    
+        }
+        
+        function ray(){ 
+            var x = document.getElementById("raySelection");
+            if (x.style.display === "block") {
+                x.style.display = "none";
+                var x = document.getElementById("ray");
+                x.style.filter ="";
+            } else {
+                x.style.display = "block";
+                var x = document.getElementById("ray");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
+            }    
+        }
+
+        function graph(){
+            var x = document.getElementById("spectrum");
+            if (x.style.display === "grid") {
+                x.style.display = "none";
+                var x = document.getElementById("graph");
+                x.style.filter ="";
+            } else {
+                x.style.display = "grid";
+                var x = document.getElementById("graph");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";                
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
+            }    
+        }
+
+        function share(){
+            var x = document.getElementById("share-presets");
+            if (x.style.display === "grid") {
+                x.style.display = "none";
+                var x = document.getElementById("share");
+                x.style.filter ="";
+            } else {
+                x.style.display = "grid";
+                var x = document.getElementById("share");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";                
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("terminal");
+                x.style.display = "none";
+                
+            }    
+        }
+
+        function gui(){
+            var x = document.getElementById("my-gui-container");
+            if (x.style.display === "block") {
+                x.style.display = "none";
+            } else {
+                x.style.display = "block";
+
+                
+            }    
+        }
+        function terminal(){
+            var x = document.getElementById("terminal");
+            if (x.style.display === "block") {
+                x.style.display = "none";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter ="";
+            } else {
+                x.style.display = "block";
+                var x = document.getElementById("terminal_icon");
+                x.style.filter = "sepia(7%) saturate(2670%) hue-rotate(154deg) brightness(95%) contrast(104%)";
+                var x = document.getElementById("graph");
+                x.style.filter = "";
+                var x = document.getElementById("ray");
+                x.style.filter = "";
+                var x = document.getElementById("data_layers_icon");
+                x.style.filter = "";
+                var x = document.getElementById("galaxy_list");
+                x.style.filter = "";
+                var x = document.getElementById("galaxylist");
+                x.style.display = "none";
+                var x = document.getElementById("data_layers");
+                x.style.display = "none";
+                var x = document.getElementById("spectrum");
+                x.style.display = "none";
+                var x = document.getElementById("raySelection");
+                x.style.display = "none";
+                var x = document.getElementById("share-presets");
+                x.style.display = "none";
+            }
+        }
+        
+        function hideDetails(type){
+            var x = document.getElementById(type+"-data-details")
+            // console.log(x)
+            if(x.style.display === "block"){
+                x.style.display = "none"
+            }
+            else x.style.display = "block"
+        }
+
+        function hideAlpha(type){
+            var x = document.getElementById(type)
+            // console.log(x)
+            if(x.style.display === "inline-flex"){
+                x.style.display = "none"
+            }
+            else x.style.display = "inline-flex"
+        }
+
+        function hideGlobalOptions(){
+
+        }
+
+        $
+    </script>
+
+    <div class="title">cosmovis</div>
+    
+    <div id="icon_container">
+        <div id="terminal_icon" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/terminal.svg" 
+            alt="terminal event log"
+            role="button"
+            onclick="terminal()"/>data selection</div>        
+        <div id="data_layers_icon" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/layers.svg" 
+            alt="attributes and data filtering"
+            role="button"
+            onclick="data_layers()"/>layers</div>
+        <div id="galaxy_list" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/spiral.svg" 
+            alt="galaxy catalog"
+            role="button"
+            onclick="galaxylist()"/>galaxies</div>
+        <div id="ray" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/hst.svg" 
+            alt="make an observation"
+            role="button"
+            onclick="ray()"/>observe</div>
+        <div id="graph" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/graph.svg" 
+            alt="view spectrum"
+            role="button"
+            onclick="graph()"/>spectra</div>
+        <div id="share" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/share.svg" 
+            alt="share the current view"
+            role="button"
+            onclick="share()"/>share</div>
+    </div>
+
+    <div id="containers">
+        <div id="galaxylist" class="container">
+            <!-- https://www.w3schools.com/howto/howto_js_sort_table.asp -->
+            
+            <h3>Galaxy Filters</h3>
+
+            <div id = "galaxy-filter-and-plots">
+                <div id="galaxy-filter-criteria"></div>
+                <div id = "YTPlots"></div>
+            </div>
+            <caption> <h3>Galaxy Query Results</h3></caption>
+
+            <div id="galaxy-filter-results">
+                <table>
+                    <thead>
+                        <tr>
+                            <td> Galaxy ID</td> 
+                            <td> Halo ID</td> 
+                            <td> Stellar Mass (M<sub>&#9737;</sub>)</td>
+                            <td> Halo Mass (M<sub>&#9737;</sub>) </td>
+                            <td> SFR (M<sub>&#9737;</sub>/yr)</td>
+                            <td> Gas Mass (M<sub>&#9737;</sub>)</td>
+
+                        </tr>
+                    </thead>
+                    <tbody id="gal-tbody">
+                        <tr id='galdata'>
+                            <td>
+                                <ul id='galid' style="list-style-type:none;"> </ul>
+                            </td>
+                            <td>
+                            <ul id='haloid' style="list-style-type:none;"> </ul>
+                            </td>
+                            <td>
+                            <ul id='ms' style="list-style-type:none;"> </ul>    
+                            </td>                    
+                            <td>
+                            <ul id='mh' style="list-style-type:none;"> </ul> 
+                            </td>                        
+                            <td>
+                            <ul id='sfr' style="list-style-type:none;"> </ul>
+                            </td> 
+                            <td>
+                            <ul id='mg' style="list-style-type:none;"> </ul>
+                            </td> 
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <br>
+            
+             <div id = "galaxy-property-plots">
+                <div id='galPropX'></div>
+                <div id='galPropY'></div>
+                <div id='galPropPlot'></div>
+            </div>
+            
+        </div>  
+              
+        <div id="data_layers" class="container">
+            <!-- <h2>attribute visualization</h2>
+            <br> -->
+            <hr>
+            
+            <label for="gas_select" class="layers-details"><h3><img 
+                id="gas-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="gas visible"
+                role="button"
+                onclick="toggleLayer( 0 )"/>
+
+            <img 
+                id="gas-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="gas hidden"
+                role="button"
+                onclick="toggleLayer( 0 )"/>
+            <div id="gas-info" style="display: inline;" onclick="hideDetails('gas')" class="layers-details">gas</div></h3></label>
+            
+            <!-- <br> -->
+            <div id="gas-data-details" class="data-details">
+                <hr>
+                select attribute:
+                <select class="data_select" id="gas_select" onchange="requestPoints(gridsize,'PartType0', document.getElementById('gas_select').value)">
+                    <option selected="selected" disabled="disabled">Select an attribute</option></select>
+                filter values:
+                <br>
+                
+                <div id="min">
+                    min: <input type="checkbox" id="gas-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="gas-min-clip-check" onclick="updateUniforms()" checked> 
+                    <br>
+                    <div class="attr-min-max">
+                        <input width="3" type="number" step="0.01" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
+                    </div>
+                    <!-- <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p> -->
+                </div>
+                <div id="max">
+                    max: <input type="checkbox" id="gas-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="gas-max-clip-check" onclick="updateUniforms()">
+                    <br>
+                    <!-- <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p> -->
+                    <div class="attr-min-max">
+                        <input type="number" step="0.01" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units gas-attr-units"></p>
+                    </div>
+                </div>
+                adjust color & alpha values:
+
+                <div id=gas-colorscale>
+                    <input type="color" class="color-picker" value="#2a1bf3" id="gasMinCol" oninput="changeColor()"><input type="color" class="color-picker" value="#ffdd00" id="gasMidCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol" oninput="changeColor()">
+                    <!-- <br> -->
+                </div>
+                <div id=gas-colorscale-alpha>
+
+                    <!-- <div id="alpha" class="alpha-min"></div><div id="alpha" class="alpha-mid">&alpha;</div><div id="alpha" class="alpha-max">&alpha;</div> -->
+
+                    <input type="range" min="0" max="1" step="0.0001" value="0.2" class="alpha-picker alpha-min-range" id="gasMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.5" class="alpha-picker alpha-mid-range" id="gasMidA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="1.0" class="alpha-picker alpha-max-range"  id="gasMaxA" oninput="changeColor()">
+                    <!-- <br> -->
+                </div>
+
+                <!-- <br> -->
+                <!-- <select class="data_select" id="gas_select" onchange="requestPoints(gridsize,'PartType0', document.getElementById('gas_select').value)">
+                    <option selected="selected" disabled="disabled">Select an attribute</option></select>
+                 -->
+                <!-- sent data : <progress id="gas_progress_sent" value="0" max="100"><p>loading</p> </progress>
+                received data : <progress id="gas_progress" value="0" max="100"><p>loading</p> </progress> -->
+            </div>
+            <hr>
+            <!-- <br> -->
+            
+            
+            
+            <label for="dm_select"><h3><img 
+                id="dm-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="dark matter visible"
+                role="button"
+                onclick="toggleLayer( 1 )"/>
+            <img 
+                id="dm-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="dark matter hidden"
+                role="button"
+                onclick="toggleLayer( 1 )"/>
+                <div style="display: inline;" onclick="hideDetails('dm')" class="layers-details">dark matter</div></h3></label>
+            
+            <!-- <br> -->
+            <div id="dm-data-details" class="data-details">
+                <hr>
+                filter density:
+                <br>
+                <div id="min">
+                    min: <input type="checkbox" id="dm-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-min-clip-check" onclick="updateUniforms()"> 
+                    <br>
+                    <div class="attr-min-max">
+                        <input type="number" step="0.01" id="dm-minval-input" class="number-input minvalinput" name="dm-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
+                    </div>
+                </div>
+                <div id="max">
+                    max: <input type="checkbox" id="dm-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="dm-max-clip-check" onclick="updateUniforms()" checked>
+                    <br>
+                    <div class="attr-min-max">
+                        <input type="number" step="0.01" id="dm-maxval-input" class="number-input maxvalinput" name="dm-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units dm-attr-units"></p>
+                    </div>
+                </div>
+                
+                adjust color & alpha values:
+                <div id=dm-colorscale>
+                    <input type="color" class="color-picker" value="#330028" id="dmMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff00ff" id="dmMaxCol" oninput="changeColor()">
+                    <br>
+
+                    <input type="range" min="0" max="0.5" step="0.001" value="0.05" class="alpha-picker alpha-min-range" id="dmMinA" oninput="changeColor()"><input type="range" min="0" max="1" step="0.0001" value="0.9" class="alpha-picker alpha-max-range"  id="dmMaxA" oninput="changeColor()">
+                    <!-- <br> -->
+                </div> 
+                <br>
+            </div>
+            <hr>
+            <!-- <br> -->
+
+
+            <label for="star_select"><h3><img 
+                id="star-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="stars visible"
+                role="button"
+                onclick="toggleLayer( 2 )"/>
+            <img 
+                id="star-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="stars hidden"
+                role="button"
+                onclick="toggleLayer( 2 )"/>
+                <div style="display: inline;" onclick="hideDetails('star')" class="layers-details">stars</div></h3></label>
+                <!-- <br> -->
+                <!-- <input type="color" class="color-picker" value="#ffffff" id="starCol"> -->
+                
+                
+                <div id="star-data-details"class="data-details">
+                    <div id="star-data-details-slider">
+                        star particle size
+                        <input type="range" id="star-size-slider" min="0.0" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()">
+                    </div>
+                    <div id="min" style="display: none;">
+                        min: <input type="checkbox" id="star-min-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="star-min-clip-check" onclick="updateUniforms()" checked> 
+                        <br>
+                        <input type="number" step="0.01" id="star-minval-input" class="number-input minvalinput" name="star-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units star-attr-units"></p>
+
+                        <!-- <input type="number" id="gas-minval-input" class="number-input minvalinput" name="gas-minval" oninput="changeValue('gas','min')"><p class="units gas-attr-units"></p> -->
+                    </div>
+                    <div id="max" style="display: none;">
+                        max: <input type="checkbox" id="star-max-check" onclick="updateUniforms()"> clip: <input type="checkbox" id="star-max-clip-check" onclick="updateUniforms()" checked>
+                        <br>
+                        <!-- <input type="number" id="gas-maxval-input" class="number-input maxvalinput" name="gas-maxval" oninput="changeValue('gas','max')"><p class="units gas-attr-units"></p> -->
+                        <input type="number" step="0.01" id="star-maxval-input" class="number-input maxvalinput" name="star-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)"><p class="units star-attr-units"></p>
+                    </div>
+                    
+                    <div id=star-colorscale style="display: none;">
+                        <input type="color" class="color-picker" value="#0000ff" id="starMinCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="starMaxCol" oninput="changeColor()">
+                        <br>
+                    </div> 
+                </div>
+            
+            <!-- <br> -->
+            
+            <!-- <br> -->
+            <!-- <select class="data_select" id="star_select" onchange="requestPoints('PartType4', document.getElementById('star_select').value)"></select>             -->
+            <!-- <progress id="star_progress" value="0" max="100"><p>loading</p> </progress> -->
+            <!-- <br>
+            <br> -->
+            <hr>
+            <!-- <br> -->
+
+            <label for="bh_select"><h3><img 
+                id="bh-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="black holes visible"
+                role="button"
+                onclick="toggleLayer( 3 )"/>
+            <img 
+                id="bh-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="black holes hidden"
+                role="button"
+                onclick="toggleLayer( 3 );"/>
+                <div style="display: inline;" onclick="hideDetails('bh')" class="layers-details">black holes</div></h3></label>
+            
+            <!-- <br> -->
+            <!-- min: <input type="color" value="#0000ff" id="bhMinCol"> max: <input type="color" value="#ff0000" id="bhMaxCol">
+            <br> -->
+            <div id="bh-data-details" class="data-details">
+
+                <div id="bh-min">
+                min: <input type="checkbox" id="bh-min-check" onclick="toggleValueThreshold('bh','min')"> clip: <input type="checkbox" id="bh-min-clip-check" onclick="clipPoints('bh','min')">
+                <br>
+                <input type="number" id="bh-minval-input" class="number-input minvalinput" name="bh-minval" oninput="changeColor()"><p class="units bh-attr-units"></p>
+
+                </div>
+                <div id="bh-max">
+                    max: <input type="checkbox" id="bh-max-check" onclick="toggleValueThreshold('bh','max')"> clip: <input type="checkbox" id="bh-max-clip-check" onclick="clipPoints('bh','max')">
+                    <br>
+                    <input type="number" id="bh-maxval-input" class="number-input maxvalinput" name="bh-maxval" oninput="changeColor()"><p class="units bh-attr-units"></p>
+                </div>
+                
+                <div id=bh-colorscale>
+                    <input type="color" class="color-picker" value="#0000ff" id="bhMinCol"><input type="color" class="color-picker" value="#ff0000" id="bhMaxCol">
+                    <br>
+                </div> 
+
+
+                <select class="data_select" id="bh_select" onchange="requestPoints('PartType5', document.getElementById('bh_select').value, renderCount)"></select>
+                
+                <!-- sent data: <progress id="bh_progress_sent" value="0" max="100"><p>loading</p> </progress>
+                received data: <progress id="bh_progress" value="0" max="100"><p>loading</p> </progress> -->
+            </div>
+            <!-- <hr> -->
+
+            <label for="global-options"><h3>
+                <img
+                    id="wrench"
+                    class="eye-icon"
+                    src="static/assets/wrench.svg" 
+                    alt=""
+                    role="button"
+                    onclick="hideDetails('global')"/><div style="display: inline;" onclick="hideDetails('global')" class="layers-details">global options</h3></label>
+                <div id="global-data-details">                
+                <hr>
+
+                <div id="density-mod" class="density-mod">
+                    
+                    <p>density opacity modulation</p>
+                    <p><input type="range" id="density-mod-intensity" min="0.0" max="10.0" step="0.1" value="2.0" oninput="updateUniforms()"> intensity</p>
+                    <div id="density-min">
+                        min
+                        <input type="number" step="0.1" id="density-minval-input" class="number-input minvalinput" name="density-minval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
+                    </div>
+                    <div id="density-max">
+                        max
+                        <input type="number" step="0.1" id="density-maxval-input" class="number-input maxvalinput" name="density-maxval" onchange="setTwoNumberDecimal(this)" oninput="setTwoNumberDecimal(this)">
+                    </div>
+                </div>
+    
+                <hr>
+                
+                <div id="options">          
+                    <!-- <p><input type="checkbox" id="dist-mod-check" onclick="updateUniforms()"> distance opacity modulation</p> -->
+                    <!-- <p><input type="range" id="dist-mod-intensity" min="0.0" max="1.0" step="0.001" value="1.00" oninput="updateUniforms()"> intensity</p> -->
+    
+                    <p><input type="checkbox" id="val-mod-check" onclick="updateUniforms()" checked> value opacity modulation</p>
+                    <p><input type="range" id="val-mod-intensity" min="0.0" max="1.0" step="0.001" value="0.25" oninput="updateUniforms()"> intensity</p>
+                    
+                    <!-- <p><input type="checkbox" id="grayscale-mod-check" onclick="updateUniforms()"> saturation filter</p> -->
+    
+                    <hr>
+                    
+                    
+                    <!-- <p><input type="checkbox" id="dither-check" onclick="updateUniforms()"> dither</p> -->
+                    <!-- <p><input type="range" id="step-size" min="0.05" max="4.0" step="0.001" value="1.0" oninput="updateUniforms()" disabled> step size</p> -->
+    
+                    <p><input type="range" id="exposure" min="1.0" max="10.0" step="0.001" value="3.5" oninput="updateUniforms()"> exposure</p>
+
+    
+                    <hr>
+                </div>
+            </div>
+            <hr>
+
+        </div>
+        
+        <div id="raySelection" class="container">
+
+            <h3><img 
+                id="skewer-eye-open"
+                class="eye-icon"
+                src="static/assets/eye_open.svg" 
+                alt="gas visible"
+                role="button"
+                onclick="toggleLayer( 4 )"/>
+            <img 
+                id="skewer-eye-closed"
+                class="eye-icon"
+                src="static/assets/eye_closed.svg" 
+                alt="gas hidden"
+                role="button"
+                onclick="toggleLayer( 4 )"/>
+            <img 
+                id="skewer-laser"
+                class="laser-icon"
+                src="static/assets/laser.svg" 
+                alt="draw skewer mode"
+                role="button"
+                onclick="toggleDrawSkewerMode()"/></h3>
+            <!-- <br> -->
+            <p><input type="range" id="skewer-width-slider" min="0.0" max="2.0" step="0.001" value="0.25" oninput="updateSkewerWidths()"> skewer width</p>
+            <p><input type="range" id="skewer-brightness-slider" min="0.0" max="10.0" step="0.001" value="1.0" oninput="updateSkewerBrightness()"> skewer brightness</p>
+
+            <div id="skewer-colorscale">
+                <input type="color" class="color-picker" value="#120099" id="skewerMinCol" oninput="changeSkewerColor()"><input type="color" class="color-picker"  value="#c8c8c8" id="skewerMaxCol" oninput="changeSkewerColor()">
+            </div>
+            <hr>
+            <div id="skewer-coords">
+            </div>
+
+        </div>
+        
+        <div id="spectrum" class="container">
+            <select class="data_select" id="common-wavelengths" onchange="commonWavelength()">
+                <option selected disabled>Select a rest wavelength (Å)</option>
+                <option value="full"        >Full Domain</option>
+                <option value="1215.67"     >HI (1215.67 Å)</option>
+                <option value="1548.195"    >C IV (1548.195 Å)</option>
+                <option value="1550.77"     >C IV (1550.77 Å)</option>
+                <option value="1260.4221"   >Si II (1260.4221 Å)</option>
+                <option value="1206.5"      >Si III (1206.5 Å)</option>
+                <option value="1334.53"     >C II (1334.53 Å)</option>
+            </select>
+
+            <div id="wavelength">
+                <input type="radio" id="Angstroms" name="x-axis-transform" value="Angstroms" onchange="commonWavelength()" checked>
+                <label for="Angstroms">Wavelength (Å)</label>
+                <input type="radio" id="Velocity-Space" name="x-axis-transform" value="Velocity Space" onchange="commonWavelength()">
+                <label for="Velocity Space">Velocity Space (km/s)</label>
+            </div>
+
+
+            <button type="submit" class="request-button" onclick="window.open('{{ url_for('static', filename='data/spectra.fits')}}')"  >download spectra</button>
+        </div>
+
+        <div id="terminal" class="container">
+            select simulation
+            <p><select class="data_select" id="sim_size_select" onchange="checkSelectedSimID()">
+                <option disabled="disabled">select simulation (n&sup3;)</option>
+                <option disabled selected="selected" value="RefL0012N0188">12 Mpc box (EAGLE)</option>
+                <option disabled value="RefL0025N0376">25 Mpc box (EAGLE)</option>
+                <option selected value="RefL0100N1504">100 Mpc box (EAGLE)</option>
+                <option disabled value="TNG100_z0.0">100 Mpc box, z = 0.0 (TNG)</option>
+                <option disabled value="TNG100_z2.3">100 Mpc box, z = 2.3 (TNG)</option>
+            </select></p>
+
+            <div id="grid-options">
+                select grid resolution
+                <p><select class="data_select" id="size_select" onchange="updateSize()">
+                    <option disabled="disabled">Select voxel grid size (n&sup3;)</option>
+                    <option selected="selected" value="64">64&sup3;</option>
+                    <option value="128">128&sup3;</option>
+                    <option value="256">256&sup3;</option>
+                    <option disabled value="384">384&sup3;</option>
+                    <option disabled value="512">512&sup3;</option>
+                </select></p>
+                <p><input type="checkbox" id="grid-check" onclick="toggleGrid()" > grid </p>
+                <div id="grid-radio-btns">
+                    <p><input type="radio" id="grid-radio-1" name="grid" onclick="toggleGrid()" checked>    static grid </p>
+                    <p><input type="radio" id="grid-radio-2" name="grid" onclick="toggleGrid()" >   boundaries grid </p>
+                </div>
+            </div>
+            <hr>
+            <div><p>input center coordinates: <br>
+                x = <input type="number" step=0.1 class="number-input" id="input-coord-x" onchange="zoomIn()"> Mpc <br>
+                y = <input type="number" step=0.1 class="number-input" id="input-coord-y" onchange="zoomIn()"> Mpc <br>
+                z = <input type="number" step=0.1 class="number-input" id="input-coord-z" onchange="zoomIn()"> Mpc <br></p>
+            </div>
+            <hr>
+            <p><input type="checkbox" id="xyzguide-check" onclick="toggleXYZGuide()" > axes helper </p>
+            
+        </div>
+
+        <div id="share-presets" class="container">
+            <button type="submit" class="request-button" onclick="storeSceneState()"  >download state file</button>
+            <button type="submit" class="request-button" onclick="restoreSceneState()"  >upload state file</button>
+        </div>
+
+        <!-- <div id="welcome-container">
+            <h2>Welcome to CosmoVis</h2>
+            <p>CosmoVis is a tool that aims to help astronomers visually inspect cosmological simulations at various scales and make and collect observations through the interactive generation of spectral line plots. </p>
+            <p>To start, click on the layers button to the right.</p>
+            <p>Here are the different types of attributes available from the simulation: gas, dark matter, stars and black holes. Gas and dark matter are rendered volumetrically from 3D textures, whereas stars and black holes are rendered as points.</p>
+            <p>You can click on the eye icon to the left of particle type to toggle that layer on or off.</p>
+            <p>Pressing on the particle name, such as gas, expands options for that particle.</p>
+            <p></p>
+        </div> -->
+    </div>
+    <div id="star-details"></div>
+    <div id="loading-animation" class="lds-ripple"><div></div><div></div></div>
+
+</div>
+    <script>
+    namespace = '/test';
+    var socket = io(namespace, {reconnect: true, transports: ['websocket'], timeout: 240000});
+    </script>
+    </body>
+
+    <footer hidden><div>Icons made by <a href="https://www.flaticon.com/authors/photo3idea-studio" title="photo3idea_studio">photo3idea_studio</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+        <div><div>Galaxy icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a>Refresh icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Delete icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> Laser icon made by  <a href="https://www.flaticon.com/authors/those-icons" title="Those Icons">Those Icons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icon made by <a href="https://www.flaticon.com/authors/kiranshastry" title="Kiranshastry">Kiranshastry</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Eye icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Layer icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>Telescope icon made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>,<a href="https://www.flaticon.com/authors/dinosoftlabs" title="DinosoftLabs">DinosoftLabs</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>, Line Graph Icon made by Zach Bogart from the Noun Project, Wrench Icon by Icon Lauk from the Noun Project</div></footer>
+
+</html>
