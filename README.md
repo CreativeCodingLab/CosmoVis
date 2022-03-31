@@ -28,7 +28,7 @@ CosmoVis can be configured to run locally or remotely on a server, but the most 
 3.  **Start CosmoVis in a shell environment (CMD / Terminal)**  
       
     In the CosmoVis directory, run:  
-    **`python cosmo-serv.py`**  
+    `python cosmo-serv.py`
      
 4.  **Access CosmoVis in your web browser**  
       
