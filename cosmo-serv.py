@@ -64,6 +64,7 @@ def index():
 #getSkewerSimpleRay -- this function is used to get column density and physical data (temperature, entropy, metallicity) along the skewer and sends it back to the frontend
 @socketio.on('getSkewerSimpleRay',namespace="/test")
 def handle_ray_selection(simID,idx, start, end):
+
     # the actual code for computing the column densities can be found in 'celery_tasks.py', which is imported in this script
     # '.delay()' is used to have the task run by celery async in the background
     result = celery_tasks.handle_skewer_simple_ray.delay(simID,idx, start, end)
