@@ -357,7 +357,7 @@ function toggleXYZGuide() {
 }
 
 function updateSkewerEndpoints(size) {
-    console.log('update skewer endpoints')
+//     console.log('update skewer endpoints')
     for (i = 0; i < lines.length; i++) {
         skewerScene.remove(lines[i])
 
@@ -506,7 +506,7 @@ function toggleXYZGuide() {
 
 function updateUniforms() {
     if (volMaterial) {
-        // console.log("update uniforms")
+        console.log("update uniforms")
 
 
         // controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
@@ -1585,8 +1585,8 @@ function zoomIn() {
 }
 
 function goToPoint(x, y, z, delta = 0.1) {
-    console.log(x, y, z)
-    console.log('click click')
+    console.log('point:', x, y, z)
+//     console.log('click click')
     // x*=0.6776999078
     // y*=0.6776999078
     // z*=0.6776999078
@@ -2101,7 +2101,7 @@ function createSkewerDataTexture(skewer_index, attr_data) {
         d[stride + 2] = band_col * 255; // empty
         // color will be programmed in the shader based on these values since delta_x is not uniform
     }
-    console.log(d)
+//     console.log(d)
 
     skewerTexture[skewer_index] = new THREE.DataTexture(d, 1, size, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
         THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
@@ -2167,9 +2167,9 @@ function createColumnDensityInfoPanel(msg) {
         // remove old plot
         // select = document.getElementById('col-density-graph-'+idx+'')
         s = document.getElementById('simple-line-results-' + msg.index + '')
-        console.log(msg)
+//         console.log()
         divID = 'simple-line-status-skewer-coords-' + msg.index + ''
-        console.log(divID)
+//         console.log(msg,divID)
         d3.select("#" + divID).selectAll(".graph").remove()
         d3.select("#" + divID).selectAll(".col-density-sum").remove()
 
@@ -2805,7 +2805,7 @@ function receiveYTPlots(msg){
 async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     sim = document.getElementById("sim_size_select").value
-    console.log('createGalaxyFilteringBrushes function', sim)
+//     console.log('createGalaxyFilteringBrushes function', sim)
 
     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
@@ -2924,7 +2924,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     function galaxyAttrBrushed() {
 
-        console.log('attrbrushed function')
+//         console.log('attrbrushed function')
 
         var s = d3.event.selection || attrScale.range();
 
@@ -2949,7 +2949,7 @@ async function filterGalaxies(sim) {
 
     sim = document.getElementById("sim_size_select").value
 
-    console.log('filterGalaxies function', sim)
+//     console.log('filterGalaxies function', sim)
 
     allGalData_doc = document.getElementById('galdata')
     galIds_doc = document.getElementById('galid')
@@ -2962,7 +2962,7 @@ async function filterGalaxies(sim) {
 
     // var filteredData = galQueryData.slice() //slice of galquerydata
 
-    console.log('new brush history', galaxyBrushHistory)
+//     console.log('new brush history', galaxyBrushHistory)
 
     for (const attr in galaxyBrushHistory) {
 
@@ -3058,7 +3058,7 @@ async function filterGalaxies(sim) {
         }
     }
     
-    console.log(propList)
+//     console.log(propList)
     plotProps(propList)
 
 
@@ -3068,7 +3068,7 @@ async function filterGalaxies(sim) {
 //  FH function to plot some galaxy properties against each other
 function plotProps(alldata) {
 
-    console.log('in plotting fn',alldata)
+//     console.log('in plotting fn',alldata)
     
     // remove old dropdowns:
     d3.select('#galPropX').selectAll("*").remove()
