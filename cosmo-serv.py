@@ -7,7 +7,7 @@ from flask import Flask, jsonify, request, render_template, session, copy_curren
 from flask_compress import Compress
 import json
 from itertools import product
-from flask import Response
+from flask import Response, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, close_room, rooms, disconnect
 import random
 from mpi4py import MPI
@@ -15,35 +15,41 @@ import os.path
 from os import path
 import os
 import celery_tasks
+import logging
+from datetime import datetime
 
 #Flask is used as web framework to run python scripts
 #Flask-io / socketio :  gives Flask applications 
 # access to low latency bi-directional communications
 # between the clients and the server.
 app = Flask(__name__)
-#Flask-Compress extension automatically compresses static files
-Compress(app)
-#Configure Flask application
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
-app.config['SECRET_KEY'] = 'secret!'
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-#Configure message queue backend
-app.config.update(
-    broker_url='amqp://cosmovis:sivomsoc@localhost:5672',
-    result_backend='rpc://',
-    result_persistent=False,
-    task_ignore_result = False,
-    task_track_started = True,
-    broker_heartbeat = 0
-)
 
 #Start SocketIO
 async_mode = 'eventlet'
 # amqp://cosmovis:sivomsoc@localhost:5672//
-# socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
-socketio = SocketIO(app,message_queue='amqp://cosmovis:sivomsoc@localhost:5672',cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
+# socketio = SocketIO(app,message_queue='amqp://cosmovis:sivomsoc@localhost:5672',cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
 
 # import pdb; pdb.set_trace()
+
+@app.before_first_request
+def before_first_request():
+    #Flask-Compress extension automatically compresses static files
+    Compress(app)
+    #Configure Flask application
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # clears cache on load for debugging
+    app.config['SECRET_KEY'] = 'secret!'
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    #Configure message queue backend
+    app.config.update(
+        broker_url='amqp://cosmovis:sivomsoc@localhost:5672',
+        result_backend='rpc://',
+        result_persistent=False,
+        task_ignore_result = False,
+        task_track_started = True,
+        broker_heartbeat = 0
+    )
+    # app.logger.setLevel(logging.OFF)
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -53,6 +59,22 @@ def webhook():
 #         threading.Thread(target=lambda: [time.sleep(2), os.system('systemctl restart cosmovis.service')]).start()
         os.system('/bin/bash update.sh')
         return info
+
+js_logs = []
+# @app.route('/js_logs', methods=['POST'])
+@socketio.on('js_logs',namespace="/test")
+def logs(incoming_log):
+    print("received log")
+    # print(incoming_log)
+    js_logs.append(incoming_log)
+    # save logs to new json file
+    datetime.now()
+    with open('logs/js_logs_' + datetime.now().strftime("%d%b%Y_%Hh%Mm%Ss") +'.json', 'a+') as f:
+        json.dump(incoming_log, f)
+    # import pdb; pdb.set_trace()
+    print(json.loads(incoming_log['header']))
+    print(json.loads(incoming_log['log']))
+    return incoming_log
 
 # route() decorator is used to define the URL where index() function is registered for
 # host the index.html web page
@@ -136,4 +158,4 @@ def test_connect():
     emit('my_response', {'data': 'Connected', 'count': 0})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

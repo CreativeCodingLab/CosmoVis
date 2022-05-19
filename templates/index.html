@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
     <head>
-        <title>cosmovis</title>
+        <title>CosmoVis</title>
         <link rel="stylesheet" href="/static/style.css">
 
         <!-- load libraries -->
@@ -15,6 +15,7 @@
         <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/jQuery.min.js') }}"></script>
         <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <script src="https://unpkg.com/js-logger/src/logger.min.js"></script>
 
         <script type="text/javascript" src="{{ url_for('static', filename='libs/dat.gui.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='libs/d3.min.js') }}"></script>
@@ -122,6 +123,46 @@
             }
         </script>
 
+        <script type="x-shader/x-vertex" id="vertexshader-starSAO">
+            
+            varying vec2 vUv;
+            varying vec4 vPos;
+
+            void main() {
+                vec2 vUv = uv;
+                vPos = vec4( position, 1.0 );
+                gl_Position = vPos;
+            }
+        </script>
+
+        <script type="x-shader/x-fragment" id="fragmentshader-starSAO">
+            #include <packing>
+            #include <common>
+            precision highp int;
+            precision highp float;
+            precision highp sampler2D;
+            varying vec2 vUv;
+            varying vec4 vPos;
+            uniform sampler2D tDiffuse;
+            uniform sampler2D starDepth;
+            uniform float u_screenWidth;
+            uniform float u_screenHeight;
+            uniform float u_cameraNear;
+            uniform float u_cameraFar;
+            void main() {
+
+                vec2 screenCoord = gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight);
+                float fragCoordZ = texture2D(starDepth, screenCoord).x;
+                float viewZ = perspectiveDepthToViewZ(fragCoordZ,u_cameraNear,u_cameraFar);
+                float starDepth = viewZToPerspectiveDepth( viewZ, u_cameraNear, u_cameraFar );
+                vec3 col = texture2D(tDiffuse, screenCoord).rgb;
+
+                gl_FragColor = vec4(col, 1.0); 
+                //gl_FragColor = vec4(screenCoord,0.0, 1.0);
+            }
+            
+        </script>
+
         <script type="x-shader/x-vertex" id="vertexshader-skewer">
             
             uniform vec4 Col;
@@ -178,23 +219,6 @@
     
         </script>
 
-        <script type="x-shader/x-vertex" id="vertexshader-volume">
-            
-            void main() {
-            
-                
-            }
-        
-        </script>
-        
-        <script type="x-shader/x-fragment" id="fragmentshader-volume">
-
-            void main() {
-
-                float a= tex3D(texCoord,dataTex);
-                color = a * emissiveColor;
-            }
-        </script>
     
         <!-- <script type="x-shader/x-vertex" id="vertexshader-235">
             attribute float density;
@@ -885,7 +909,7 @@
         $
     </script>
 
-    <div class="title">cosmovis</div>
+    <div class="title">CosmoVis</div>
     
     <div id="icon_container">
         <div id="terminal_icon" class="icon_caption"><img 

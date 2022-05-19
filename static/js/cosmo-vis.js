@@ -27,7 +27,7 @@ var uniforms
 var densityTexture, densityMin, densityMax
 var gasMesh, dmMesh, starMesh, bhMesh
 var dataArray3D, dataTexture3D, volumeShader, volumeUniforms, volMaterial, volGeometry
-var gasMaterial, dmMaterial, starMaterial, bhMaterial, skewerMaterial
+var gasMaterial, dmMaterial, starMaterial, starSaoMaterial, bhMaterial, skewerMaterial
 var skewerMaterial1 = []
 var skewerTexture = []
 var climGasLimits = []
@@ -48,7 +48,7 @@ for (x = 0; x < gridsize; x++) {
         }
     }
 }
-// console.log(d)
+// //console.log(d)
 blankTexture = new THREE.DataTexture3D(blank_d, gridsize, gridsize, gridsize)
 blankTexture.format = THREE.RedFormat
 blankTexture.type = THREE.FloatType
@@ -81,8 +81,9 @@ var container_hover //used to determine if the mouse is over a GUI container whe
 var edges_scaled = []
 var domainXYZ = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
 
-var starScene, skewerScene
-var target //used for rendering star particles to depth texture
+var starScene, starSaoScene, skewerScene
+var starTarget //used for rendering star particles to depth texture
+var starSaoTarget //ambient occlusion render target
 var skewerTarget
 var boxOfStarPoints
 var starData
@@ -133,7 +134,7 @@ let renderRequested = false
 // })
 // .then(data => {
 //     galQueryData = data
-//     console.log(galQueryData)}
+//     //console.log(galQueryData)}
 //     );
 
 function storeSceneState() {
@@ -180,7 +181,7 @@ function restoreSceneState() {
         // here we tell the reader what to do when it's done reading...
         reader.onload = readerEvent => {
             newSceneState = JSON.parse(readerEvent.target.result); // this is the content!
-            console.log(newSceneState);
+            //console.log(newSceneState);
 
             // simID = newSceneState.simID
             document.getElementById("sim_size_select").value = newSceneState.simID
@@ -259,7 +260,7 @@ function clearLayer(l) {
     for (i = scene.children.length - 1; i >= 0; i--) {
         layer = scene.children[i].layers.mask
         if (l == 0 && layer == 1) {
-            console.log('clear')
+            //console.log('clear')
             scene.remove(scene.children[i])
         }
         if (l == 1 && layer == 2) {
@@ -273,11 +274,11 @@ function clearLayer(l) {
         }
         if (l == 8 && layer == 256) {
             scene.remove(scene.children[i])
-            console.log('clear')
+            //console.log('clear')
         }
         if (l == 9 && layer == 512) {
             scene.remove(scene.children[i])
-            console.log('clear')
+            //console.log('clear')
         }
         if (l == 10 && layer == 1024) {
             scene.remove(scene.children[i])
@@ -357,7 +358,7 @@ function toggleXYZGuide() {
 }
 
 function updateSkewerEndpoints(size) {
-    console.log('update skewer endpoints')
+    //console.log('update skewer endpoints')
     for (i = 0; i < lines.length; i++) {
         skewerScene.remove(lines[i])
 
@@ -375,7 +376,7 @@ function updateSkewerEndpoints(size) {
         skewerGeometry.colorsNeedUpdate = true;
         skewerGeometry.tangentsNeedUpdate = true;
 
-        // console.log(skewerGeometry)
+        // //console.log(skewerGeometry)
         // render()
 
 
@@ -506,7 +507,7 @@ function toggleXYZGuide() {
 
 function updateUniforms() {
     if (volMaterial) {
-        // console.log("update uniforms")
+        // //console.log("update uniforms")
 
 
         // controls.target.set( ((domainXYZ[1]+domainXYZ[0]) * gridsize)/2,  ((domainXYZ[3]+domainXYZ[2]) * gridsize)/2, ((domainXYZ[5]+domainXYZ[4])*gridsize)/2 );
@@ -523,6 +524,9 @@ function updateUniforms() {
         starMaterial.uniforms["u_xyzMax"].value = new THREE.Vector3(domainXYZ[1], domainXYZ[3], domainXYZ[5])
         starMaterial.uniforms["u_gridsize"].value = gridsize
         starMaterial.uniforms["u_starSize"].value = document.getElementById("star-size-slider").value
+
+        starSaoMaterial.uniforms["u_screenHeight"].value = window.innerHeight
+        starSaoMaterial.uniforms["u_screenWidth"].value = window.innerWidth
 
         // volMaterial.uniforms["u_dmVisibility"].value = false        
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
@@ -552,7 +556,7 @@ function updateUniforms() {
         if (d_mod == 1.0) {
             volMaterial.uniforms["u_density"].value = densityTexture;
             // volMaterial.uniforms[ " u_grayscaleDepthMod" ]
-            // console.log(densityMin,densityMax)
+            // //console.log(densityMin,densityMax)
             volMaterial.uniforms["u_climDensity"].value.set(densityMin, densityMax);
         } else {
             volMaterial.uniforms["u_density"].value = blankTexture;
@@ -662,7 +666,7 @@ function updateUniforms() {
         } else {
 
         }
-        // console.log(volMaterial.uniforms["u_dmClim"].value)
+        // //console.log(volMaterial.uniforms["u_dmClim"].value)
         volMaterial.uniforms["u_dmClip"].value = [document.getElementById("dm-min-clip-check").checked, document.getElementById("dm-max-clip-check").checked]
 
         dmMinCol = new THREE.Color(document.querySelector("#dmMinCol").value);
@@ -707,7 +711,7 @@ function updateSkewerBrightness() {
 
 function init3dDataTexture(size) {
     // startLoadingAnimation()
-    console.log('initialize 3d data texture')
+    //console.log('initialize 3d data texture')
     return new Promise(resolve => {
         clearLayer(0)
 
@@ -753,7 +757,7 @@ function init3dDataTexture(size) {
 function update3dDataTexture() {
     return new Promise(resolve => {
         // startLoadingAnimation()
-        console.log("update 3d texture uniforms")
+        //console.log("update 3d texture uniforms")
         dataTexture3D = new THREE.DataTexture3D(dataArray3D, gridsize, gridsize, gridsize)
         dataTexture3D.internalformat = 'RGB32F' // 'RGB8UI'
         dataTexture3D.format = THREE.RGBFormat
@@ -771,6 +775,9 @@ function update3dDataTexture() {
         volMaterial.uniforms["u_renderthreshold"].value = 1.0; // For ISO renderstyle
         volMaterial.uniforms["u_cmGasData"].value = cmtexture['PartType0'];
         volMaterial.uniforms["u_cmDMData"].value = cmtexture['PartType1'];
+        volMaterial.extensions.drawBuffers = true
+        volMaterial.extensions.fragDepth = true
+        volMaterial.extensions.shaderTextureLOD = true
         volMaterial.needsUpdate = true
         volGeometry = new THREE.BoxBufferGeometry(gridsize, gridsize, gridsize);
         volGeometry.translate(gridsize / 2, gridsize / 2, gridsize / 2);
@@ -797,7 +804,7 @@ function update3dDataTexture() {
 function loadGas(size, attr, resolution_bool) {
     // startLoadingAnimation()
     gasAttr = attr
-    console.log('loading gas')
+    //console.log('loading gas')
     return new Promise(resolve => {
         d3.json('static/data/' + simID + '/PartType0/' + size + '_PartType0_' + attr + '.json').then(function (d) {
             // d3.text('static/data/'+simID+'/PartType0/' + size + '_PartType0_' + attr +'.json').then(function(textData){
@@ -828,7 +835,7 @@ function loadGas(size, attr, resolution_bool) {
             //GAS IS THE RED CHANNEL IN THE 3D DATA TEXTURE
             var min = Infinity
             var max = -Infinity
-            // console.log(log)
+            // //console.log(log)
             for (x = 0; x < size; x++) {
                 for (y = 0; y < size; y++) {
                     for (z = 0; z < size; z++) {
@@ -1025,7 +1032,7 @@ function loadGas(size, attr, resolution_bool) {
 }
 
 function loadDarkMatter(size) {
-    console.log('loading dark matter')
+    //console.log('loading dark matter')
     // startLoadingAnimation()
     attr = 'density'
     return new Promise(resolve => {
@@ -1036,7 +1043,7 @@ function loadDarkMatter(size) {
                 //     const d = JSON.parse(textData, function(key, value){
                 //         return value === "-Infinity" ? -Infinity : value;
                 //     });
-                // console.log(d)
+                // //console.log(d)
                 // DM_file_exists = true
                 log = false
 
@@ -1211,7 +1218,7 @@ async function asyncCall(resolution_bool) {
 
     }
     // catch(err){
-    //     console.log(err)
+    //     //console.log(err)
     // }
     // finally{
 
@@ -1224,7 +1231,7 @@ async function asyncCall(resolution_bool) {
 
 function loadDensity(size, type, attr) {
     // startLoadingAnimation()
-    console.log('loading density')
+    //console.log('loading density')
     return new Promise(resolve => {
         d3.json('static/data/' + simID + '/' + type + '/' + size + '_' + type + '_' + attr + '.json').then(function (d) {
             // d3.text('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(textData){
@@ -1274,7 +1281,7 @@ function loadDensity(size, type, attr) {
                 min = Math.log10(3.22215222e-31)
                 max = Math.log10(4.31157793e-19)
                 densityUnpackDomain = [min, max]
-                console.log(densityUnpackDomain)
+                //console.log(densityUnpackDomain)
                 setDensityMinMaxInputValues('density', min, max)
                 volMaterial.uniforms["u_densityUnpackDomain"].value.set(densityUnpackDomain[0], densityUnpackDomain[1])
             }
@@ -1300,17 +1307,17 @@ function loadDensity(size, type, attr) {
 
 function loadStars() {
     // startLoadingAnimation()
-    console.log('loading stars')
+    //console.log('loading stars')
     return new Promise(resolve => {
         while (starScene.children.length > 0) {
             starScene.remove(starScene.children[0]);
         }
         d3.json('static/data/' + simID + '/PartType4/star_particles.json').then(function (d) {
-            // console.log( Object.keys(d).length )
+            // //console.log( Object.keys(d).length )
             starData = []
             n = Object.keys(d).length
-            // console.log(d[0])
-            console.log(n)
+            // //console.log(d[0])
+            //console.log(n)
             m = gridsize / (edges.right_edge[0] - edges.left_edge[0]) //take into account other dimensions
             var starGeometry = new THREE.BufferGeometry();
             var starPositions = new Float32Array(n * 3)
@@ -1326,7 +1333,7 @@ function loadStars() {
                     ] //solar mass
 
                 }
-                // console.log(starPositions)
+                // //console.log(starPositions)
                 starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3)) //.onUpload( disposeArray )
                 starGeometry.computeBoundingBox()
                 boxOfStarPoints = new THREE.Points(starGeometry, starMaterial);
@@ -1356,7 +1363,7 @@ function starCaster() {
     intersects = []
     // intersects = starcaster.intersectObjects(boxOfStarPoints, true);
     boxOfStarPoints.raycast(starcaster, intersects);
-    // console.log(intersects)
+    // //console.log(intersects)
     // intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
     if (intersects.length > 0) {
         star = starData[intersects[0].index]
@@ -1443,8 +1450,8 @@ function stopLoadingAnimation() {
 function setupStarScene() {
     starScene = new THREE.Scene();
     starScene.background = new THREE.Color("rgb(0,0,0)")
-    starCol = new THREE.Color(0.8, 0.8, 0)
-    // console.log(starCol)
+    starCol = new THREE.Color(0.8, 0.8, 0.0)
+    // //console.log(starCol)
     starMaterial = new THREE.ShaderMaterial({
 
         uniforms: {
@@ -1472,10 +1479,48 @@ function setupStarScene() {
         side: THREE.DoubleSide,
         clipping: true
         // alphaTest:      0.3
-
     });
+}
 
+function setupStarSaoScene() {
+    starSaoScene = new THREE.Scene();
+    starSaoScene.background = new THREE.Color("rgb(0,0,0)")
+    starSaoMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            tDiffuse: { value: starTarget.texture },
+            starDepth: {value: starTarget.depthTexture},
+            u_screenHeight: {value: window.innerHeight},
+            u_screenWidth: {value: window.innerWidth},
+            u_cameraNear: {value: camera.near},
+            u_cameraFar: {value: camera.far}
+        },
+        vertexShader: document.getElementById('vertexshader-starSAO').textContent,
+        fragmentShader: document.getElementById('fragmentshader-starSAO').textContent,
 
+        // blending:       THREE.AdditiveBlending,
+        blending: THREE.CustomBlending,
+        // blendEquation:  THREE.AddEquation, //default
+        blendSrc: THREE.OneFactor,
+        blendDst: THREE.ZeroFactor,
+        depthTest: false,
+        depthWrite: false,
+        transparent: false,
+        opacity: 1.0,
+        precision: 'highp',
+        dithering: false,
+        side: THREE.DoubleSide,
+        clipping: false
+        // alphaTest:      0.3
+    });
+    starSaoMaterial.needsUpdate = true
+
+    var quad = new THREE.Mesh(
+        new THREE.PlaneGeometry(2, 2),
+        starSaoMaterial
+      );
+      quad.frustumCulled = false;
+
+      starSaoScene.add(quad);
 }
 
 function setupSkewerScene() {
@@ -1517,7 +1562,7 @@ function setupRenderTarget() {
 
     //STAR SCENE TARGET
 
-    if (target) target.dispose();
+    if (starTarget) starTarget.dispose();
 
     var format = THREE.DepthFormat
     var type = THREE.FloatType
@@ -1526,18 +1571,32 @@ function setupRenderTarget() {
     const size = new THREE.Vector2()
     renderer.getSize(size);
 
-    target = new THREE.WebGLRenderTarget(size.x, size.y);
-    target.texture.format = THREE.RGBAFormat;
-    target.texture.minFilter = THREE.LinearFilter;
-    target.texture.magFilter = THREE.LinearFilter;
-    target.texture.generateMipMaps = false
-    target.stencilBuffer = (format === THREE.DepthStencilFormat) ? true : false;
-    target.depthBuffer = true;
-    target.depthTexture = new THREE.DepthTexture(size.x, size.y);
-    target.depthTexture.format = format
-    target.depthTexture.type = type;
-    target.scissorTest = true;
-    target.scissor
+    starTarget = new THREE.WebGLRenderTarget(size.x, size.y);
+    starTarget.texture.format = THREE.RGBAFormat;
+    starTarget.texture.minFilter = THREE.LinearFilter;
+    starTarget.texture.magFilter = THREE.LinearFilter;
+    starTarget.texture.generateMipMaps = false
+    starTarget.stencilBuffer = (format === THREE.DepthStencilFormat) ? true : false;
+    starTarget.depthBuffer = true;
+    starTarget.depthTexture = new THREE.DepthTexture(size.x, size.y);
+    starTarget.depthTexture.format = format
+    starTarget.depthTexture.type = type;
+    starTarget.scissorTest = true;
+    starTarget.scissor
+
+    // STAR AMBIENT OCCLUSION SCENE TARGET
+    // if (starSaoTarget) starSaoTarget.dispose();
+    starSaoTarget = new THREE.WebGLRenderTarget(size.x, size.y);
+    starSaoTarget.texture.format = THREE.RGBAFormat;
+    starSaoTarget.texture.minFilter = THREE.LinearFilter;
+    starSaoTarget.texture.magFilter = THREE.LinearFilter;
+    starSaoTarget.texture.generateMipMaps = false
+    starSaoTarget.stencilBuffer = (format === THREE.DepthStencilFormat) ? true : false;
+    starSaoTarget.depthBuffer = false;
+    // starSaoTarget.depthTexture = new THREE.DepthTexture(size.x, size.y);
+    // starSaoTarget.depthTexture.format = format
+    // starSaoTarget.depthTexture.type = type;
+    starSaoTarget.scissorTest = true;
 
     //SKEWER SCENE TARGET
 
@@ -1547,7 +1606,7 @@ function setupRenderTarget() {
     skewerTarget.texture.format = THREE.RGBAFormat;
     skewerTarget.texture.minFilter = THREE.LinearFilter;
     skewerTarget.texture.magFilter = THREE.LinearFilter;
-    skewerTarget.texture.generateMipMaps = false
+    skewerTarget.texture.generateMipMaps = true
     skewerTarget.stencilBuffer = (format === THREE.DepthStencilFormat) ? true : false;
     skewerTarget.depthBuffer = true;
     skewerTarget.depthTexture = new THREE.DepthTexture(size.x, size.y);
@@ -1557,6 +1616,7 @@ function setupRenderTarget() {
     skewerTarget.scissor
 
     setupStarScene()
+    setupStarSaoScene()
     setupSkewerScene()
 }
 
@@ -1585,8 +1645,8 @@ function zoomIn() {
 }
 
 function goToPoint(x, y, z, delta = 0.1) {
-    console.log(x, y, z)
-    console.log('click click')
+    //console.log(x, y, z)
+    //console.log('click click')
     // x*=0.6776999078
     // y*=0.6776999078
     // z*=0.6776999078
@@ -1620,11 +1680,11 @@ function goToPoint(x, y, z, delta = 0.1) {
 
 
     m = gridsize / width_Mpc
-    console.log(m)
+    //console.log(m)
     x *= m
     y *= m
     z *= m
-    console.log(x, y, z)
+    //console.log(x, y, z)
     camera.lookAt(x / m, y / m, z / m)
     controls.target.set(x / m, y / m, z / m);
     camera.zoom = 9;
@@ -1781,7 +1841,7 @@ function createSkewerCube(size) {
      * * this is used for using a raycaster when placing skewers
      * size = voxels per edge
      */
-    // console.log(size)
+    // //console.log(size)
     clearLayer(8)
 
     min = new THREE.Vector3(domainXYZ[0] * size, domainXYZ[2] * size, domainXYZ[4] * size)
@@ -1821,27 +1881,40 @@ function render() {
     /**
      * * render()
      */
-
     // controls.update()
 
     renderRequested = false;
     //render stars into target
     renderer.setRenderTarget(null)
 
-
     // render star depth buffer
-    if (target) {
-        renderer.setRenderTarget(target)
+    if (starTarget) {
+        renderer.setRenderTarget(starTarget)
         renderer.render(starScene, camera);
         if (volMaterial) {
-            volMaterial.uniforms["u_starDiffuse"].value = target.texture
-            volMaterial.uniforms["u_starDepth"].value = target.depthTexture
-
+            starSaoMaterial.uniforms["tDiffuse"].value = starTarget.texture
+            volMaterial.uniforms["u_starDiffuse"].value = starTarget.texture
+            starSaoMaterial.uniforms["starDepth"] = starTarget.depthTexture
+            volMaterial.uniforms["u_starDepth"].value = starTarget.depthTexture
+            // starSaoMaterial.needsUpdate = true
         }
-
-
         renderer.setRenderTarget(null)
     }
+    // renderer.render(starScene, camera);
+
+    // star particle ambient occlusion pass
+    if (starSaoTarget){
+
+        renderer.setRenderTarget(starSaoTarget)
+        renderer.render(starSaoScene, camera);
+        if (volMaterial) {
+            // update starDiffuse uniform with new values from SAO shader pass
+            volMaterial.uniforms["u_starDiffuse"].value = starSaoTarget.texture
+            // volMaterial.needsUpdate = true
+        }
+        renderer.setRenderTarget(null)
+    }
+
 
     // render skewer depth buffer
     if (skewerTarget) {
@@ -1862,6 +1935,8 @@ function render() {
         staticGrid.lookAt(camera.position.x, camera.position.y, camera.position.z)
         staticGrid.rotateX(Math.PI / 2)
     }
+    // renderer.render(starSaoScene, camera);
+
     renderer.render(scene, camera);
 
 };
@@ -2044,7 +2119,7 @@ function requestSimpleLineData(idx) {
     buttonId = 'simple-line-request-button-' + idx + ''
     div = document.getElementById(buttonId)
     div.disabled = true
-    console.log(pt1, pt2)
+    //console.log(pt1, pt2)
     sendLine(idx, pt1, pt2)
     div.innerText = 'requesting skewer data . . . '
 
@@ -2059,7 +2134,7 @@ function requestSimpleLineData(idx) {
     }
 
     function sendLine(idx, point1, point2) {
-        console.log(point1, point2)
+        //console.log(point1, point2)
         socket.emit('getSkewerSimpleRay', simID, idx, [point1.x, point1.y, point1.z], [point2.x, point2.y, point2.z])
     }
 }
@@ -2083,7 +2158,7 @@ function downloadSkewerTable(d) {
 skewer_attribute_matrix = []
 
 function createSkewerDataTexture(skewer_index, attr_data) {
-    // console.log(attr_data)
+    // //console.log(attr_data)
     size = attr_data.length
     d = new Uint8Array(3 * size)
 
@@ -2095,17 +2170,17 @@ function createSkewerDataTexture(skewer_index, attr_data) {
         // high_col = new THREE.Color("rgb(200,200,200)")
 
         // band_col = low_col.lerp(high_col,attr_data[i].c)
-        // console.log(band_col)
+        // //console.log(band_col)
         d[stride] = band_col * 255; // stores length along skewer (to be used as texture UV lookup)
         d[stride + 1] = band_col * 255; // stores attribute value at distance x
         d[stride + 2] = band_col * 255; // empty
         // color will be programmed in the shader based on these values since delta_x is not uniform
     }
-    console.log(d)
+    //console.log(d)
 
     skewerTexture[skewer_index] = new THREE.DataTexture(d, 1, size, THREE.RGBFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping,
         THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter)
-    console.log(skewer_index)
+    //console.log(skewer_index)
     skewerTexture[skewer_index].needsUpdate = true
     lines[skewer_index].material.uniforms.skewer_tex.value = skewerTexture[skewer_index]
     lines[skewer_index].material.uniformsNeedUpdate = true
@@ -2167,9 +2242,9 @@ function createColumnDensityInfoPanel(msg) {
         // remove old plot
         // select = document.getElementById('col-density-graph-'+idx+'')
         s = document.getElementById('simple-line-results-' + msg.index + '')
-        console.log(msg)
+        //console.log(msg)
         divID = 'simple-line-status-skewer-coords-' + msg.index + ''
-        console.log(divID)
+        //console.log(divID)
         d3.select("#" + divID).selectAll(".graph").remove()
         d3.select("#" + divID).selectAll(".col-density-sum").remove()
 
@@ -2319,11 +2394,11 @@ function createColumnDensityInfoPanel(msg) {
 
         }
 
-        console.log(min_l)
+        //console.log(min_l)
 
         createSkewerDataTexture(msg.index, scaled_data)
 
-        // console.log(scaled_data)
+        // //console.log(scaled_data)
         var svg = d3.select('#' + divID)
             .append("svg")
             .attr("class", "graph col-density-graph")
@@ -2483,7 +2558,7 @@ function requestSpectrum(idx) {
     }
 
     function sendLine(idx, point1, point2) {
-        console.log(point1, point2)
+        //console.log(point1, point2)
         socket.emit('selectRay', simID, idx, [point1.x, point1.y, point1.z], [point2.x, point2.y, point2.z])
     }
 }
@@ -2710,8 +2785,8 @@ function createBrush() {
     function brushed() {
         var s = d3.event.selection || x.range();
         ret = s.map(x.invert, x);
-        // console.log(s)
-        // console.log(ret)
+        // //console.log(s)
+        // //console.log(ret)
         if (ret[0] !== ret[1]) {
 
             updateLambdaDomain(ret[0], ret[1])
@@ -2751,7 +2826,7 @@ function commonWavelength() {
 
         if (ele == "Angstroms") {
             updateLambdaDomain(val - 5, val + 5)
-            console.log(domainLambda)
+            //console.log(domainLambda)
         } else if (ele == "Velocity Space") {
             updateLambdaDomain(-2000, 2000)
         }
@@ -2787,7 +2862,7 @@ var image_data
 function receiveYTPlots(msg){
     image_data = msg
     const image = document.createElement('img')
-    console.log(msg.image_url)
+    //console.log(msg.image_url)
     image.src  = msg.image_url
     document.getElementById('YTPlots').innerHTML = ''
     document.getElementById('YTPlots').appendChild(image)
@@ -2805,7 +2880,7 @@ function receiveYTPlots(msg){
 async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     sim = document.getElementById("sim_size_select").value
-    console.log('createGalaxyFilteringBrushes function', sim)
+    //console.log('createGalaxyFilteringBrushes function', sim)
 
     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
@@ -2818,14 +2893,14 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
     // checkState determines if checkbox is clicked
     check.addEventListener('change', e => {
         galaxyBrushHistory[attr].checkState = e.target.checked
-//         console.log('new check', galaxyBrushHistory)
-        // console.log('new check 2',attr)
+//         //console.log('new check', galaxyBrushHistory)
+        // //console.log('new check 2',attr)
         filterGalaxies(sim)
     })
 
     // changing simulation changes the entire query
     document.getElementById("sim_size_select").addEventListener('change', e => {
-//         console.log('inside sim select event listener', sim)
+//         //console.log('inside sim select event listener', sim)
         galIds_doc.innerText = ''
         haloIds_doc.innerText = ''
 
@@ -2856,11 +2931,11 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
        // need the big 100 Mpc box here!!
         const data = await d3.json('static/data/RefL0100N1504/galaxies_RefL0100N1504.json')
 
-        // console.log(data,'json response')
+        // //console.log(data,'json response')
 
         if (data) {
 
-//             console.log('eagle data', data)
+//             //console.log('eagle data', data)
 
             // set the min and max:
             const data_length = data.length
@@ -2871,7 +2946,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
                 max = val > max ? val : max
                 min = val < min ? val : min  // === 0 ? val : min_ms
             }
-            //         console.log(min,max,'min and max here')
+            //         //console.log(min,max,'min and max here')
             minAttrScale = min === 0 ? 0.0001 : min  // to prevent undefined values
             maxAttrScale = max
         }
@@ -2924,7 +2999,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     function galaxyAttrBrushed() {
 
-        console.log('attrbrushed function')
+        ////console.log('attrbrushed function')
 
         var s = d3.event.selection || attrScale.range();
 
@@ -2934,7 +3009,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
             galaxyBrushHistory[attr].ranges = ret.slice()
 
-//             console.log('brush history', galaxyBrushHistory)
+//             ////console.log('brush history', galaxyBrushHistory)
             filterGalaxies(sim)
         }
 
@@ -2949,7 +3024,7 @@ async function filterGalaxies(sim) {
 
     sim = document.getElementById("sim_size_select").value
 
-    console.log('filterGalaxies function', sim)
+    ////console.log('filterGalaxies function', sim)
 
     allGalData_doc = document.getElementById('galdata')
     galIds_doc = document.getElementById('galid')
@@ -2962,7 +3037,7 @@ async function filterGalaxies(sim) {
 
     // var filteredData = galQueryData.slice() //slice of galquerydata
 
-    console.log('new brush history', galaxyBrushHistory)
+    //console.log('new brush history', galaxyBrushHistory)
 
     for (const attr in galaxyBrushHistory) {
 
@@ -2972,13 +3047,13 @@ async function filterGalaxies(sim) {
         if (galaxyBrushHistory[attr].checkState == true) {
 
             var filteredData = filteredData.filter(d => d[field] >= range[0] && d[field] <= range[1])
-            // console.log('filtering in loop',field)
+            // //console.log('filtering in loop',field)
             // filteredData.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
         }
     }
 
-//     console.log('after filtering properly', filteredData)
+//     //console.log('after filtering properly', filteredData)
 
     for (const attr in galaxyBrushHistory) {
 
@@ -3018,10 +3093,9 @@ async function filterGalaxies(sim) {
 
                 // takes you to galaxy whose ID you click on:
                 anchor.addEventListener('click', (e) => {
-                    console.log('clicked on this galaxy:',
-                       'ID: ', filteredGalIds[i], 'X Y Z: ', filteredX[i], filteredY[i], filteredZ[i], 'virial radius: ', filteredrh[i])
+                    //console.log('clicked on this galaxy:','ID: ', filteredGalIds[i], 'X Y Z: ', filteredX[i], filteredY[i], filteredZ[i], 'virial radius: ', filteredrh[i])
                     dl = (filteredrh[i] / 1000) / (width_Mpc)
-                    // console.log(width_Mpc,dl)
+                    // //console.log(width_Mpc,dl)
                     camera.zoom = 3.0
 
                     if (sim == "RefL0100N1504") {
@@ -3058,7 +3132,7 @@ async function filterGalaxies(sim) {
         }
     }
     
-    console.log(propList)
+    //console.log(propList)
     plotProps(propList)
 
 
@@ -3068,7 +3142,7 @@ async function filterGalaxies(sim) {
 //  FH function to plot some galaxy properties against each other
 function plotProps(alldata) {
 
-    console.log('in plotting fn',alldata)
+    //console.log('in plotting fn',alldata)
     
     // remove old dropdowns:
     d3.select('#galPropX').selectAll("*").remove()
@@ -3135,7 +3209,7 @@ function plotProps(alldata) {
         datax = alldata[sx.value]
         datay = alldata[sy.value]
 
-//         console.log('plot data',datax,datay)
+//         //console.log('plot data',datax,datay)
 
         data = []
 
@@ -3218,7 +3292,7 @@ function plotProps(alldata) {
         datax = alldata[sx.value]
         datay = alldata[sy.value]
 
-//         console.log('plot data',datax,datay)
+//         //console.log('plot data',datax,datay)
 
         data = []
 
@@ -3471,7 +3545,7 @@ function checkSelectedSimID() {
         for (i = 0; i < field_list.length; i++) {
             if (field_list[i][0] == 'PartType0') {
                 if (field_list[i][0] == 'PartType0') {
-                    console.log(field_list[i])
+                    //console.log(field_list[i])
                     if ((field_list[i][1] == 'Temperature') ||
                         (field_list[i][1] == 'Entropy') ||
                         (field_list[i][1] == 'Metallicity') ||
@@ -3518,8 +3592,77 @@ function checkSelectedSimID() {
     }
 }
 
+function getDate(){
+    var objToday = new Date(),
+	weekday = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'),
+	dayOfWeek = weekday[objToday.getDay()],
+	domEnder = function() { var a = objToday; if (/1/.test(parseInt((a + "").charAt(0)))) return "th"; a = parseInt((a + "").charAt(1)); return 1 == a ? "st" : 2 == a ? "nd" : 3 == a ? "rd" : "th" }(),
+	dayOfMonth = today + ( objToday.getDate() < 10) ? '0' + objToday.getDate() + domEnder : objToday.getDate() + domEnder,
+	months = new Array('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'),
+	curMonth = months[objToday.getMonth()],
+	curYear = objToday.getFullYear(),
+	curHour = objToday.getHours() > 12 ? objToday.getHours() - 12 : (objToday.getHours() < 10 ? "0" + objToday.getHours() : objToday.getHours()),
+	curMinute = objToday.getMinutes() < 10 ? "0" + objToday.getMinutes() : objToday.getMinutes(),
+	curSeconds = objToday.getSeconds() < 10 ? "0" + objToday.getSeconds() : objToday.getSeconds(),
+	curMeridiem = objToday.getHours() > 12 ? "PM" : "AM";
+    var today = curHour + ":" + curMinute + "." + curSeconds + curMeridiem + " " + dayOfWeek + " " + dayOfMonth + " of " + curMonth + ", " + curYear;
+    return objToday
+}
+
+function checkMobile(){
+    var isMobile = false; //initiate as false
+    // device detection
+    if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(navigator.userAgent) 
+        || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(navigator.userAgent.substr(0,4))) { 
+        isMobile = true;
+    }
+    return isMobile;
+}
+
+var logs = []
+// PREFERRED METHOD FOR LOGGING -- CONSOLE.LOG() BAD
+function write2Log(msg, lvl, cmnt, tag ){
+    // msg == can be any variable type, ideally a string for readability.
+    // lvl == log level [ 0 DEBUG, 1 ERROR, 2 INFO, 3 WARN ]
+    // cmnt == any string comment to go along with the message
+    // tag == a string, or list of strings, describing the context for the error. (ex: [ skewer, ui ] )
+    
+    // push message to global 'logs' variable along with some metadata
+    logs.header = ['message', 'log_level', 'comments', 'tags', 'simID', 'grid_size', 'timestamp', 'browser_info', 'isMobile?']
+    logs.push(
+        [msg,lvl,cmnt,tag,simID,gridsize,getDate(),navigator,checkMobile()]
+    )
+
+    // print to console based on set Logger.level. Default is off
+    if      ( lvl == 0 || lvl == 'DEBUG' ){
+        Logger.trace(msg)
+    }
+    else if ( lvl == 1 || lvl == 'ERROR' ){
+        Logger.error(msg)
+    }
+    else if ( lvl == 2 || lvl == 'INFO' ){
+        Logger.info(msg)
+    }
+    else if ( lvl == 3 || lvl == 'WARN' ){
+        Logger.warn(msg)
+    }
+}
+
+// send logs to Flask server when user navigates away from screen
+document.addEventListener('visibilitychange', function() {
+    write2Log('send log to server', 'INFO', null, 'log' )
+    console.log(logs)
+    if (document.visibilityState == 'hidden') { 
+        socket.emit("js_logs", {'log': JSON.stringify(logs), 'header':JSON.stringify(logs.header) });
+    }
+});
+
 function init() {
     // simID = 'RefL0012N0188'
+    Logger.useDefaults()
+    // https://github.com/jonnyreeves/js-logger
+    Logger.setLevel(Logger.OFF) // other options: Logger.WARN, Logger.TRACE, Logger.DEBUG
+    write2Log("initializing environment")
     checkSelectedSimID()
     THREE.Cache.enabled = true
     canvas = document.createElement('canvas')
@@ -3533,7 +3676,7 @@ function init() {
     scene.background = new THREE.Color("rgb(4,6,23)")
 
     // camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.0001, 10000 );
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 4000);
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 4000);
 
     camera.layers.enable(0);
     camera.layers.enable(1);
@@ -3546,13 +3689,13 @@ function init() {
     renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(1);
-
+    
     renderer.antialias = true;
     renderer.precision = 'highp';
     renderer.powerPreference = 'high-performance'
     renderer.sortPoints = true;
     renderer.gammaFactor = 4.2;
-    renderer.gammaOutput = true;
+    renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.logarithmicDepthBuffer = true
 
     // renderer.context.canvas.addEventListener("webglcontextlost", function(event) {
@@ -3577,14 +3720,15 @@ function init() {
     controls.noRotate = false
     controls.noZoom = true
     controls.rotateSpeed = 10.0;
-    controls.zoomSpeed = 5.0;
+    controls.zoomSpeed = 1.0;
     controls.panSpeed = 5.0;
-    controls.staticMoving = true
-    controls.dynamicDampingFactor = 0.2
-    controls.keys = [65, 83, 68];
-    // controls.enableDamping = false
-    // controls.rotateSpeed = 0.75;
-    // controls.dampingFactor = 0.75;
+    controls.staticMoving = false
+    controls.dynamicDampingFactor = 0.5
+    // controls.keys
+    // controls.enableDamping = true
+    // controls.panSpeed = 0.1
+    controls.rotateSpeed = 4;
+    controls.dampingFactor = 0.2;
     controls.addEventListener('change', requestRenderIfNotRequested)
     controls.enableKeys = true
     controls.update()
@@ -3592,10 +3736,10 @@ function init() {
 
     window.addEventListener('wheel', function (e) {
         // e.preventDefault();
-        // console.log(e)
+        // //console.log(e)
         //scrolling
         if (!container_hover) {
-            camera.zoom -= e.deltaY / 300
+            camera.zoom -= e.deltaY / 1000
             if (camera.zoom <= 0) {
                 camera.zoom = 0.1
             }
@@ -3617,7 +3761,7 @@ function init() {
 //         // updateXYZDomain('x',0.0,1.0) 
 //         // updateXYZDomain('y',0.0,1.0) 
 //         // updateXYZDomain('z',0.0,1.0)
-//         // console.log('dblclk',width_Mpc/2)
+//         // //console.log('dblclk',width_Mpc/2)
 //         goToPoint(width_Mpc / 2, width_Mpc / 2, width_Mpc / 2, 0.5)
 //         camera.zoom = 1.0
 //     })
@@ -3744,12 +3888,12 @@ function onMouseClick(event) {
         if (points[1].x > domainXYZ[1] * gridsize) points[1].x = domainXYZ[1] * gridsize
         if (points[1].y > domainXYZ[3] * gridsize) points[1].y = domainXYZ[3] * gridsize
         if (points[1].z > domainXYZ[5] * gridsize) points[1].z = domainXYZ[5] * gridsize
-        // console.log(points[0],points[1])
+        // //console.log(points[0],points[1])
 
         // printLine(point1,point2)...
-        // console.log('2/2')
+        // //console.log('2/2')
 
-        // console.log(dir)
+        // //console.log(dir)
         handleLine(dir, points[0], points[1])
         // printLine(dir,point1,point2)
     }
@@ -3786,7 +3930,7 @@ function onMouseClick(event) {
         skewerGeometry.colorsNeedUpdate = true;
         skewerGeometry.tangentsNeedUpdate = true;
 
-        // console.log(skewerGeometry)
+        // //console.log(skewerGeometry)
         // render()
 
 
@@ -3832,8 +3976,8 @@ function onMouseClick(event) {
         div = document.getElementById(id)
         id = "skewer-coords-point1-" + idx + ''
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x * (edges.right_edge[0] / gridsize), 3) + ', ' + round(point1.y * (edges.right_edge[1] / gridsize), 3) + ', ' + round(point1.z * (edges.right_edge[0] / gridsize), 3) + ' ) Mpc </div>')
-        console.log(point1)
-        console.log(point1.x * (edges.right_edge[0] / gridsize))
+        //console.log(point1)
+        //console.log(point1.x * (edges.right_edge[0] / gridsize))
         //create div to show pt2 details and range slider
         id = 'skewer-coords-' + idx
         div = document.getElementById(id)
@@ -3956,7 +4100,7 @@ function cylinderMesh(pointX, pointY) {
         // morphNormals: true,
     });
     // Make the geometry (of "direction" length)
-    // console.log(gridsize)
+    // //console.log(gridsize)
     skewer_width = (document.getElementById("skewer-width-slider")).value
     let skewerGeometry = new THREE.CylinderBufferGeometry(skewer_width, skewer_width, direction.length(), 100, 1000, true, 0, 2 * Math.PI);
     skewerGeometry.setDrawRange(0, Infinity)
@@ -4080,22 +4224,21 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(1);
     const size = new THREE.Vector2()
     renderer.getSize(size);
-    // console.log(size)
+    // //console.log(size)
     var pixelRatio = window.devicePixelRatio;
-    target.setSize(size.x, size.y)
+    starTarget.setSize(size.x, size.y)
+    starSaoTarget.setSize(size.x, size.y)
+    skewerTarget.setSize(size.x, size.y)
     updateUniforms()
-
-
 }
 
 function onKeyUp(event) {
     if (event.keyCode) {
-        // console.log("shift")
+        // //console.log("shift")
         setTimeout(function () {
             controls.rotateSpeed = 10.0;
             controls.zoomSpeed = 5.0;
@@ -4105,12 +4248,12 @@ function onKeyUp(event) {
 }
 
 function onKeyDown(event) {
-    // console.log(event)
+    // //console.log(event)
     var k = String.fromCharCode(event.keyCode);
-    // console.log(k)
+    // //console.log(k)
 
     if (event.keyCode) {
-        // console.log("shift")
+        // //console.log("shift")
         setTimeout(function () {
             controls.rotateSpeed = 4.0;
             controls.zoomSpeed = 1.0;

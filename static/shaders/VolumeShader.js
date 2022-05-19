@@ -46,7 +46,7 @@ THREE.VolumeRenderShader1 = {
 		"u_skewerDiffuse": {value: null},
 		"u_skewerDepth": {value: null},
 		"u_starCol": {value: new THREE.Vector3( 1.0, 1.0 , 0.0 )},
-		"u_cameraNear": { value: 0.00001 },
+		"u_cameraNear": { value: 0.01 },
 		"u_cameraFar": { value: 4000.0 },
 		"u_screenWidth": {value : null},
 		"u_screenHeight": {value : null},
@@ -334,7 +334,8 @@ THREE.VolumeRenderShader1 = {
 					// if star || skewer is visible, multiply color by transmittance (0,1)
 					if(u_starVisibility == true) {
 						vec3 starCol = texture2D(u_starDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
-						if( starCol.r > 0.1) path_L += transmittance * ((starCol)/(starDepth*starDepth));
+						if (starCol.r > 0.1) path_L += transmittance * ((starCol)/(starDepth*starDepth)); 
+						//fragColor = vec4(starCol,1.0); 
 					}
 					if(u_skewerVisibility == true) {
 						vec3 skewerCol = texture2D(u_skewerDiffuse,gl_FragCoord.xy/vec2(u_screenWidth,u_screenHeight)).rgb;
