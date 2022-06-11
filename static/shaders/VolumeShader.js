@@ -4,7 +4,7 @@
  * This is not the only approach, therefore it's marked 1.
  */
 
-THREE.VolumeRenderShader1 = {
+ THREE.VolumeRenderShader1 = {
 	
     uniforms: {
 		"u_size": { value: new THREE.Vector3( 1, 1, 1 ) },

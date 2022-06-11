@@ -19,7 +19,7 @@ var gasMinCol, gasMidCol, gasMaxCol, dmMinCol, dmMaxCol, starMinCol, starMaxCol,
 var gm, gmx, bhm, bhmx //used for changeValue()
 var brusher //used for spectra brush
 var gui //used to hold dat.GUI object
-// var material
+    // var material
 var cmtexture = []
 var gasTexture, dmTexture
 var gasAttr = "Temperature"
@@ -56,7 +56,7 @@ blankTexture.minFilter = blankTexture.magFilter = THREE.LinearFilter
 blankTexture.unpackAlignment = 1
 blank_d = []
 var elements = ['Hydrogen', 'Helium', 'Carbon', 'Nickel', 'Oxygen', 'Neon', 'Magnesium', 'Silicon', 'Iron']
-// var volconfig
+    // var volconfig
 
 /**
  * * these variables are used for raycasting when drawing skewers
@@ -72,6 +72,10 @@ var plane = new THREE.Plane();
 var planeNormal = new THREE.Vector3();
 var point = new THREE.Vector3();
 var edges = []
+// for zooming in:
+var zoomEdges = []
+var zoom_bool,halos
+// //
 var skewers = []
 var drawSkewers = false
 var line
@@ -88,25 +92,22 @@ var boxOfStarPoints
 var starData
 var width_Mpc
 var galaxy_centers
-/**
- * * used with refreshLoop() to get fps
- */
+    /**
+     * * used with refreshLoop() to get fps
+     */
 const times = [];
 let fps;
 
-var galaxyBrushHistory = {}
-
-
 function refreshLoop() {
-    window.requestAnimationFrame(() => {
-        const now = performance.now();
-        while (times.length > 0 && times[0] <= now - 1000) {
-            times.shift();
-        }
-        times.push(now);
-        fps = times.length;
-        refreshLoop();
-    });
+  window.requestAnimationFrame(() => {
+    const now = performance.now();
+    while (times.length > 0 && times[0] <= now - 1000) {
+      times.shift();
+    }
+    times.push(now);
+    fps = times.length;
+    refreshLoop();
+  });
 }
 
 refreshLoop();
@@ -136,20 +137,32 @@ let renderRequested = false
 //     console.log(galQueryData)}
 //     );
 
+// FH - for going back to full box view:
+// window.addEventListener('dblclick', (e) => {
+// // updateXYZDomain('x',0.0,1.0) 
+// // updateXYZDomain('y',0.0,1.0) 
+// // updateXYZDomain('z',0.0,1.0)
+// // console.log('dblclk',width_Mpc/2)
+// goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
+// camera.zoom = 1.0
+// camera.updateProjectionMatrix()
+// updateUniforms() 
+// })
+
 function storeSceneState() {
     sceneState = {}
     // simulation snapshot
     sceneState.simID = simID
     // layer visibility
-    sceneState.gas = volMaterial.uniforms["u_gasVisibility"].value
-    sceneState.dm = volMaterial.uniforms["u_dmVisibility"].value
+    sceneState.gas   = volMaterial.uniforms["u_gasVisibility"].value
+    sceneState.dm    = volMaterial.uniforms["u_dmVisibility"].value
     sceneState.stars = volMaterial.uniforms["u_starVisibility"].value
     // camera orientation/location
     sceneState.camera = camera.matrix.toArray()
     sceneState.cameraZoom = camera.zoom
     // XYZ slice
     sceneState.domainXYZ = domainXYZ
-
+    
     // min/max for transfer function
     // save sceneState
 
@@ -164,33 +177,33 @@ function storeSceneState() {
 }
 
 var newSceneState = {}
-function restoreSceneState() {
+function restoreSceneState(){
     var input = document.createElement('input');
     input.type = 'file';
-
-    input.onchange = e => {
+    
+    input.onchange = e => { 
 
         // getting a hold of the file reference
-        var file = e.target.files[0];
+        var file = e.target.files[0]; 
 
         // setting up the reader
         var reader = new FileReader();
-        reader.readAsText(file, 'UTF-8');
+        reader.readAsText(file,'UTF-8');
 
         // here we tell the reader what to do when it's done reading...
         reader.onload = readerEvent => {
             newSceneState = JSON.parse(readerEvent.target.result); // this is the content!
-            console.log(newSceneState);
+            console.log( newSceneState );
 
             // simID = newSceneState.simID
             document.getElementById("sim_size_select").value = newSceneState.simID
             document.getElementById("size_select").value = 64
-
+            
             updateSize()
             checkSelectedSimID()
 
-            volMaterial.uniforms["u_gasVisibility"].value = newSceneState.gas
-            volMaterial.uniforms["u_dmVisibility"].value = newSceneState.dm
+            volMaterial.uniforms["u_gasVisibility"].value  = newSceneState.gas
+            volMaterial.uniforms["u_dmVisibility"].value   = newSceneState.dm
             volMaterial.uniforms["u_starVisibility"].value = newSceneState.stars
 
             camera.matrix.fromArray(newSceneState.camera)
@@ -207,27 +220,65 @@ function restoreSceneState() {
                 height = 40
             var x = d3.scaleLinear()
                 .domain([0.0, 1.0])
-                .range([margin.left + width * domainXYZ[0], margin.left + width * domainXYZ[1]]);
+                .range([margin.left + width * domainXYZ[0], margin.left + width * domainXYZ[1] ]);
             xBrush.call(xBrusher).call(xBrusher.move, x.range())
 
             var y = d3.scaleLinear()
                 .domain([0.0, 1.0])
-                .range([margin.left + width * domainXYZ[2], margin.left + width * domainXYZ[3]]);
+                .range([margin.left + width * domainXYZ[2],margin.left +  width * domainXYZ[3] ]);
             yBrush.call(yBrusher).call(yBrusher.move, y.range())
 
             var z = d3.scaleLinear()
                 .domain([0.0, 1.0])
-                .range([margin.left + width * domainXYZ[4], margin.left + width * domainXYZ[5]]);
+                .range([margin.left + width * domainXYZ[4], margin.left + width * domainXYZ[5] ]);
             zBrush.call(zBrusher).call(zBrusher.move, z.range())
-
+            
 
             updateUniforms()
         }
-
+    
     }
-
+    
     input.click();
-}
+}    
+
+
+
+
+    // // load sceneState
+    // var file = document.getElementById('file').files[0];
+    // if(file){
+    //     var reader = new FileReader();
+
+    //     // Read file into memory as UTF-16
+    //     reader.readAsText(file, "UTF-16");
+
+    //     // Handle progress, success, and errors
+    //     reader.onload = loaded;
+    //     reader.onerror = errorHandler;
+
+    // }
+      
+    // function loaded(evt) {
+    //     // Obtain the read file data
+    //     var newSceneState = evt.target.result;
+        
+    //     simID = newSceneState.simID
+    //     volMaterial.uniforms["u_gasVisibility"].value  = newSceneState.gas
+    //     volMaterial.uniforms["u_dmVisibility"].value   = newSceneState.dm
+    //     volMaterial.uniforms["u_starVisibility"].value = newSceneState.stars
+ 
+    //     camera = newSceneState.camera
+
+    //     domainXYZ = newSceneState.domainXYZ
+    // }
+    
+    // function errorHandler(evt) {
+    //     if(evt.target.error.name == "NotReadableError") {
+    //         // The file could not be read
+    //     }
+    // }      
+// }
 
 function clearThree(obj) {
     /**
@@ -286,23 +337,79 @@ function clearLayer(l) {
 
 }
 
-async function updateSize() {
+// // OG updatesize fn:
+// async function updateSize() {
+//     s = document.getElementById("size_select").value
+//         //check to see if selected size is different than the current configuration
+
+//     oldSize = gridsize
+//     oldPos = camera.position
+
+//     if (gridsize != s) {
+//         gridsize = s
+//         var init = init3dDataTexture(gridsize)
+
+//         asyncCall(true)
+//             //check to see which variables are visible and update those immediately
+//         checkSelectedSimID()
+//             // asyncCall()
+//             // loadHaloCenters()
+
+//         createSkewerCube(gridsize)
+//         updateSkewerEndpoints(gridsize, oldSize)
+//         toggleXYZGuide()
+//         updateUniforms()
+//         toggleGrid()
+//         camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+//         camera.updateProjectionMatrix()
+//             // controls
+//         controls.target.set(((domainXYZ[1] + domainXYZ[0]) * gridsize) / 2, ((domainXYZ[3] + domainXYZ[2]) * gridsize) / 2, ((domainXYZ[5] + domainXYZ[4]) * gridsize) / 2);
+//         controls.update()
+//     }
+// }
+
+
+// FH updatesize fn:
+async function updateSize(zoom_bool,halos=null) {
+
     s = document.getElementById("size_select").value
+    // console.log('hey now',s)
     //check to see if selected size is different than the current configuration
 
     oldSize = gridsize
     oldPos = camera.position
 
+    //
+    // console.log('what updates are there',gridsize,s)
+
+    // s2.onchange = function() {
+    // console.log('There was a change')
+    
+    // }
+
+    //
+
+    // if (halos) {
+    //     console.log('heyyyyy')
+    // }
 
     if (gridsize != s) {
+
+        // console.log('are you there',s,gridsize)
+        
+        if (!zoom_bool) { //this is for non zoom-ins
+        // if (!halos) {
+        // console.log('are you there',s,gridsize,zoom_bool,halos)
+
         gridsize = s
+
         var init = init3dDataTexture(gridsize)
 
         asyncCall(true)
-        //check to see which variables are visible and update those immediately
+            //check to see which variables are visible and update those immediately
         checkSelectedSimID()
-        // asyncCall()
-        // loadHaloCenters()
+            // asyncCall()
+            // loadHaloCenters()
 
         createSkewerCube(gridsize)
         updateSkewerEndpoints(gridsize, oldSize)
@@ -311,11 +418,64 @@ async function updateSize() {
         toggleGrid()
         camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
         camera.updateProjectionMatrix()
-        // controls
+            // controls
         controls.target.set(((domainXYZ[1] + domainXYZ[0]) * gridsize) / 2, ((domainXYZ[3] + domainXYZ[2]) * gridsize) / 2, ((domainXYZ[5] + domainXYZ[4]) * gridsize) / 2);
         controls.update()
+        }
+
+        if (zoom_bool) { //this is for zoom-ins
+        // if (halos) {
+        
+        gridsize = s
+
+        var init = init3dDataTexture(gridsize)
+
+        // console.log('no i am here instead',gridsize,s,zoom_bool,halos) 
+
+        asyncZoom(true,halos)
+        //check to see which variables are visible and update those immediately
+        // checkSelectedSimID()
+
+        createSkewerCube(gridsize)
+        updateSkewerEndpoints(gridsize, oldSize)
+        toggleXYZGuide()
+        updateUniforms()
+        toggleGrid()
+        camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+        camera.updateProjectionMatrix()
+            // controls
+        controls.target.set(((domainXYZ[1] + domainXYZ[0]) * gridsize) / 2, ((domainXYZ[3] + domainXYZ[2]) * gridsize) / 2, ((domainXYZ[5] + domainXYZ[4]) * gridsize) / 2);
+        controls.update()
+        }
     }
+
+    // if (gridsize != s) {
+        
+    //     gridsize = s
+
+    //     // var init = init3dDataTexture(gridsize)
+
+    //     // asyncZoom(true,halos)        
+    //     //     //check to see which variables are visible and update those immediately
+    //     // checkSelectedSimID()
+    //     //     // asyncCall()
+    //     //     // loadHaloCenters()
+
+    //     // createSkewerCube(gridsize)
+    //     // updateSkewerEndpoints(gridsize, oldSize)
+    //     // toggleXYZGuide()
+    //     // updateUniforms()
+    //     // toggleGrid()
+    //     // camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+    //     // camera.updateProjectionMatrix()
+    //     //     // controls
+    //     // controls.target.set(((domainXYZ[1] + domainXYZ[0]) * gridsize) / 2, ((domainXYZ[3] + domainXYZ[2]) * gridsize) / 2, ((domainXYZ[5] + domainXYZ[4]) * gridsize) / 2);
+    //     // controls.update()
+
+
+    // }
 }
+
 
 function toggleGrid() {
     let div = (document.getElementById("grid-check")).checked
@@ -524,7 +684,9 @@ function updateUniforms() {
         starMaterial.uniforms["u_gridsize"].value = gridsize
         starMaterial.uniforms["u_starSize"].value = document.getElementById("star-size-slider").value
 
-        // volMaterial.uniforms["u_dmVisibility"].value = false        
+        // FH setting this false for now:
+        volMaterial.uniforms["u_dmVisibility"].value = false  
+
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
         volMaterial.uniforms["u_screenWidth"].value = window.innerWidth
 
@@ -761,8 +923,8 @@ function update3dDataTexture() {
         dataTexture3D.minFilter = dataTexture3D.magFilter = THREE.LinearFilter //THREE.NearestFilter//
         dataTexture3D.unpackAlignment = 4
         dataTexture3D.needsUpdate = true
-        // uniforms[ "u_gasData" ].value = gasTexture;
-        // uniforms[ "u_dmData" ].value = dmTexture;
+            // uniforms[ "u_gasData" ].value = gasTexture;
+            // uniforms[ "u_dmData" ].value = dmTexture;
         volMaterial.uniforms["u_dataTexture3D"].value = dataTexture3D;
         volMaterial.uniforms["u_size"].value.set(gridsize, gridsize, gridsize);
         volMaterial.uniforms["u_gasClim"].value.set(climGasLimits[0], climGasLimits[1]);
@@ -797,9 +959,9 @@ function update3dDataTexture() {
 function loadGas(size, attr, resolution_bool) {
     // startLoadingAnimation()
     gasAttr = attr
-    console.log('loading gas')
+    console.log('loading gas',size)
     return new Promise(resolve => {
-        d3.json('static/data/' + simID + '/PartType0/' + size + '_PartType0_' + attr + '.json').then(function (d) {
+        d3.json('static/data/' + simID + '/PartType0/' + size + '_PartType0_' + attr + '.json').then(function(d) {
             // d3.text('static/data/'+simID+'/PartType0/' + size + '_PartType0_' + attr +'.json').then(function(textData){
             //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
             //     const d = JSON.parse(textData, function(key, value){
@@ -809,7 +971,7 @@ function loadGas(size, attr, resolution_bool) {
             volMaterial.uniforms["u_gasAttribute"] = attr
 
             let log = false
-            // if(size == 64){
+                // if(size == 64){
 
             //     if(elements.includes(attr) || attr=="GFM_Metallicity"){
             //         log = false
@@ -828,7 +990,7 @@ function loadGas(size, attr, resolution_bool) {
             //GAS IS THE RED CHANNEL IN THE 3D DATA TEXTURE
             var min = Infinity
             var max = -Infinity
-            // console.log(log)
+                // console.log(log)
             for (x = 0; x < size; x++) {
                 for (y = 0; y < size; y++) {
                     for (z = 0; z < size; z++) {
@@ -881,10 +1043,410 @@ function loadGas(size, attr, resolution_bool) {
                     let dropdown = document.getElementById("gas_select")
                     dropdown.value = 'Temperature'
                     min = 2.0
-                    minval.value = 3.745
+                    minval.value = 4
                     max = 7.5
+                    maxval.value = 7
+                    gasUnpackDomain = [1.0, 8.0]
+                }
+                if (attr == "Density") {
+                    min = -33.0
+                    minval.value = -32.0
+                    max = -27.0
+                    maxval.value = -26.0
+                    gasUnpackDomain = [-33.0, -23.0]
+                }
+                if (attr == "Entropy") {
+                    min = 1.0
+                    minval.value = 1.0
+                    max = 6.0
+                    maxval.value = 6.0
+                    gasUnpackDomain = [0.0, 6.0]
+                }
+                if (attr == "Metallicity") {
+                    min = -5.0
+                    minval.value = -5.0
+                    max = 1.0
+                    maxval.value = 0
+                    gasUnpackDomain = [-5.0, 1.0]
+                }
+                if (attr == "Pressure") {
+                    min = -4.0
+                    minval.value = -4.0
+                    max = 7.0
+                    maxval.value = 2.0
+                    gasUnpackDomain = [-4.0, 7.0]
+                }
+                if (attr == "Mach_number") {
+                    min = -3.0
+                    minval.value = -2.0
+                    max = 3.0
+                    maxval.value = 3.0
+                    gasUnpackDomain = [-3.0, 3.0]
+                }
+                if (attr == "tcool_tff") {
+                    min = -3.0
+                    minval.value = -2.0
+                    max = 4.0
+                    maxval.value = 2.0
+                    gasUnpackDomain = [-3.0, 4.0]
+                }
+                if (attr == "xray_luminosity_0.1_2_keV") {
+                    min = 26.0
+                    minval.value = 30.0
+                    max = 44.0
+                    maxval.value = 40.0
+                    gasUnpackDomain = [24.0,44.0]
+                }
+                if (attr == "Carbon") {
+                    min = 0.0
+                    minval.value = 0.0001
+                    max = 0.01
+                    maxval.value = 0.001
+                    gasUnpackDomain = [0.0, 0.01]
+                }
+                if (attr == "Oxygen") {
+                    min = 0.0
+                    minval.value = 0.0001
+                    max = 0.01
+                    maxval.value = 0.001
+                    gasUnpackDomain = [0.0, 0.01]
+                }
+
+            } else if (simID == 'TNG100_z0.0') {
+                // set some default values
+                if (attr == "Temperature") {
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Temperature'
+                    min = Math.log10(1433.90826193)
+                    minval.value = 3.745
+                    max = Math.log10(7.6024808e8)
                     maxval.value = 6.75
-                    gasUnpackDomain = [2.0, 7.5]
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Density") {
+                    min = Math.log10(3.22215222e-31)
+                    minval.value = Math.log10(3.22215222e-31)
+                    max = Math.log10(4.31157793e-19)
+                    maxval.value = Math.log10(4.31157793e-19)
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Metallicity") {
+                    min = -3.0 //Math.log10(4.06559314e-10)
+                    minval.value = -3.0 //Math.log10(4.06559314e-10)
+                    max = 1.0 //Math.log10(0.16250114)
+                    maxval.value = -1.0 //Math.log10(0.16250114)
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Masses") {
+                    min = Math.log10(3.11659301e-06)
+                    minval.value = Math.log10(3.11659301e-06)
+                    max = Math.log10(0.00150664)
+                    maxval.value = Math.log10(0.00150664)
+                    gasUnpackDomain = [min, max]
+                }
+            } else if (simID == 'TNG100_z2.3') {
+                // set some default values
+                if (attr == "Temperature") {
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Temperature'
+                    min = Math.log10(1433.90826193)
+                    minval.value = 3.745
+                    max = Math.log10(7.6024808e8)
+                    maxval.value = 6.75
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Density") {
+                    min = Math.log10(3.22215222e-31)
+                    minval.value = Math.log10(3.22215222e-31)
+                    max = Math.log10(4.31157793e-19)
+                    maxval.value = Math.log10(4.31157793e-19)
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Metallicity") {
+                    min = -3.0 //Math.log10(4.06559314e-10)
+                    minval.value = -3.0 //Math.log10(4.06559314e-10)
+                    max = 1.0 //Math.log10(0.16250114)
+                    maxval.value = -1.0 //Math.log10(0.16250114)
+                    gasUnpackDomain = [min, max]
+                }
+                if (attr == "Masses") {
+                    min = Math.log10(3.11659301e-06)
+                    minval.value = Math.log10(3.11659301e-06)
+                    max = Math.log10(0.00150664)
+                    maxval.value = Math.log10(0.00150664)
+                    gasUnpackDomain = [min, max]
+                }
+            }
+            climGasLimits = [min, max]
+
+
+
+
+
+            volMaterial.uniforms["u_gasUnpackDomain"].value.set(gasUnpackDomain[0], gasUnpackDomain[1])
+                // if(elements.includes(attr)){
+
+
+            // min = 4.5
+            // minval.value = 4.5
+            // }
+            let gasUnits = document.getElementsByClassName('gas-attr-units')
+            for (i = 0; i < gasUnits.length; i++) {
+                if ((attr == 'Temperature') || (attr == 'Temperature_Test') || (attr == 'Temperature_Test1')) {
+                    gasUnits[i].innerHTML = 'log(K)'
+                } else if (elements.includes(attr)) {
+                    gasUnits[i].innerHTML = 'unitless'
+                } else if (attr == "Mass") {
+                    gasUnits[i].innerHTML = 'log(Msun)'
+                } else if (attr == "Density") {
+                    gasUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+                } else if (attr == "InternalEnergy") {
+                    gasUnits[i].innerHTML = "log(erg/g)"
+                } else if (attr == "Pressure") {
+                    gasUnits[i].innerHTML = "log(K/cm<sup>3)"
+                } else if (attr == "xray_luminosity_0.1_2_keV") {
+                    gasUnits[i].innerHTML = "log(erg/s)"
+                } else if (attr == "Entropy") {
+                    gasUnits[i].innerHTML = "log(cm<sup>2</sup>keV)"
+                } else if (attr == "Metallicity") {
+                    gasUnits[i].innerHTML = "log(Zsun)"
+                } else {
+                    gasUnits[i].innerHTML = 'dimensionless'
+                }
+            }
+            initColor('PartType0')
+                // updateUniforms()
+                // update3dDataTexture()
+                // stopLoadingAnimation()
+            resolve()
+        })
+    })
+}
+
+function loadDarkMatter(size) {
+    console.log('loading dark matter',size)
+        // startLoadingAnimation()
+    attr = 'density'
+    return new Promise(resolve => {
+        try {
+            d3.json('static/data/' + simID + '/PartType1/' + size + '_PartType1_' + attr + '.json').then(function(d) {
+                // d3.text('static/data/'+simID+'/PartType1/' + size + '_PartType1_' + attr +'.json').then(function(textData){
+                //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
+                //     const d = JSON.parse(textData, function(key, value){
+                //         return value === "-Infinity" ? -Infinity : value;
+                //     });
+                // console.log(d)
+                // DM_file_exists = true
+                log = false
+
+                // DARK MATTER IS THE GREEN CHANNEL IN THE 3D DATA TEXTURE
+
+                min = Infinity
+                max = -Infinity
+                for (x = 0; x < size; x++) {
+                    for (y = 0; y < size; y++) {
+                        for (z = 0; z < size; z++) {
+                            if (log) {
+                                dataArray3D[3 * (x + y * size + z * size * size) + 1] = Math.log10(d[x][y][z])
+                            } else {
+                                dataArray3D[3 * (x + y * size + z * size * size) + 1] = d[x][y][z]
+                            }
+
+                            if (dataArray3D[3 * (x + y * size + z * size * size) + 1] < min) {
+                                min = dataArray3D[3 * (x + y * size + z * size * size) + 1]
+                            }
+
+                            if (dataArray3D[3 * (x + y * size + z * size * size) + 1] > max) {
+                                max = dataArray3D[3 * (x + y * size + z * size * size) + 1]
+                            }
+                        }
+                    }
+                }
+
+                if (min == -Infinity) { min = -323 } // -323 is the smallest value log10() can return in javascript... because log10(0)=-Infinity
+                // var x = document.getElementById("dm-eye-open");
+                // x.style.display = "inline-block";
+
+                // var y = document.getElementById("dm-eye-closed");
+                // y.style.display = "none";
+                // // volMaterial.uniforms["u_dmVisibility"].value = true
+                // volMaterial.uniforms["u_dmVisibility"].value = false
+
+                var x = document.getElementById("dm-eye-open");
+                x.style.display = "none";
+                var y = document.getElementById("dm-eye-closed");
+                y.style.display = "inline-block";
+                volMaterial.uniforms["u_dmVisibility"].value = true
+
+                    // if(localStorage.getItem('dmMinVal') != ""){
+                    //     min = localStorage.getItem('dmMinVal')
+                    // }
+                    // if(localStorage.getItem('dmMaxVal') != ""){
+                    //     max = localStorage.getItem('dmMaxVal')
+                    // }
+                    // climDMLimits = [min, max]
+                if (simID == 'RefL0012N0188') {
+                    gridrestomaxval = {
+                        64: 1.26664915e-26,
+                        128: 6.9301215e-26,
+                        256: 2.1937904e-25,
+                        512: 6.3844367e-25
+                    }
+                    darkmatterUnpackDomain = [0.0, gridrestomaxval[size]]
+                    climDMLimits = [0.0, gridrestomaxval[size]]
+
+                    let minval = document.getElementById('dm-minval-input')
+                    minval.value = 0.0 //round(min,2)
+                    let maxval = document.getElementById('dm-maxval-input')
+                    maxval.value = gridrestomaxval[size] //round(max,2)
+                }
+                if (simID == 'RefL0025N0376') {
+                    gridrestomaxval = {
+                        64: 7.00784199967097e-27,
+                        128: 2.4839307056953186e-26,
+                        256: 8.163568369617648e-26,
+                        512: 2.2696208635739263e-25
+                    }
+                    darkmatterUnpackDomain = [0.0, gridrestomaxval[size]]
+                    climDMLimits = [0.0, gridrestomaxval[size]]
+
+                    let minval = document.getElementById('dm-minval-input')
+                    minval.value = 0.0 //round(min,2)
+                    let maxval = document.getElementById('dm-maxval-input')
+                    maxval.value = gridrestomaxval[size] //round(max,2)
+                }
+
+                if (simID == "TNG100_z2.3") {
+                    darkmatterUnpackDomain = [1.75, 5.0]
+                    climDMLimits = [1.75, 5.0]
+
+                    let minval = document.getElementById('dm-minval-input')
+                    minval.value = 1.75 //round(min,2)
+                    let maxval = document.getElementById('dm-maxval-input')
+                    maxval.value = 5.0 //round(max,2)
+                }
+
+                if (simID == "RefL0100N1504") {
+                    darkmatterUnpackDomain = [-1.0, 3.5]
+                    climDMLimits = [-1.0, 3.5]
+
+                    let minval = document.getElementById('dm-minval-input')
+                    minval.value = -1.0 //round(min,2)
+                    let maxval = document.getElementById('dm-maxval-input')
+                    maxval.value = 3.5 //round(max,2)
+                }
+
+                // min = -28
+                // minval.value = -28
+                // max = -25
+                // maxval.value = -25 
+                let dmUnits = document.getElementsByClassName('dm-attr-units')
+                for (i = 0; i < dmUnits.length; i++) {
+                    if (simID == "RefL0100N1504") {
+                        dmUnits[i].innerHTML = 'log10(Msun/kpc<sup>3</sup>)'
+                    }
+                    if (simID == "TNG100_z2.3") {
+                        dmUnits[i].innerHTML = 'log10(Msun/kpc<sup>3</sup>)'
+                    } else {
+                        dmUnits[i].innerHTML = 'g/cm<sup>3</sup>' //'log(g/cm<sup>3</sup>)'
+                    }
+                }
+
+                volMaterial.uniforms["u_darkmatterUnpackDomain"].value.set(darkmatterUnpackDomain[0], darkmatterUnpackDomain[1])
+                volMaterial.uniforms["u_dmVisibility"].value = true
+                volMaterial.needsUpdate = true
+
+                initColor('PartType1')
+                    // updateUniforms()
+                    // update3dDataTexture()
+                    // stopLoadingAnimation()
+                resolve()
+            })
+        } catch (err) {
+
+
+            resolve()
+        }
+        resolve()
+    })
+}
+
+// FH - zoom in functions:
+
+// function loadZoomIn(size, attr, resolution_bool, haloID) {
+function loadZoomGas(size, attr, resolution_bool, haloID) {
+
+    // console.log('in the zoom-in function')
+    
+    // function loadGasZoom(size, attr, resolution_bool, haloID) {
+        // startLoadingAnimation()
+    gasAttr = attr
+    // str2 = 'static/data/' + simID + '/Halos/halo_' + haloID + '/PartType0/' + size + '_PartType0_' + attr + '.json'
+    console.log('loading zoom-in gas',haloID,size)
+
+    return new Promise(resolve => {
+        d3.json('static/data/' + simID + '/Halos/halo_' + haloID + '/PartType0/' + size + '_PartType0_' + attr + '.json').then(function(d) {
+            volMaterial.uniforms["u_gasAttribute"] = attr
+
+            let log = false
+
+            //GAS IS THE RED CHANNEL IN THE 3D DATA TEXTURE
+            var min = Infinity
+            var max = -Infinity
+                // console.log(log)
+            for (x = 0; x < size; x++) {
+                for (y = 0; y < size; y++) {
+                    for (z = 0; z < size; z++) {
+                        if (simID == "TNG100" && attr == "GFM_Metallicity") {
+                            dataArray3D[3 * (x + y * size + z * size * size)] = d[x][y][z]
+                        }
+                        else if (log) {
+                            dataArray3D[3 * (x + y * size + z * size * size)] = Math.log10(d[x][y][z])
+                        } else {
+                            dataArray3D[3 * (x + y * size + z * size * size)] = d[x][y][z]
+                        }
+
+                        if (dataArray3D[3 * (x + y * size + z * size * size)] < min) {
+                            min = dataArray3D[3 * (x + y * size + z * size * size)]
+                        }
+                        if (dataArray3D[3 * (x + y * size + z * size * size)] > max) {
+                            max = dataArray3D[3 * (x + y * size + z * size * size)]
+                        }
+
+                    }
+                }
+            }
+            if (min == -Infinity) { min = -323 } // -323 is the smallest value log10() can return in javascript... because log10(0)=-Infinity
+            var x = document.getElementById("gas-eye-open");
+            x.style.display = "inline-block";
+            var y = document.getElementById("gas-eye-closed");
+            y.style.display = "none";
+
+            let minval = document.getElementById('gas-minval-input')
+            minval.value = round(min, 2)
+            let maxval = document.getElementById('gas-maxval-input')
+            maxval.value = round(max, 2)
+            gasUnpackDomain = []
+            if (resolution_bool) {
+            if (localStorage.getItem('gasMinVal') != "") {
+                min = localStorage.getItem('gasMinVal')
+                minval.value = min
+            }
+            if (localStorage.getItem('gasMaxVal') != "") {
+                max = localStorage.getItem('gasMaxVal')
+                maxval.value = max
+            }
+        }
+            if (simID.substr(0, 3) != 'TNG') {
+                // set some default values
+                if (attr == "Temperature") {
+                    let dropdown = document.getElementById("gas_select")
+                    dropdown.value = 'Temperature'
+                    min = 2.0
+                    minval.value = 5.5
+                    max = 7.5
+                    maxval.value = 7
+                    gasUnpackDomain = [1.0, 8.0]
                 }
                 if (attr == "Carbon") {
                     min = 0.0
@@ -895,17 +1457,24 @@ function loadGas(size, attr, resolution_bool) {
                 }
                 if (attr == "Density") {
                     min = -33.0
-                    minval.value = -33.0
-                    max = -27.0
-                    maxval.value = -27.0
-                    gasUnpackDomain = [-33.0, -27.0]
+                    minval.value = -31
+                    max = -25.0
+                    maxval.value = -24
+                    gasUnpackDomain = [-33.0, -23.0]
                 }
                 if (attr == "Entropy") {
                     min = 1.0
                     minval.value = 1.0
                     max = 6.0
                     maxval.value = 6.0
-                    gasUnpackDomain = [1.0, 6.0]
+                    gasUnpackDomain = [0.0, 6.0]
+                }
+                if (attr == "xray_luminosity_0.1_2_keV") {
+                    min = 26.0
+                    minval.value = 32.0
+                    max = 44.0
+                    maxval.value = 42.0
+                    gasUnpackDomain = [24.0,44.0]
                 }
                 if (attr == "Metallicity") {
                     min = -5.0
@@ -990,11 +1559,7 @@ function loadGas(size, attr, resolution_bool) {
             climGasLimits = [min, max]
 
             volMaterial.uniforms["u_gasUnpackDomain"].value.set(gasUnpackDomain[0], gasUnpackDomain[1])
-            // if(elements.includes(attr)){
 
-            // min = 4.5
-            // minval.value = 4.5
-            // }
             let gasUnits = document.getElementsByClassName('gas-attr-units')
             for (i = 0; i < gasUnits.length; i++) {
                 if ((attr == 'Temperature') || (attr == 'Temperature_Test') || (attr == 'Temperature_Test1')) {
@@ -1005,6 +1570,8 @@ function loadGas(size, attr, resolution_bool) {
                     gasUnits[i].innerHTML = 'log(Msun)'
                 } else if (attr == "Density") {
                     gasUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
+                } else if (attr == "xray_luminosity_0.1_2_keV") {
+                    gasUnits[i].innerHTML = "log(erg/s)"
                 } else if (attr == "InternalEnergy") {
                     gasUnits[i].innerHTML = "log(erg/g)"
                 } else if (attr == "Entropy") {
@@ -1016,174 +1583,294 @@ function loadGas(size, attr, resolution_bool) {
                 }
             }
             initColor('PartType0')
-            // updateUniforms()
-            // update3dDataTexture()
-            // stopLoadingAnimation()
+            updateUniforms()
+            update3dDataTexture()
+                // stopLoadingAnimation()
             resolve()
         })
     })
+    // }
+
+
 }
 
-function loadDarkMatter(size) {
-    console.log('loading dark matter')
+function loadZoomStars(haloID) {
     // startLoadingAnimation()
-    attr = 'density'
+    console.log('loading zoom-in stars',haloID)
     return new Promise(resolve => {
-        try {
-            d3.json('static/data/' + simID + '/PartType1/' + size + '_PartType1_' + attr + '.json').then(function (d) {
-                // d3.text('static/data/'+simID+'/PartType1/' + size + '_PartType1_' + attr +'.json').then(function(textData){
-                //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
-                //     const d = JSON.parse(textData, function(key, value){
-                //         return value === "-Infinity" ? -Infinity : value;
-                //     });
-                // console.log(d)
-                // DM_file_exists = true
-                log = false
+        while (starScene.children.length > 0) {
+            starScene.remove(starScene.children[0]);
+        }
 
-                // DARK MATTER IS THE GREEN CHANNEL IN THE 3D DATA TEXTURE
+        var galCenter = []
+        var galSpin = []
 
-                min = Infinity
-                max = -Infinity
-                for (x = 0; x < size; x++) {
-                    for (y = 0; y < size; y++) {
-                        for (z = 0; z < size; z++) {
-                            if (log) {
-                                dataArray3D[3 * (x + y * size + z * size * size) + 1] = Math.log10(d[x][y][z])
-                            } else {
-                                dataArray3D[3 * (x + y * size + z * size * size) + 1] = d[x][y][z]
-                            }
+        d3.json('static/data/' + simID + '/Halos/halo_' + haloID + '/simMetadata.json').then(function(d) {
+            zoomEdges.left_edge = d.left_edge
+            zoomEdges.right_edge = d.right_edge
 
-                            if (dataArray3D[3 * (x + y * size + z * size * size) + 1] < min) {
-                                min = dataArray3D[3 * (x + y * size + z * size * size) + 1]
-                            }
+            galCenter = d.star_center
+            galSpin = d.star_spin
 
-                            if (dataArray3D[3 * (x + y * size + z * size * size) + 1] > max) {
-                                max = dataArray3D[3 * (x + y * size + z * size * size) + 1]
-                            }
+            // console.log(edges,zoomEdges)
+            resolve()
+        })
+
+
+    
+        d3.json('static/data/' + simID + '/Halos/halo_' + haloID + '/PartType4/star_particles.json').then(function (d) {
+            // console.log( Object.keys(d).length )
+            starData = []
+            n = Object.keys(d).length
+            console.log(zoomEdges,n)
+
+            // console.log('hey',edges,zoomEdges,galCenter,galSpin)
+
+            // console.log(n,edges.left_edge,edges.right_edge)
+
+            var starGeometry = new THREE.BufferGeometry();
+            var starPositions = new Float32Array(n * 3)
+            if (Object.keys(d).length > 0) {
+                for (i = 0; i < n; i++) {
+                    mx = gridsize*((d[i][0] - zoomEdges.left_edge[0]) / (zoomEdges.right_edge[0] - zoomEdges.left_edge[0]))
+                    my = gridsize*((d[i][1] - zoomEdges.left_edge[1]) / (zoomEdges.right_edge[1] - zoomEdges.left_edge[1]))
+                    mz = gridsize*((d[i][2] - zoomEdges.left_edge[2]) / (zoomEdges.right_edge[2] - zoomEdges.left_edge[2]))
+                    let vertex = new THREE.Vector3(mx, my, mz)
+                    vertex.toArray(starPositions, i * 3)
+                    starData[i] = [d[i][0], //x
+                    d[i][1], //y
+                    d[i][2], //z
+                    d[i][3], //subhalo ID
+                    d[i][4] //solar mass
+                    ] 
+
+                }
+                // console.log('star positions:')
+                // console.log(starPositions)
+                starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3)) //.onUpload( disposeArray )
+                starGeometry.computeBoundingBox()
+                // console.log('star positions', starGeometry)
+                boxOfStarPoints = new THREE.Points(starGeometry, starMaterial);
+                boxOfStarPoints.layers.enable(3)
+                boxOfStarPoints.layers.set(3)
+                boxOfStarPoints.renderOrder = 0
+                starScene.add(boxOfStarPoints);
+                var x = document.getElementById("star-eye-open");
+                x.style.display = "inline-block";
+                var y = document.getElementById("star-eye-closed");
+                y.style.display = "none";
+                // renderer.setRenderTarget( target )
+                // renderer.render( starScene, camera );
+                // renderer.setRenderTarget( null )
+
+                //////// Some ideas below - SPIN ARROW:
+
+                // let material = new THREE.LineBasicMaterial({
+                //     color: 0xffffff })
+                
+                // var points = [];
+                // points.push( new THREE.Vector3( 0, 0, 0 ) );
+                // points.push( new THREE.Vector3( 0, 100, 0 ) );
+                // points.push( new THREE.Vector3( 100, 0, 0 ) );
+                
+                // var geometry = new THREE.BufferGeometry().setFromPoints( points );
+                
+                // var line = new THREE.Line( geometry, material );
+                // starScene.add( line );
+
+                // const dir = new THREE.Vector3( 10, 20, 5 );
+
+                // //normalize the direction vector (convert to vector of length 1)
+                // // dir.normalize();
+
+                // const origin = new THREE.Vector3( 0,0,0 );
+                // const length = 1;
+                // const hex = 0xffffff;
+
+                // const arrowHelper = new THREE.ArrowHelper( dir, origin, length, hex );
+                // starScene.add( arrowHelper );
+
+            
+                //center of most massive galaxy scaled to voxelized grid:           
+                galX = gridsize*((galCenter[0] - zoomEdges.left_edge[0]) / (zoomEdges.right_edge[0] - zoomEdges.left_edge[0]))
+                galY = gridsize*((galCenter[1] - zoomEdges.left_edge[1]) / (zoomEdges.right_edge[1] - zoomEdges.left_edge[1]))
+                galZ = gridsize*((galCenter[2] - zoomEdges.left_edge[2]) / (zoomEdges.right_edge[2] - zoomEdges.left_edge[2]))
+
+                // galX = (galCenter[0])
+                // galY = (galCenter[1])
+                // galZ = (galCenter[2])
+
+                //spin of most massive galaxy scaled to voxelized grid:
+                // spinX = ((galSpin[0] - zoomEdges.left_edge[0]) / (zoomEdges.right_edge[0] - zoomEdges.left_edge[0]))
+                // spinY = ((galSpin[1] - zoomEdges.left_edge[1]) / (zoomEdges.right_edge[1] - zoomEdges.left_edge[1]))
+                // spinZ = ((galSpin[2] - zoomEdges.left_edge[2]) / (zoomEdges.right_edge[2] - zoomEdges.left_edge[2]))
+
+                // draw the arrow:
+                var from = new THREE.Vector3(galX,galY,galZ);
+                // var to = new THREE.Vector3(spinX,spinY,spinZ);
+                var spinDirection = new THREE.Vector3(galSpin[0],galSpin[1],galSpin[2]);
+                // const dir = new THREE.Vector3( 10, 20, 5 );
+
+                // var spinDirection = to.clone().sub(from);
+                var length = spinDirection.length()
+
+
+                // edgeX = ((zoomEdges.left_edge[0]) / (zoomEdges.right_edge[0] - zoomEdges.left_edge[0]))
+                // edgeY = ((zoomEdges.left_edge[1]) / (zoomEdges.right_edge[1] - zoomEdges.left_edge[1]))
+                // edgeZ = ((zoomEdges.left_edge[2]) / (zoomEdges.right_edge[2] - zoomEdges.left_edge[2]))
+                
+                edgeX = gridsize/2
+                edgeY = gridsize/2
+                edgeZ = gridsize/2
+
+                var from2 = new THREE.Vector3(gridsize/2, gridsize/2, gridsize/2)
+                var spinDirection2 = new THREE.Vector3(edgeX,edgeY,edgeZ);
+                var length2 = spinDirection2.length() - 1
+
+
+                // var spinLength = (length/(0.33 * gridsize))
+
+                // scale by gridsize:
+                if (gridsize == 256) {
+                // var spinLength = (gridsize/2) + (length/200)
+                var spinLength = ((16*length)/gridsize)
+                }
+                else if(gridsize == 128) {
+                // var spinLength = (gridsize/4) + (length/200)
+                var spinLength = ((4*length)/gridsize)
+                }
+                else if(gridsize == 64) {
+                // var spinLength = (gridsize/8) + (length/200)
+                var spinLength = ((1*length)/gridsize)
+                }
+
+                spinLengthX = Math.min(spinLength,length2)  // so that the arrow doesn't go beyond the box
+                spinLengthX = Math.max(spinLengthX,length2/20)  // so that the arrow is not TOO small
+
+                // var spinLength2 = gridsize * ()
+                
+                // var length = 50;
+                // var spinArrow = new THREE.ArrowHelper(spinDirection.normalize(), from, length, 0xffffff);
+                var spinArrow = new THREE.ArrowHelper(spinDirection.normalize(), from, spinLengthX, 0xffffff)
+                // var spinArrow2 = new THREE.ArrowHelper(spinDirection2.normalize(), from2, length2, 0xffffff)
+                // starScene.add(spinArrow2)
+
+                starScene.add(spinArrow);
+
+                // console.log('spin arrow loaded',galX,galY,galZ,spinLength,length2)
+                
+                ////////
+
+                updateUniforms()
+                // stopLoadingAnimation()
+                resolve()
+
+            }
+
+        })
+
+    })
+}
+
+
+
+function loadZoomDensity(size, type, attr, haloID) {
+    // startLoadingAnimation()
+    console.log('loading zoom-in density',haloID,size)
+    // str2 = 'static/data/' + simID + '/Halos/halo_' + haloID + '/' + type + '/' + size + '_PartType0_' + attr + '.json'
+    // console.log(str2)
+    return new Promise(resolve => {
+        d3.json('static/data/' + simID + '/Halos/halo_' + haloID + '/' + type + '/' + size + '_PartType0_' + attr + '.json').then(function(d) {
+            // d3.text('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(textData){
+            //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
+            //     const d = JSON.parse(textData, function(key, value){
+            //         return value === "-Infinity" ? -Infinity : value;
+            //     });
+            // DENSITY USES BLUE CHANNEL OF 3D DATA TEXTURE
+
+            min = Infinity
+            max = -Infinity
+            for (x = 0; x < size; x++) {
+                for (y = 0; y < size; y++) {
+                    for (z = 0; z < size; z++) {
+                        // if(size==64) dataArray3D[ 3 * ( x + y * size + z * size * size ) + 2 ] = Math.log10(d[x][y][z])
+                        dataArray3D[3 * (x + y * size + z * size * size) + 2] = d[x][y][z]
+
+                        // if(size==384 || size==512) dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = d[x][y][z]
+                        // else dataArray3D[ 4 * ( x + y * size + z * size * size ) + 2 ] = Math.log10(d[x][y][z])
+
+                        if (dataArray3D[3 * (x + y * size + z * size * size) + 2] < min) {
+                            min = dataArray3D[3 * (x + y * size + z * size * size) + 2]
+                        }
+                        if (dataArray3D[3 * (x + y * size + z * size * size) + 2] > max) {
+                            max = dataArray3D[3 * (x + y * size + z * size * size) + 2]
                         }
                     }
                 }
+            }
 
-                if (min == -Infinity) { min = -323 } // -323 is the smallest value log10() can return in javascript... because log10(0)=-Infinity
-                var x = document.getElementById("dm-eye-open");
-                x.style.display = "inline-block";
-                var y = document.getElementById("dm-eye-closed");
-                y.style.display = "none";
-                volMaterial.uniforms["u_dmVisibility"].value = true
-                // if(localStorage.getItem('dmMinVal') != ""){
-                //     min = localStorage.getItem('dmMinVal')
-                // }
-                // if(localStorage.getItem('dmMaxVal') != ""){
-                //     max = localStorage.getItem('dmMaxVal')
-                // }
-                // climDMLimits = [min, max]
-                if (simID == 'RefL0012N0188') {
-                    gridrestomaxval = {
-                        64: 1.26664915e-26,
-                        128: 6.9301215e-26,
-                        256: 2.1937904e-25,
-                        512: 6.3844367e-25
-                    }
-                    darkmatterUnpackDomain = [0.0, gridrestomaxval[size]]
-                    climDMLimits = [0.0, gridrestomaxval[size]]
+            // setDensityMinMaxInputValues('density',min,max)
 
-                    let minval = document.getElementById('dm-minval-input')
-                    minval.value = 0.0 //round(min,2)
-                    let maxval = document.getElementById('dm-maxval-input')
-                    maxval.value = gridrestomaxval[size] //round(max,2)
-                }
-                if (simID == 'RefL0025N0376') {
-                    gridrestomaxval = {
-                        64: 7.00784199967097e-27,
-                        128: 2.4839307056953186e-26,
-                        256: 8.163568369617648e-26,
-                        512: 2.2696208635739263e-25
-                    }
-                    darkmatterUnpackDomain = [0.0, gridrestomaxval[size]]
-                    climDMLimits = [0.0, gridrestomaxval[size]]
+            function setDensityMinMaxInputValues(type, min, max) {
+                let minval = document.getElementById(type + '-minval-input')
+                minval.value = round(min, 2)
+                let maxval = document.getElementById(type + '-maxval-input')
+                maxval.value = round(max, 2)
+            }
+            if (simID != "TNG100_z2.3") {
+                densityUnpackDomain = [-9, -3]
+                setDensityMinMaxInputValues('density', -8, -3)
+                volMaterial.uniforms["u_densityUnpackDomain"].value.set(densityUnpackDomain[0], densityUnpackDomain[1])
+            }
 
-                    let minval = document.getElementById('dm-minval-input')
-                    minval.value = 0.0 //round(min,2)
-                    let maxval = document.getElementById('dm-maxval-input')
-                    maxval.value = gridrestomaxval[size] //round(max,2)
-                }
+            if (simID == "TNG100_z2.3") {
 
-                if (simID == "TNG100_z2.3") {
-                    darkmatterUnpackDomain = [1.75, 5.0]
-                    climDMLimits = [1.75, 5.0]
+                min = Math.log10(3.22215222e-31)
+                max = Math.log10(4.31157793e-19)
+                densityUnpackDomain = [min, max]
+                console.log(densityUnpackDomain)
+                setDensityMinMaxInputValues('density', min, max)
+                volMaterial.uniforms["u_densityUnpackDomain"].value.set(densityUnpackDomain[0], densityUnpackDomain[1])
+            }
 
-                    let minval = document.getElementById('dm-minval-input')
-                    minval.value = 1.75 //round(min,2)
-                    let maxval = document.getElementById('dm-maxval-input')
-                    maxval.value = 5.0 //round(max,2)
-                }
+            dm = document.querySelector('#density-minval-input')
+            dm.addEventListener('input', updateUniforms);
+            // dm.value = -8;
+            dmx = document.querySelector('#density-maxval-input')
+            dmx.addEventListener('input', updateUniforms);
 
-                if (simID == "RefL0100N1504") {
-                    darkmatterUnpackDomain = [-1.0, 3.5]
-                    climDMLimits = [-1.0, 3.5]
-
-                    let minval = document.getElementById('dm-minval-input')
-                    minval.value = -1.0 //round(min,2)
-                    let maxval = document.getElementById('dm-maxval-input')
-                    maxval.value = 3.5 //round(max,2)
-                }
-
-
-                // min = -28
-                // minval.value = -28
-                // max = -25
-                // maxval.value = -25 
-                let dmUnits = document.getElementsByClassName('dm-attr-units')
-                for (i = 0; i < dmUnits.length; i++) {
-                    if (simID == "RefL0100N1504") {
-                        dmUnits[i].innerHTML = 'log10(Msun/kpc<sup>3</sup>)'
-                    }
-                    if (simID == "TNG100_z2.3") {
-                        dmUnits[i].innerHTML = 'log10(Msun/kpc<sup>3</sup>)'
-                    } else {
-                        dmUnits[i].innerHTML = 'g/cm<sup>3</sup>' //'log(g/cm<sup>3</sup>)'
-                    }
-                }
-
-                volMaterial.uniforms["u_darkmatterUnpackDomain"].value.set(darkmatterUnpackDomain[0], darkmatterUnpackDomain[1])
-                volMaterial.uniforms["u_dmVisibility"].value = true
-                volMaterial.needsUpdate = true
-
-                initColor('PartType1')
-                // updateUniforms()
-                // update3dDataTexture()
-                // stopLoadingAnimation()
-                resolve()
-            })
-        } catch (err) {
-
-
-            resolve()
-        }
-        resolve()
+            // updateUniforms()
+            // stopLoadingAnimation()
+            resolve([min, max])
+        })
     })
 }
 
 function setTwoNumberDecimal(el) {
     updateUniforms()
-    // el.value = el.value.toFixed(2);
+        // el.value = el.value.toFixed(2);
 };
+
+//OG asynccall function:
 async function asyncCall(resolution_bool) {
     startLoadingAnimation()
 
     let init = await init3dDataTexture(gridsize)
-    // try{
+        // try{
     var dens = await loadDensity(gridsize, 'PartType0', 'H_number_density')
     densityMin = dens[0]
     densityMax = dens[1]
-    // if(!resolution_bool){
+        // if(!resolution_bool){
     var stars = await loadStars()
-    // }
+        // }
     var gas = await loadGas(gridsize, gasAttr, resolution_bool)
+//
+    // var zooms = await loadZoomIn(gridsize, gasAttr, resolution_bool, haloID)
+//
     try {
         var darkmatter = await loadDarkMatter(gridsize)
-        // volMaterial.uniforms["u_dmVisibility"].value = true
-        // volMaterial.needsUpdate = true
+            // volMaterial.uniforms["u_dmVisibility"].value = true
+            // volMaterial.needsUpdate = true
     } catch (err) {
         // toggleLayer(1)
         // // volMaterial.uniforms["u_dmVisibility"].value = false
@@ -1203,7 +1890,7 @@ async function asyncCall(resolution_bool) {
             }
         }
         volMaterial.uniforms["u_dmVisibility"].value = false
-        // volMaterial.needsUpdate = true
+            // volMaterial.needsUpdate = true
         var x = document.getElementById("dm-eye-open");
         x.style.display = "none";
         var y = document.getElementById("dm-eye-closed");
@@ -1219,21 +1906,145 @@ async function asyncCall(resolution_bool) {
     updateUniforms()
     createSkewerCube(gridsize)
     stopLoadingAnimation()
-    // }
+        // }
 }
+
+// FH asyncall fn:
+
+// async function asyncCall(resolution_bool,zooms=false,halos=null) {
+//     startLoadingAnimation()
+
+//     let init = await init3dDataTexture(gridsize)
+
+
+//         // try{
+//     var dens = await loadDensity(gridsize, 'PartType0', 'H_number_density')
+//     densityMin = dens[0]
+//     densityMax = dens[1]
+//         // if(!resolution_bool){
+//     var stars = await loadStars()
+//         // }
+//     var gas = await loadGas(gridsize, gasAttr, resolution_bool)
+    
+//     try {
+//         var darkmatter = await loadDarkMatter(gridsize)
+//             // volMaterial.uniforms["u_dmVisibility"].value = true
+//             // volMaterial.needsUpdate = true
+//     } catch (err) {
+//         // toggleLayer(1)
+//         // // volMaterial.uniforms["u_dmVisibility"].value = false
+//         // // var x = document.getElementById("dm-eye-open");
+//         // // x.style.display = "none";
+//         // // var y = document.getElementById("dm-eye-closed");
+//         // // y.style.display = "inline-block";
+//         // volMaterial.needsUpdate = true
+
+//     } finally {
+//         // toggleLayer(1)
+//         for (x = 0; x < gridsize; x++) {
+//             for (y = 0; y < gridsize; y++) {
+//                 for (z = 0; z < gridsize; z++) {
+//                     dataArray3D[3 * (x + y * gridsize + z * gridsize * gridsize) + 1] = 0
+//                 }
+//             }
+//         }
+//         volMaterial.uniforms["u_dmVisibility"].value = false
+//             // volMaterial.needsUpdate = true
+//         var x = document.getElementById("dm-eye-open");
+//         x.style.display = "none";
+//         var y = document.getElementById("dm-eye-closed");
+//         y.style.display = "inline-block";
+
+//         }
+    
+//     // catch(err){
+//     //     console.log(err)
+//     // }
+//     // finally{
+
+//     //  zoom-ins:
+//     // if (zooms=true && halos!=null)  {
+//     //     // console.log('came this far',halos)
+//     //     // halos = haloID
+//     //     var resample = await loadZoomIn(gridsize, gasAttr, resolution_bool, halos)
+//     //     }
+//     //
+    
+//     var update3dTexture = update3dDataTexture()
+//     updateUniforms()
+//     createSkewerCube(gridsize)
+//     stopLoadingAnimation()
+//         // }
+// }
+
+// async fn just for zoom-in:
+
+async function asyncZoom(resolution_bool,halos=null) {
+    startLoadingAnimation()
+
+    let init = await init3dDataTexture(gridsize)
+
+        // try{
+    var dens = await loadZoomDensity(gridsize, 'PartType0', 'H_number_density',halos)
+    densityMin = dens[0]
+    densityMax = dens[1]
+        // if(!resolution_bool){
+    var stars = await loadZoomStars(halos)
+        // }
+    var gas = await loadZoomGas(gridsize, gasAttr, resolution_bool, halos)
+
+    // zoomRes = document.getElementById("size_select").value
+
+    // console.log('size',zoomRes,gridsize)
+
+    // if (gridsize != zoomRes) {
+
+
+    //     gridsize = zoomRes
+
+    //     // console.log('are you there',zoom_bool,halos)
+
+    //     // var init = init3dDataTexture(gridsize)
+
+    //     // asyncCall(true)
+    //     //     //check to see which variables are visible and update those immediately
+    //     // checkSelectedSimID()
+    //     //     // asyncCall()
+    //     //     // loadHaloCenters()
+
+    //     // createSkewerCube(gridsize)
+    //     // updateSkewerEndpoints(gridsize, oldSize)
+    //     // toggleXYZGuide()
+    //     // updateUniforms()
+    //     // toggleGrid()
+    //     // camera.position.set(oldPos.x * gridsize / oldSize, oldPos.y * gridsize / oldSize, oldPos.z * gridsize / oldSize)
+    //     // camera.updateProjectionMatrix()
+    //     //     // controls
+    //     // controls.target.set(((domainXYZ[1] + domainXYZ[0]) * gridsize) / 2, ((domainXYZ[3] + domainXYZ[2]) * gridsize) / 2, ((domainXYZ[5] + domainXYZ[4]) * gridsize) / 2);
+    //     // controls.update()
+    //     }
+
+    
+    // var update3dTexture = update3dDataTexture()
+    // updateUniforms()
+    createSkewerCube(gridsize)
+    stopLoadingAnimation()
+        // }
+}
+
 
 function loadDensity(size, type, attr) {
     // startLoadingAnimation()
-    console.log('loading density')
+    console.log('loading density',size)
     return new Promise(resolve => {
-        d3.json('static/data/' + simID + '/' + type + '/' + size + '_' + type + '_' + attr + '.json').then(function (d) {
+        d3.json('static/data/' + simID + '/' + type + '/' + size + '_' + type + '_' + attr + '.json').then(function(d) {
             // d3.text('static/data/'+simID+'/'+type+'/' + size + '_' + type + '_' + attr +'.json').then(function(textData){
             //     textData = textData.replace(/-Infinity/g, '"-Infinity"');
             //     const d = JSON.parse(textData, function(key, value){
             //         return value === "-Infinity" ? -Infinity : value;
             //     });
             // DENSITY USES BLUE CHANNEL OF 3D DATA TEXTURE
-
+            // console.log(d,'static/data/' + simID + '/' + type + '/' + size + '_' + type + '_' + attr + '.json')
             min = Infinity
             max = -Infinity
             for (x = 0; x < size; x++) {
@@ -1310,13 +2121,18 @@ function loadStars() {
             starData = []
             n = Object.keys(d).length
             // console.log(d[0])
-            console.log(n)
-            m = gridsize / (edges.right_edge[0] - edges.left_edge[0]) //take into account other dimensions
+            // console.log(n)
+            // min(1.0, (new_dm_val - u_dmClim[0]) / (u_dmClim[1] - u_dmClim[0]));
+            //(gas_val - u_gasClim[0]) / (u_gasClim[1] - u_gasClim[0])  
+            
             var starGeometry = new THREE.BufferGeometry();
             var starPositions = new Float32Array(n * 3)
             if (Object.keys(d).length > 0) {
                 for (i = 0; i < n; i++) {
-                    let vertex = new THREE.Vector3(d[i][0] * m, d[i][1] * m, d[i][2] * m)
+                    mx = gridsize*((d[i][0] - edges.left_edge[0]) / (edges.right_edge[0] - edges.left_edge[0]))
+                    my = gridsize*((d[i][1] - edges.left_edge[1]) / (edges.right_edge[1] - edges.left_edge[1]))
+                    mz = gridsize*((d[i][2] - edges.left_edge[2]) / (edges.right_edge[2] - edges.left_edge[2]))
+                    let vertex = new THREE.Vector3(mx, my, mz)
                     vertex.toArray(starPositions, i * 3)
                     starData[i] = [d[i][0], //x
                     d[i][1], //y
@@ -1326,6 +2142,7 @@ function loadStars() {
                     ] //solar mass
 
                 }
+                // console.log('star positions:')
                 // console.log(starPositions)
                 starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3)) //.onUpload( disposeArray )
                 starGeometry.computeBoundingBox()
@@ -1346,8 +2163,10 @@ function loadStars() {
                 resolve()
             }
         })
+
     })
 }
+
 
 function starCaster() {
 
@@ -1356,7 +2175,7 @@ function starCaster() {
     intersects = []
     // intersects = starcaster.intersectObjects(boxOfStarPoints, true);
     boxOfStarPoints.raycast(starcaster, intersects);
-    // console.log(intersects)
+    // console.log('intersects',intersects)
     // intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
     if (intersects.length > 0) {
         star = starData[intersects[0].index]
@@ -1420,7 +2239,7 @@ function starCaster() {
         </tr>
         
     </table>`
-        //"<h4></h4>\n : " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
+            //"<h4></h4>\n : " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
     }
 }
 
@@ -1441,10 +2260,11 @@ function stopLoadingAnimation() {
 }
 
 function setupStarScene() {
+
     starScene = new THREE.Scene();
     starScene.background = new THREE.Color("rgb(0,0,0)")
     starCol = new THREE.Color(0.8, 0.8, 0)
-    // console.log(starCol)
+    // console.log('setting up star scene',starCol)
     starMaterial = new THREE.ShaderMaterial({
 
         uniforms: {
@@ -1471,7 +2291,7 @@ function setupStarScene() {
         dithering: true,
         side: THREE.DoubleSide,
         clipping: true
-        // alphaTest:      0.3
+            // alphaTest:      0.3
 
     });
 
@@ -1527,6 +2347,8 @@ function setupRenderTarget() {
     renderer.getSize(size);
 
     target = new THREE.WebGLRenderTarget(size.x, size.y);
+    // console.log('render target',target)
+
     target.texture.format = THREE.RGBAFormat;
     target.texture.minFilter = THREE.LinearFilter;
     target.texture.magFilter = THREE.LinearFilter;
@@ -1560,21 +2382,21 @@ function setupRenderTarget() {
     setupSkewerScene()
 }
 
-function loadHaloCenters() {
-    d3.json('static/data/' + simID + '/PartType5/black_hole_particles.json').then(function (data) {
-        galaxy_centers = data
-        div = document.getElementById("galaxylist")
-        str = '<div id="galaxy-list">'
-        for (i = 0; i < Object.keys(galaxy_centers).length; i++) {
-            m = (edges.right_edge[0] - edges.left_edge[0])
-            str += '<button onclick="goToPoint(' + galaxy_centers[i].x * m + ',' + galaxy_centers[i].y * m + ',' + galaxy_centers[i].z * m + ')">'
-            str += i + '<br>'
-            str += "</p>"
-        }
-        str += "</div>"
-        div.innerHTML = str
-    })
-}
+// function loadHaloCenters() {
+//     d3.json('static/data/' + simID + '/PartType5/black_hole_particles.json').then(function(data) {
+//         galaxy_centers = data
+//         div = document.getElementById("galaxylist")
+//         str = '<div id="galaxy-list">'
+//         for (i = 0; i < Object.keys(galaxy_centers).length; i++) {
+//             m = (edges.right_edge[0] - edges.left_edge[0])
+//             str += '<button onclick="goToPoint(' + galaxy_centers[i].x*m + ',' + galaxy_centers[i].y*m + ',' + galaxy_centers[i].z*m + ')">'
+//             str += i + '<br>'
+//             str += "</p>"
+//         }
+//         str += "</div>"
+//         div.innerHTML = str
+//     })
+// }
 
 function zoomIn() {
     let ix = document.getElementById("input-coord-x").value
@@ -1585,33 +2407,29 @@ function zoomIn() {
 }
 
 function goToPoint(x, y, z, delta = 0.1) {
-    console.log(x, y, z)
-    console.log('click click')
-    // x*=0.6776999078
-    // y*=0.6776999078
-    // z*=0.6776999078
+    console.log('gotopoint: ', x, y, z)
+    // console.log('click click')
+        // x*=0.6776999078
+        // y*=0.6776999078
+        // z*=0.6776999078
 
     width_Mpc = (edges.right_edge[0] - edges.left_edge[0])
 
-    //     delta = 0.1
+//     delta = 0.1
     domainXYZ[0] = (x / width_Mpc) - delta
     domainXYZ[1] = (x / width_Mpc) + delta
     domainXYZ[2] = (y / width_Mpc) - delta
     domainXYZ[3] = (y / width_Mpc) + delta
     domainXYZ[4] = (z / width_Mpc) - delta
     domainXYZ[5] = (z / width_Mpc) + delta
-    updateXYZDomain('x', domainXYZ[0], domainXYZ[1])
-    updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
-    updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
 
-    
-     /////////////// forcing the domains to be within the voxelized volume!
+    /////////////// forcing the domains to be within the voxelized volume!
     /// - to remove edge effects for example
 
     domainXYZ[0] = Math.max(domainXYZ[0],0)
     domainXYZ[2] = Math.max(domainXYZ[2],0)
     domainXYZ[4] = Math.max(domainXYZ[4],0)
-    
+
     domainXYZ[1] = Math.min(domainXYZ[1],1)
     domainXYZ[3] = Math.min(domainXYZ[3],1)
     domainXYZ[5] = Math.min(domainXYZ[5],1)
@@ -1619,14 +2437,24 @@ function goToPoint(x, y, z, delta = 0.1) {
     ////////////////
 
 
+    updateXYZDomain('x', domainXYZ[0], domainXYZ[1])
+    updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
+    updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
+
+
     m = gridsize / width_Mpc
-    console.log(m)
-    x *= m
-    y *= m
-    z *= m
-    console.log(x, y, z)
-    camera.lookAt(x / m, y / m, z / m)
-    controls.target.set(x / m, y / m, z / m);
+
+    mx = gridsize * ((x - edges.left_edge[0])/(edges.right_edge[0] - edges.left_edge[0]))
+    my = gridsize * ((y - edges.left_edge[1])/(edges.right_edge[1] - edges.left_edge[1]))
+    mz = gridsize * ((z - edges.left_edge[2])/(edges.right_edge[2] - edges.left_edge[2]))
+    // console.log('just m',m,gridsize,width_Mpc,edges)
+    // console.log("mx,my,mz",mx,my,mz)
+    x *= mx
+    y *= my
+    z *= mz
+    // console.log(x, y, z)
+    camera.lookAt(x / mx, y / my, z / mz)
+    controls.target.set(x / mx, y / my, z / mz);
     camera.zoom = 9;
 
 
@@ -1650,7 +2478,7 @@ function goToPoint(x, y, z, delta = 0.1) {
     updateUniforms()
     camera.updateProjectionMatrix()
 
-
+    
 
 }
 
@@ -1677,7 +2505,7 @@ function initColor(type) {
 
 function changeColor() {
     /**
-     * * changeColor() is called whe the value in a color selection box is changed and updates corresponding material uniforms
+     * * changeColor() is called when the value in a color selection box is changed and updates corresponding material uniforms
      */
 
     gasMinCol = new THREE.Color(document.querySelector("#gasMinCol").value);
@@ -1814,7 +2642,7 @@ function animate() {
     controls.update();
 
     render()
-    // renderer.render( scene, camera );
+        // renderer.render( scene, camera );
 }
 
 function render() {
@@ -2013,9 +2841,9 @@ function updateUnits(type, units) {
 }
 
 // check to see if the mouse is over a container. This is used when drawing skewers
-$(".container").hover(function () {
+$(".container").hover(function() {
     container_hover = true;
-}, function () {
+}, function() {
     container_hover = false;
 });
 
@@ -2136,12 +2964,7 @@ function createColumnDensityInfoPanel(msg) {
     div.appendChild(dwnld_btn)
     div.appendChild(document.createElement("br"))
 
-    // Lists for plotting (FH)
-    quanName = ['T', 'n_H', 'K', 'Z','v_los', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
-    unitName = ['K', 'cm^-3', 'keV cm^2', 'Zsun','km/s', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'N(N VII)', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2','cm^-2', 'cm^-2','cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2','cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2']
-    //
-    
-    dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity', 'LOS velocity','N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
+    dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
     var select = document.createElement("select")
     select.name = 'simple-line-results-' + idx + ''
     select.id = 'simple-line-results-' + idx + ''
@@ -2163,7 +2986,7 @@ function createColumnDensityInfoPanel(msg) {
         height = 200 - margin.top - margin.bottom;
 
     s = document.getElementById('simple-line-results-' + idx + '')
-    s.onchange = function () {
+    s.onchange = function() {
         // remove old plot
         // select = document.getElementById('col-density-graph-'+idx+'')
         s = document.getElementById('simple-line-results-' + msg.index + '')
@@ -2253,36 +3076,7 @@ function createColumnDensityInfoPanel(msg) {
             for (i = 0; i < msg.i_l.length; i++) {
                 scaled_data[i] = { 'l': (msg.i_l[i] - i_min_l) / (i_max_l - i_min_l), 'c': (Math.log10(msg["i_" + s.value][i]) - i_min_val) / (i_max_val - i_min_val) }
             }
-        } 
-        
-   ////////  FH: LOS velocity below    
-        else if (s.value == 'LOS velocity') {
-
-            // DATA FOR GRAPH
-            min_l = d3.min(msg.l)
-            max_l = d3.max(msg.l)
-            
-            min_val = d3.min(msg[s.value])
-            max_val = d3.max(msg[s.value])
-
-            for (i = 0; i < msg.l.length; i++) {
-                data[i] = { 'l': msg.l[i], 'c': msg[s.value][i] }
-            }
-
-            // INTERPOLATED DATA FOR SKEWERS
-            i_min_l = d3.min(msg.i_l)
-            i_max_l = d3.max(msg.i_l)
-
-            i_min_val = d3.min(msg["i_" + s.value])
-            i_max_val = d3.max(msg["i_" + s.value])
-
-            for (i = 0; i < msg.i_l.length; i++) {
-                scaled_data[i] = { 'l': (msg.i_l[i] - i_min_l) / (i_max_l - i_min_l), 'c': (msg["i_" + s.value][i] - i_min_val) / (i_max_val - i_min_val) }
-            }
-        }
-  //////// 
-        
-        else {
+        } else {
 
             // DATA FOR GRAPH
             min_l = d3.min(msg.l)
@@ -2337,56 +3131,32 @@ function createColumnDensityInfoPanel(msg) {
         var xScale = d3.scaleLinear()
             .range([0, width + margin.left + margin.right])
             .domain(domainL);
-        
-// FH - edits below:
-        
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(xScale).ticks(8));
-
+            .call(d3.axisBottom(xScale).ticks(6));
         svg.append("text")
             .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 30) + ")")
             .style("text-anchor", "middle")
             .text("Distance (kpc)")
-
-        if (s.value == 'LOS velocity') {
 
         var yScale = d3.scaleLinear()
             .range([height, 0])
             .domain([min_val, max_val]);
         svg.append("g")
             .call(d3.axisLeft(yScale)
-                .tickFormat(d3.format("1")))
+                .tickFormat(d3.format("1")));
         svg.append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", 0 - margin.left - 5)
             .attr("x", 0 - (height / 2))
             .attr("dy", "0.9em")
             .style("text-anchor", "middle")
-            .text(quanName[s.selectedIndex] + "(" + unitName[s.selectedIndex] + ")")
-        }
-        else {
-        
-            var yScale = d3.scaleLinear()
-                .range([height, 0])
-                .domain([min_val, max_val]);
-            svg.append("g")
-                .call(d3.axisLeft(yScale)
-                    .tickFormat(d3.format("1")))
-            svg.append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 0 - margin.left - 5)
-                .attr("x", 0 - (height / 2))
-                .attr("dy", "0.9em")
-                .style("text-anchor", "middle")
-                .text("log(" + quanName[s.selectedIndex] + "/" + unitName[s.selectedIndex] + ")")
-    
-            }
+            .text("log(" + s.value + ")");
 
         var line = d3.line()
             .x(d => xScale(d.l))
             .y(d => yScale(d.c))
-
+            // console.log(line)    
         svg.append("path")
             .datum(data)
             .attr("class", "line")
@@ -2399,12 +3169,12 @@ function createColumnDensityInfoPanel(msg) {
     max_l = d3.max(msg.l)
     min_val = Math.log10(d3.min(msg[s.value]) + 1)
     max_val = Math.log10(d3.max(msg[s.value]) + 1)
-    //by defualt plot dist vs temp
+        //by defualt plot dist vs temp
     data = []
     scaled_data = []
-    // var margin = {top: 10, right: 40, bottom: 30, left: 50},
-    //     width = 300 - margin.left - margin.right,
-    //     height = 200 - margin.top - margin.bottom;
+        // var margin = {top: 10, right: 40, bottom: 30, left: 50},
+        //     width = 300 - margin.left - margin.right,
+        //     height = 200 - margin.top - margin.bottom;
 
     for (i = 0; i < msg.l.length; i++) {
         data[i] = { 'l': msg.l[i], 'c': Math.log10(msg.temperature[i] + 1) }
@@ -2502,7 +3272,7 @@ function plotSyntheticSpectrum(points) {
         data[i] = { 'lambda': points.lambda[i], 'flux': points.flux[i] }
     }
 
-    skewers[points.index] = ({ 'point1': skewers[points.index].point1.clone(), 'point2': skewers[points.index].point2.clone(), 'lambda': points.lambda, 'flux': points.flux })
+    skewers[points.index] = ({ 'point1': skewers[points.index].point1.clone() , 'point2': skewers[points.index].point2.clone(), 'lambda': points.lambda, 'flux': points.flux })
     // skewers[points.index] = ({ 'point1': { 'x': points.start[0], 'y': points.start[1], 'z': points.start[2] }, 'point2': { 'x': points.end[0], 'y': points.end[1], 'z': points.end[2] }, 'lambda': points.lambda, 'flux': points.flux })
     skewerData[points.index] = ([points, data])
     domainLambda = d3.extent(points.lambda)
@@ -2634,10 +3404,10 @@ function updateGraph() {
 
                 if (lines[idx]) {
                     let id = "#graph-" + idx + ''
-                    $(id).hover(function () {
+                    $(id).hover(function() {
 
                         lines[idx].material.color = new THREE.Color(0, 1, 0)
-                    }, function () {
+                    }, function() {
                         lines[idx].material.color = new THREE.Color(0xff5522)
                     });
                 }
@@ -2682,10 +3452,10 @@ function createBrush() {
         height = vh - margin.bottom;
 
         svg
-            //.style("font-size", "2px")
+        //.style("font-size", "2px")
             .attr('width', w).attr('height', h)
             .attr("viewBox", "0 0 " + vw + " " + vh)
-        //.attr("text", "white")
+            //.attr("text", "white")
 
         x.range([margin.left, width - margin.right]);
 
@@ -2765,7 +3535,7 @@ function commonWavelength() {
 
 function downloadSpectra() {
 
-    var c = skewerData[0][0].lambda.map(function (e, i) {
+    var c = skewerData[0][0].lambda.map(function(e, i) {
         return [e, skewerData[0][0].flux[i]];
     });
 
@@ -2797,15 +3567,17 @@ function receiveYTPlots(msg){
     // $('#YTPlots').append($('<img>')).attr('src','static/slice.png');
 }
 
-
 // FH galaxy brush history global object:
-// var galaxyBrushHistory = {}
+var galaxyBrushHistory = {}
 
 //  .........FH create galaxy brush function.........
-async function createGalaxyFilteringBrushes(attr, field, sim) {
+async function createGalaxyFilteringBrushes(attr,field) {
+  
+    let selection = document.getElementById("sim_size_select")
 
-    sim = document.getElementById("sim_size_select").value
-    console.log('createGalaxyFilteringBrushes function', sim)
+    sim = selection.value
+
+    // console.log('createGalaxyFilteringBrushes function',sim)
 
     d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
     let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
@@ -2813,35 +3585,17 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
     var check = document.createElement("INPUT");
     check.setAttribute("type", "checkbox");
     document.getElementById(attr + 'galaxy-brush-label').prepend(check)
-
-
+    
     // checkState determines if checkbox is clicked
     check.addEventListener('change', e => {
-        galaxyBrushHistory[attr].checkState = e.target.checked
-//         console.log('new check', galaxyBrushHistory)
-        // console.log('new check 2',attr)
-        filterGalaxies(sim)
+    galaxyBrushHistory[attr].checkState = e.target.checked
+    // console.log('new check',galaxyBrushHistory)
+    filterGalaxies(sim)
     })
 
-    // changing simulation changes the entire query
-    document.getElementById("sim_size_select").addEventListener('change', e => {
-//         console.log('inside sim select event listener', sim)
-        galIds_doc.innerText = ''
-        haloIds_doc.innerText = ''
-
-        for (const attr in galaxyBrushHistory) {
-
-            const field = galaxyBrushHistory[attr].fieldName
-
-            prop_doc = document.getElementById(field)
-
-            prop_doc.innerText = ''
-        }
-        filterGalaxies(sim)
-    })
 
     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
-    let width = 300,
+    let width = 350,
         height = 40
     let axis = svg.append('g');
     let brush = svg.append("g")
@@ -2849,42 +3603,39 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     let minAttrScale, maxAttrScale
 
-    let haloids, galids, quantity
-
     if (sim) {
 
-       // need the big 100 Mpc box here!!
-        const data = await d3.json('static/data/RefL0100N1504/galaxies_RefL0100N1504.json')
+    const data = await d3.json('static/data/RefL0100N1504/galaxies_RefL0100N1504.json')
 
-        // console.log(data,'json response')
+    if (data) {
 
-        if (data) {
+        // console.log('eagle 100 data',data.length)
 
-//             console.log('eagle data', data)
-
-            // set the min and max:
-            const data_length = data.length
-            var max = 0
-            var min = data[0][field]
-            for (i = 0; i < data_length; i++) {
-                val = data[i][field]
-                max = val > max ? val : max
-                min = val < min ? val : min  // === 0 ? val : min_ms
-            }
-            //         console.log(min,max,'min and max here')
-            minAttrScale = min === 0 ? 0.0001 : min  // to prevent undefined values
-            maxAttrScale = max
+        // set the min and max:
+        const data_length = data.length
+        var max = 0
+        var min = data[0][field]
+        for (i = 0; i < data_length; i++) {
+            val = data[i][field]
+            max = val > max ? val : max
+            min = val < min ? val : min  // === 0 ? val : min_ms
+        }
+        minAttrScale = min === 0 ? 0.0001 : min  // to prevent undefined values
+        // maxAttrScale = max
+        // minAttrScale = min - 0.00001 === 0 ? 0.0001 : min  // to prevent undefined values
+        minAttrScale = minAttrScale - 0.00001  // to ensure the minimum value is not omitted from queries
+        maxAttrScale = max + 1  // to ensure the maximum value is not omitted from queries
         }
     }
 
+    // console.log(minAttrScale,maxAttrScale,'these are the attr')
 
     var attrScale = d3.scaleLog()
-        .domain([minAttrScale, maxAttrScale])
+        .domain([minAttrScale,maxAttrScale])
         .range([margin.left, width]);
 
     galaxyBrushHistory[attr] = {
-        ranges: [minAttrScale, maxAttrScale], fieldName: field
-    }
+    ranges:[minAttrScale,maxAttrScale], fieldName:field}
 
     galaxyBrushResize()
     drawGalaxyAttrBrush(attr)
@@ -2924,8 +3675,8 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     function galaxyAttrBrushed() {
 
-        console.log('attrbrushed function')
-
+        // console.log('attrbrushed function')
+            
         var s = d3.event.selection || attrScale.range();
 
         ret = s.map(attrScale.invert, attrScale);
@@ -2934,352 +3685,291 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
             galaxyBrushHistory[attr].ranges = ret.slice()
 
-//             console.log('brush history', galaxyBrushHistory)
+            // console.log('brush history',galaxyBrushHistory)
             filterGalaxies(sim)
         }
 
     }
 
+    // console.log('brushessssss', galaxyBrushHistory[attr] )
+
 }
 
-var propList = {} // for plotting galaxy properties 
+var propList = {}
 
 // FH galaxy function #2 - actual querying in table:
 async function filterGalaxies(sim) {
 
-    sim = document.getElementById("sim_size_select").value
+    let selection = document.getElementById("sim_size_select")
 
-    console.log('filterGalaxies function', sim)
+    sim = selection.value
 
-    allGalData_doc = document.getElementById('galdata')
+//     allGalData_doc = document.getElementById('galdata')
     galIds_doc = document.getElementById('galid')
     haloIds_doc = document.getElementById('haloid')
-    // prop_doc.innerText = ''
 
     const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
 
+    // console.log('filterGalaxies function',sim,'static/data/' + sim + '/galaxies_' + sim + '.json')
+
     var filteredData = data.slice() //slice of data
 
-    // var filteredData = galQueryData.slice() //slice of galquerydata
+    // console.log('new brush history',galaxyBrushHistory)
 
-    console.log('new brush history', galaxyBrushHistory)
+    ////////
 
     for (const attr in galaxyBrushHistory) {
 
         const range = galaxyBrushHistory[attr].ranges
         const field = galaxyBrushHistory[attr].fieldName
 
-        if (galaxyBrushHistory[attr].checkState == true) {
+        var predicate = (x) => x[field] == 0 // find the 0 values
+        // const getMax = (a, b) => Math.max(a[field], b[field]);
+        // var f2 = filteredData.filter(predicate) 
 
-            var filteredData = filteredData.filter(d => d[field] >= range[0] && d[field] <= range[1])
-            // console.log('filtering in loop',field)
-            // filteredData.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+        var replaceZero = (x) => { // finds and replaces the 0 values
+            if (x[field] === 0) {
+                x[field] = 1.0e-4
+            }
+        }
+
+        // // console.log('see now 1',f2)
+        filteredData.map(replaceZero)
+
+        // console.log(filteredData.length)
+
+        // if (field == "sfr" || field == "mg") {
+        //     var f2 = filteredData.filter(predicate) 
+        //     // console.log('see now 1',f2)
+        //     filteredData.map(replaceZero)
+        // }
+
+        // if (field == "sfr" || field == "mg") {
+        //     var f2 = filteredData.filter(predicate) 
+        //     console.log('see now 1',f2)
+        //     // for (i = 0; i < f2.length; i++) {
+        //     for (i = 0; i < filteredData.length; i++) {
+
+        //         // var f3 = filteredData[i].filter(predicate)
+        //         // console.log(f3)
+        //         var val = filteredData[i][field]
+        //         // var val = f2[i][field]
+        //         if (val == 0) {
+        //             // console.log('this is zero')
+        //             val == 0.0001
+        //         }
+        //         // console.log(val)
+        //     }
+
+        //     var f3 = filteredData.filter(predicate) 
+        //     console.log('see now 2',f3)
+        //     // console.log('see now 2', filteredData)
+        // }
+
+        if (galaxyBrushHistory[attr].checkState == true) {
+        
+        var filteredData = filteredData.filter(d => d[field] >= range[0] && d[field] < range[1])
 
         }
     }
 
-//     console.log('after filtering properly', filteredData)
+    // console.log('after filtering properly',filteredData)
+
+    var Fs = require['fs']
+
+    // /*
+    //  * Determine whether the given `path` points to an empty directory.
+    //  *
+    //  * @returns {Boolean}
+    //  */
+    async function isEmptyDir(path) {  
+        try {
+        const directory = await Fs.opendir(path)
+        const entry = await directory.read()
+        await directory.close()
+        return entry === null
+        } catch (error) {
+        return false
+        }
+    }
+    ///////
 
     for (const attr in galaxyBrushHistory) {
+    
+        // console.log(document.getElementById(field))
+        propList[attr] = []
 
         if (galaxyBrushHistory[attr].checkState == true) {
-
-            propList[attr] = []
-
-            galIds_doc.innerText = ''  // clears any existing lists
-            haloIds_doc.innerText = ''
-
-            const range = galaxyBrushHistory[attr].ranges
-            const field = galaxyBrushHistory[attr].fieldName
-
-            prop_doc = document.getElementById(field)
-            prop_doc.innerText = ''
-
-            var filteredGalIds = filteredData.map(d => d.galID)
-            var filteredHaloIds = filteredData.map(d => d.haloID)
-            var filteredProps = filteredData.map(d => d[field])
-            
-            filteredProps.forEach(e => propList[attr].push(e)) //append to list for plotting
-
-            var filteredX = filteredData.map(d => d['gal_x'])
-            var filteredY = filteredData.map(d => d['gal_y'])
-            var filteredZ = filteredData.map(d => d['gal_z'])
-            var filteredrh = filteredData.map(d => d['rh'])
-
-            for (let i in filteredGalIds) {
-
-                let anchor = document.createElement("a");
-                anchor.href = "#";
-                anchor.innerText = parseFloat(filteredGalIds[i]);
-
-                let elem = document.createElement("li");
-                elem.appendChild(anchor);
-                galIds_doc.appendChild(elem);
-
-                // takes you to galaxy whose ID you click on:
-                anchor.addEventListener('click', (e) => {
-                    console.log('clicked on this galaxy:',
-                       'ID: ', filteredGalIds[i], 'X Y Z: ', filteredX[i], filteredY[i], filteredZ[i], 'virial radius: ', filteredrh[i])
-                    dl = (filteredrh[i] / 1000) / (width_Mpc)
-                    // console.log(width_Mpc,dl)
-                    camera.zoom = 3.0
-
-                    if (sim == "RefL0100N1504") {
-                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 15)
-                    }
-                    else if (sim == "RefL0025N0376") {
-                        goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 4)
-                    }
-                    else { goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 2) }
-
-                    center_coord_mpc = [filteredX[i], filteredY[i], filteredZ[i]]
-                    rvir = filteredrh[i] / 1000
-                    galaxyID = filteredGalIds[i]
-                    plot_type = "2D_phase"
-                    requestYTPlots(galaxyID,rvir,center_coord_mpc,plot_type)
-                    // goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)
-                })
-            }
-
-            for (var i in filteredHaloIds) {
-
-                var elem = document.createElement("li");
-                elem.innerText = parseFloat(filteredHaloIds[i])
-                haloIds_doc.appendChild(elem);
-            }
-
-            for (var i in filteredProps) {
-
-                var elem = document.createElement("li");
-                elem.innerText = Number.parseFloat(filteredProps[i]).toPrecision(3);
-                prop_doc.appendChild(elem);
-            }
-
-        }
-    }
-    
-    console.log(propList)
-    plotProps(propList)
-
-
-}
-
-
-//  FH function to plot some galaxy properties against each other
-function plotProps(alldata) {
-
-    console.log('in plotting fn',alldata)
-    
-    // remove old dropdowns:
-    d3.select('#galPropX').selectAll("*").remove()
-    d3.select('#galPropY').selectAll("*").remove()
-
-    // create new dropdowns:
-    dvx = document.getElementById('galPropX')
-    dvy = document.getElementById('galPropY')
-
-    dropdown_elements = ['halo mass','stellar mass', 'sfr', 'gas mass']
-
-    var selectX = document.createElement("select")
-    selectX.name = 'galaxy-prop-x'
-    selectX.id = 'galaxy-prop-x'
-
-    var selectY = document.createElement("select")
-    selectY.name = 'galaxy-prop-y'
-    selectY.id = 'galaxy-prop-y'
-
-    for (const el of dropdown_elements) {
-        var option = document.createElement("option")
-        option.value = el
-        option.text = el
-        selectX.appendChild(option)
-    }
-
-    for (const el of dropdown_elements) {
-        var option = document.createElement("option")
-        option.value = el
-        option.text = el
-        selectY.appendChild(option)
-    }
-
-    document.createElement("br")
-
-    var label = document.createElement("label")
-    label.innerHTML = "Choose plot variables:"
-    label.htmlfor = 'galaxy-prop-plot'
-
-    dvx.appendChild(label).appendChild(selectX).append("br")
-    dvy.appendChild(label).appendChild(selectY).append("br")
-
-    sx = document.getElementById('galaxy-prop-x')
-    sy = document.getElementById('galaxy-prop-y')
-
-    //make plots at change of dropdown option:
-
-    sx.onchange = function() {
-
-        attrx = sx.value
-        attry = sy.value
-
-        // remove old plot:
-        d3.select('#galPropPlot').selectAll(".graph").remove()
-
-        // make new plot:
-
-        let minXScale, maxXScale, minYScale, maxYScale
-
-        var margin = { top: 15, right: 25, bottom: 15, left: 85 },
-        width = 400 - margin.left - margin.right,
-        height = 200 - margin.top - margin.bottom;
-       
-        datax = alldata[sx.value]
-        datay = alldata[sy.value]
-
-//         console.log('plot data',datax,datay)
-
-        data = []
-
-        for (i = 0; i < datax.length; i++) {
-            data[i] = { 'x': datax[i], 'y': datay[i] }
-        }
-
-        const x_length = datax.length
-        const y_length = datay.length
         
-        minXScale = d3.min(datax) -  (0.1*d3.min(datax))  // just giving the axis limits a little wiggle room
-        maxXScale = d3.max(datax) +  (0.1*d3.max(datax))
+        galIds_doc.innerText = ''  // clears any existing lists
+        haloIds_doc.innerText = ''
 
-        minYScale = d3.min(datay) -  (0.1*d3.min(datay))
-        maxYScale = d3.max(datay) +  (0.1*d3.max(datay))
+        const range = galaxyBrushHistory[attr].ranges
+        const field = galaxyBrushHistory[attr].fieldName
 
-        var svg = d3.select('#galPropPlot')
-        .append("svg")
-        .attr("class", "graph")
-        .attr("width", width + margin.right)
-        .attr("height", height + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        prop_doc = document.getElementById(field)
+        // console.log(prop_doc,galIds_doc)
+        prop_doc.innerText = ''
 
-        // Set x and y-axis scales
-        var xScale = d3.scaleLog()
-            .domain([minXScale,maxXScale])
-            .range([0, width + margin.left + margin.right])
+        var filteredGalIds = filteredData.map(d => d.galID)
+        var filteredHaloIds = filteredData.map(d => d.haloID)
+        var filteredProps = filteredData.map(d => d[field])
+        
+        // propList.push(filteredProps)
 
-        svg.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(xScale).ticks(4));
-        svg.append("text")
-            .attr("transform", "translate(" + (width / 2 + 50) + " ," + (height + margin.top + 20) + ")")
-            .style("text-anchor", "middle")
-            .text(attrx)
+        filteredProps.forEach(e => propList[attr].push(e));
 
-        var yScale = d3.scaleLog()
-            .domain([minYScale,maxYScale])
-            .range([height, 0])
+        // propList[attr].push(filteredProps);
 
-        svg.append("g")
-            .call(d3.axisLeft(yScale).ticks(4));
+        // console.log('push thingy',propList[0])
 
-        svg.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 0 - margin.left + 35)
-            .attr("x", 0 - (height / 2))
-            .style("text-anchor", "middle")
-            .text(attry);
+        var filteredX = filteredData.map(d => d['gal_x'])
+        var filteredY = filteredData.map(d => d['gal_y'])
+        var filteredZ = filteredData.map(d => d['gal_z'])
+        var filteredmh = filteredData.map(d => d['mh']) 
+        var filteredrh = filteredData.map(d => d['rh']) 
+        // var filteredngal = filteredData.map(d => d['num_gal']) 
 
-        svg.append('g')
-            .selectAll("dot")
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr("cx", (d) => xScale(d.x))
-            .attr("cy", (d) => yScale(d.y))
-            .attr("r", 3)
-            .style("fill", "#CC0000");
 
+        for (let i in filteredGalIds) {
+
+            let anchor = document.createElement("a");
+            anchor.href = "#";
+            anchor.innerText = parseFloat(filteredGalIds[i]);
+
+            let elem = document.createElement("li");
+            elem.appendChild(anchor);
+            galIds_doc.appendChild(elem);
+
+            // let anchor2 = document.createElement("a");
+            // anchor2.href = "#";
+            // anchor2.innerText = 'zoom'
+
+            // let elem2 = document.createElement("li");
+            // elem2.appendChild(anchor2);
+            // galIds_doc.appendChild(elem2);
+
+        // takes you to galaxy whose ID you click on:
+            anchor.addEventListener('click', (e) => {
+            dl = (filteredrh[i]/1000)/(width_Mpc)  // half-width of virial halo in voxelized units
+
+            console.log('clicked on this galaxy: ID',
+            filteredGalIds[i],' X',filteredX[i],' Y',filteredY[i],' Z',filteredZ[i])
+            
+            asyncCall(true)  // this is so that we go back to the full view if we are currently zoomed in
+            updateSize(zoom_bool=false)  // this is so that we can change the grid resolution for the full view and not zoom-in
+
+            if (sim == "RefL0100N1504") {
+                goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 5 * (0.005 / dl))  
+                // the last factor is to scale the width slightly by inverse of virial radius
+                
+                /* if (filteredmh[i] >= 1.0e13) {
+                     goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 5) }
+                
+                else if ((filteredmh[i] >= 1.0e12) && (filteredmh[i] < 1.0e13)) {
+                         goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 3) }
+                
+                else if (filteredmh[i] < 1.0e12) {
+                             goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 2) }
+                */
+            }
+            else if (sim == "RefL0025N0376") {
+                goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 3)
+            }
+            else { goToPoint(filteredX[i], filteredY[i], filteredZ[i], dl * 3) }
+
+        //////////////////
+        // center_coord_mpc = [filteredX[i], filteredY[i], filteredZ[i]]
+        // rvir = filteredrh[i] / 1000
+        // galaxyID = filteredGalIds[i]
+        // plot_type = "2D_phase"
+        // plot_type = "slice"
+        // requestYTPlots(galaxyID,rvir,center_coord_mpc,plot_type)
+        // ytPlotOptions(galaxyID,rvir,center_coord_mpc)
+        ///////////////
+
+        })
+    
     }
 
-    sy.onchange = function() {
+        for (let i in filteredHaloIds) {
 
-        attrx = sx.value
-        attry = sy.value
+            // var elem = document.createElement("li");
+            // elem.innerText = parseFloat(filteredHaloIds[i])
+            // haloIds_doc.appendChild(elem);
 
-        // remove old plot:
-        d3.select('#galPropPlot').selectAll(".graph").remove()
+            // let path = 'static/data/' + sim + '/Halos/halo_' + filteredHaloIds[i] + '/PartType0/'
+            
+            // var isItEmpty = isEmptyDir(path)
 
-        // make new plot:
+            // console.log(isItEmpty)
 
-        let minXScale, maxXScale, minYScale, maxYScale
+            let anchor = document.createElement("a");
+            anchor.href = "#";
+            anchor.innerText = parseFloat(filteredHaloIds[i]);
 
-        var margin = { top: 15, right: 25, bottom: 15, left: 85 },
-        width = 400 - margin.left - margin.right,
-        height = 200 - margin.top - margin.bottom;
-       
-        datax = alldata[sx.value]
-        datay = alldata[sy.value]
+            let elem = document.createElement("li");
+            elem.appendChild(anchor);
+            haloIds_doc.appendChild(elem);
 
-//         console.log('plot data',datax,datay)
+            // var path = 'static/data/' + sim + '/Halos/halo_' + filteredHaloIds[i] + '/simMetadata.json'
+            // var haloFile = new File([""],path)
 
-        data = []
+            // // See if the file exists
+            // if(haloFile.exists()) {
+            //     console.log('EXISTS!')
+            // }
+            // else {
+            //     console.log('DOESNT EXIST!')
 
-        for (i = 0; i < datax.length; i++) {
-            data[i] = { 'x': datax[i], 'y': datay[i] }
+            // }
+            
+            anchor.addEventListener('click', (e) => {
+                // let btn = document.createElement("button");
+                // btn.innerHTML = "Save";
+
+                console.log('Zoom-in resampling: Halo ID ',filteredHaloIds[i],
+                ", virial radius ",filteredrh[i], " kpc")
+
+                // camera.zoom = 1.0
+                // camera.updateProjectionMatrix()
+
+                goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
+                camera.zoom = 1.0
+                camera.updateProjectionMatrix()
+                // updateUniforms() 
+                
+                asyncZoom(true,halos=filteredHaloIds[i])
+
+                updateSize(zoom_bool=true,halos=filteredHaloIds[i])
+
+                // zoom_bool == false
+                // console.log('what about here', zoom_bool,halos)
+
+                // loadZoomIn(simSize, attr, filteredHaloIds[i])
+                // btn.addEventListener("click", function () {
+                // console.log('Button here')
+                // })
+        
+            })
         }
 
-        const x_length = datax.length
-        const y_length = datay.length
+        for (let i in filteredProps) {
 
-        minXScale = d3.min(datax) -  (0.1*d3.min(datax))  // just giving the axis limits a little wiggle room
-        maxXScale = d3.max(datax) +  (0.1*d3.max(datax))
+            var elem = document.createElement("li");
 
-        minYScale = d3.min(datay) -  (0.1*d3.min(datay))
-        maxYScale = d3.max(datay) +  (0.1*d3.max(datay))
+            if (field=="num_gal") {  //just integers to be displayed for the number of galaxies field
+                elem.innerText = Number.parseInt(filteredProps[i]);
+            }
+            else {  //scientific notation to 3 sig figs for the rest
+                elem.innerText = Number.parseFloat(filteredProps[i]).toPrecision(3);
+            }
+            prop_doc.appendChild(elem);
+        }                
+    
+        }
 
-        var svg = d3.select('#galPropPlot')
-        .append("svg")
-        .attr("class", "graph")
-        .attr("width", width + margin.right)
-        .attr("height", height + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-
-        // Set x and y-axis scales
-        var xScale = d3.scaleLog()
-            .domain([minXScale,maxXScale])
-            .range([0, width + margin.left + margin.right])
-
-        svg.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(xScale).ticks(4));
-        svg.append("text")
-            .attr("transform", "translate(" + (width / 2 + 50) + " ," + (height + margin.top + 20) + ")")
-            .style("text-anchor", "middle")
-            .text(attrx)
-
-        var yScale = d3.scaleLog()
-            .domain([minYScale,maxYScale])
-            .range([height, 0])
-
-        svg.append("g")
-            .call(d3.axisLeft(yScale).ticks(4));
-
-        svg.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 0 - margin.left + 35)
-            .attr("x", 0 - (height / 2))
-            .style("text-anchor", "middle")
-            .text(attry);
-
-        svg.append('g')
-            .selectAll("dot")
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr("cx", (d) => xScale(d.x))
-            .attr("cy", (d) => yScale(d.y))
-            .attr("r", 3)
-            .style("fill", "#CC0000");
-
+    // plotProps(propList)
     }
 
 }
@@ -3287,6 +3977,7 @@ function plotProps(alldata) {
 
 function createXYZBrush(xyz) {
     // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js 
+
     d3.select('#terminal').append('div').attr('id', xyz + '-depth-brush-label').attr('class', 'depth-brush').append('text').text(xyz)
     let svg = d3.select('#terminal').append('div').attr('id', xyz + '-depth-brush').attr('class', 'depth-brush').append('svg')
 
@@ -3299,19 +3990,36 @@ function createXYZBrush(xyz) {
     let brush = svg.append("g")
         .attr("class", "brush")
 
-
     var x = d3.scaleLinear()
         .domain([0.0, 1.0])
+        // .domain([edges.left_edge[0],edges.right_edge[0]])
         .range([margin.left, width]);
 
     var y = d3.scaleLinear()
         .domain([0.0, 1.0])
+        // .domain([edges.left_edge[1],edges.right_edge[1]])
         .range([margin.left, width]);
 
     var z = d3.scaleLinear()
         .domain([0.0, 1.0])
+        // .domain([edges.left_edge[2],edges.right_edge[2]])
         .range([margin.left, width]);
 
+    // simID = document.getElementById("sim_size_select").value
+    
+    // let edge = []
+
+    // var e2 = edges.slice() //slice of data
+    
+   
+    // d3.json('static/data/' + simID + '/simMetadata.json').then(function(d) {
+    //     edges.left_edge = d.left_edge
+    //     edges.right_edge = d.right_edge
+    //     resolve()
+    // }) 
+
+
+    // console.log('XYZBrush', edges)    
 
     XYZresize();
     drawXYZBrush(xyz);
@@ -3333,15 +4041,15 @@ function createXYZBrush(xyz) {
 
         x.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(x).ticks(11))
+            .call(d3.axisBottom(x).ticks(12))
 
         y.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(y).ticks(11))
+            .call(d3.axisBottom(y).ticks(12))
 
         z.range([margin.left, width - margin.right]);
         axis.attr('transform', 'translate(0,' + height + ')')
-            .call(d3.axisBottom(z).ticks(11))
+            .call(d3.axisBottom(z).ticks(12))
 
     }
 
@@ -3397,7 +4105,7 @@ function createXYZBrush(xyz) {
         if (ret[0] !== ret[1]) {
             updateXYZDomain(xyz, ret[0], ret[1])
         }
-    }
+    } 
 }
 
 function updateXYZDomain(xyz, min, max) {
@@ -3430,10 +4138,13 @@ function checkSelectedSimID() {
     simID = selection.value
 
     if (oldSimID != simID) {
-        d3.json('static/data/' + simID + '/simMetadata.json').then(function (d) {
+        d3.json('static/data/' + simID + '/simMetadata.json').then(function(d) {
             edges.left_edge = d.left_edge
             edges.right_edge = d.right_edge
             width_Mpc = (edges.right_edge[0] - edges.left_edge[0])
+
+            // console.log('edges',edges)
+            
             field_list = d.field_list
             createAttributeSelectors(field_list)
             simSize = (edges.right_edge[0] - edges.left_edge[0]) //0.6776999078
@@ -3451,6 +4162,24 @@ function checkSelectedSimID() {
             $("#star_select").empty();
             $("#bh_select").empty();
         }
+        
+        // FH - changing simulation changes the entire galaxy query:
+        galIds_doc = document.getElementById('galid')
+        haloIds_doc = document.getElementById('haloid')
+        galIds_doc.innerText = '' 
+        haloIds_doc.innerText = ''
+
+        for (const attr in galaxyBrushHistory) {
+
+            const field = galaxyBrushHistory[attr].fieldName
+
+            prop_doc = document.getElementById(field)
+
+            prop_doc.innerText = ''
+
+        }
+
+        filterGalaxies(simID)
     }
 
     function createAttributeSelectors(field_list) {
@@ -3476,8 +4205,14 @@ function checkSelectedSimID() {
                         (field_list[i][1] == 'Entropy') ||
                         (field_list[i][1] == 'Metallicity') ||
                         (field_list[i][1] == 'Density') ||
-                        (field_list[i][1] == 'Carbon') ||
-                        (field_list[i][1] == 'Oxygen')) {
+                        (field_list[i][1] == 'Pressure') ||
+                        (field_list[i][1] == 'Mach_number') ||
+                        (field_list[i][1] == 'tcool_tff') ||
+                        (field_list[i][1] == 'xray_luminosity_0.1_2_keV')
+                        // these feel pretty useless to me: 
+                        // (field_list[i][1] == 'Carbon') ||
+                        // (field_list[i][1] == 'Oxygen')
+                        ) {
                         var select = document.getElementById("gas_select");
                         var option = document.createElement("option");
                         option.text = field_list[i][1];
@@ -3567,7 +4302,7 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     setupRenderTarget()
-    // controls = new THREE.OrbitControls(camera, renderer.domElement);
+        // controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls = new THREE.TrackballControls(camera, renderer.domElement);
     camera.position.set(gridsize * 2, gridsize * 2, gridsize * 2)
     camera.lookAt(gridsize / 2, gridsize / 2, gridsize / 2)
@@ -3590,14 +4325,14 @@ function init() {
     controls.update()
     initColor();
 
-    window.addEventListener('wheel', function (e) {
+    window.addEventListener('wheel', function(e) {
         // e.preventDefault();
         // console.log(e)
         //scrolling
         if (!container_hover) {
             camera.zoom -= e.deltaY / 300
             if (camera.zoom <= 0) {
-                camera.zoom = 0.1
+                camera.zoom = 0.5
             }
         }
         // var x = ( event.clientX / window.innerWidth ) * 2 - 1,
@@ -3611,17 +4346,6 @@ function init() {
         // controls.target[func](controls.target,vector.setLength(factor));
         camera.updateProjectionMatrix();
     })
-
-// for going back to full box view:
-//     window.addEventListener('dblclick', (e) => {
-//         // updateXYZDomain('x',0.0,1.0) 
-//         // updateXYZDomain('y',0.0,1.0) 
-//         // updateXYZDomain('z',0.0,1.0)
-//         // console.log('dblclk',width_Mpc/2)
-//         goToPoint(width_Mpc / 2, width_Mpc / 2, width_Mpc / 2, 0.5)
-//         camera.zoom = 1.0
-//     })
-    
 
     // document.onkeydown = onKeyDown
     document.addEventListener('keyup', onKeyUp, false)
@@ -3665,10 +4389,13 @@ function init() {
     camPos = camera.position
 
 
-    createGalaxyFilteringBrushes('halo mass', 'mh')
-    createGalaxyFilteringBrushes('stellar mass', 'ms')
-    createGalaxyFilteringBrushes('sfr', 'sfr')
-    createGalaxyFilteringBrushes('gas mass', 'mg')
+
+    createGalaxyFilteringBrushes('halo mass','mh')
+    createGalaxyFilteringBrushes('stellar mass','ms')
+    createGalaxyFilteringBrushes('star formation rate','sfr')
+    createGalaxyFilteringBrushes('gas mass','mg')
+    createGalaxyFilteringBrushes('black hole mass','mbh')
+    createGalaxyFilteringBrushes('M*>10^8 galaxies in halo','num_gal')
 
 
     x = document.getElementById('x-depth-brush')
@@ -3717,7 +4444,7 @@ function onMouseClick(event) {
         cd = new THREE.Vector3()
         camera.getWorldDirection(cd)
         var intersects = raycaster.intersectObject(object = cube, recursive = true)
-        //check to see if the mouse click intersects with invisible cube around the data
+            //check to see if the mouse click intersects with invisible cube around the data
         points = []
         if (raycaster.intersectObject(cube).length > 0) {
 
@@ -3744,14 +4471,14 @@ function onMouseClick(event) {
         if (points[1].x > domainXYZ[1] * gridsize) points[1].x = domainXYZ[1] * gridsize
         if (points[1].y > domainXYZ[3] * gridsize) points[1].y = domainXYZ[3] * gridsize
         if (points[1].z > domainXYZ[5] * gridsize) points[1].z = domainXYZ[5] * gridsize
-        // console.log(points[0],points[1])
+            // console.log(points[0],points[1])
 
         // printLine(point1,point2)...
         // console.log('2/2')
 
         // console.log(dir)
         handleLine(dir, points[0], points[1])
-        // printLine(dir,point1,point2)
+            // printLine(dir,point1,point2)
     }
 
     function handleLine(dir, point1, point2) {
@@ -3762,7 +4489,7 @@ function onMouseClick(event) {
         idx = skewers.length
         updateSkewerList(dir, idx, point1, point2)
         saveLine(idx, point1, point2)
-        // sendLine(idx,point1,point2)
+            // sendLine(idx,point1,point2)
         printLine(idx, point1, point2)
     }
 
@@ -3806,7 +4533,7 @@ function onMouseClick(event) {
          */
 
         dist = Math.sqrt(Math.pow((point1.x - point2.x), 2) + Math.pow((point1.y - point2.y), 2) + Math.pow((point1.z - point2.z), 2))
-        //create div to hold skewer details
+            //create div to hold skewer details
         div = document.getElementById('skewer-coords')
         id = 'skewer-coords-' + idx
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords" id="' + id + '"></div>');
@@ -3823,7 +4550,7 @@ function onMouseClick(event) {
         div = document.getElementById(id)
         id = 'skewer-coords-number-' + idx
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-number" id=' + id + '>' + idx + ' <img id="delete-icon-"' + idx + '" class="delete-icon" src="static/assets/delete.svg" alt="delete line" role="button" onclick="deleteLine(' + idx + ')"  /> <img id="retry-icon-"' + idx + '" class="retry-icon" src="static/assets/refresh.svg" alt="retry line" role="button" onclick="retryLine(' + idx + ')"  /> </div>')
-        //create div to show pt1 details and range slider
+            //create div to show pt1 details and range slider
         id = 'skewer-coords-' + idx
         div = document.getElementById(id)
         id = 'skewer-coords-pt1-range-' + idx + ''
@@ -3846,7 +4573,7 @@ function onMouseClick(event) {
 
         //create event listeners for the range sliders
         p1slider = document.getElementById('p1-range-' + idx + '')
-        p1slider.oninput = function () {
+        p1slider.oninput = function() {
             slider = document.getElementById('p1-range-' + idx + '')
             pt1 = []
             pt1.x = point1.x - slider.value * dir.x * (-1)
@@ -3869,7 +4596,7 @@ function onMouseClick(event) {
 
         //create event listeners for the range sliders
         p2slider = document.getElementById('p2-range-' + idx + '')
-        p2slider.oninput = function () {
+        p2slider.oninput = function() {
             slider = document.getElementById('p1-range-' + idx + '')
             pt1 = []
             pt1.x = point1.x - slider.value * dir.x * (-1)
@@ -3960,7 +4687,7 @@ function cylinderMesh(pointX, pointY) {
     skewer_width = (document.getElementById("skewer-width-slider")).value
     let skewerGeometry = new THREE.CylinderBufferGeometry(skewer_width, skewer_width, direction.length(), 100, 1000, true, 0, 2 * Math.PI);
     skewerGeometry.setDrawRange(0, Infinity)
-    // shift it so one end rests on the origin
+        // shift it so one end rests on the origin
     skewerGeometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, direction.length() / 2, 0));
     // rotate it the right way for lookAt to work
     skewerGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(90)));
@@ -4096,7 +4823,7 @@ function onWindowResize() {
 function onKeyUp(event) {
     if (event.keyCode) {
         // console.log("shift")
-        setTimeout(function () {
+        setTimeout(function() {
             controls.rotateSpeed = 10.0;
             controls.zoomSpeed = 5.0;
             controls.panSpeed = 5.0;
@@ -4111,7 +4838,7 @@ function onKeyDown(event) {
 
     if (event.keyCode) {
         // console.log("shift")
-        setTimeout(function () {
+        setTimeout(function() {
             controls.rotateSpeed = 4.0;
             controls.zoomSpeed = 1.0;
             controls.panSpeed = 1.0;
@@ -4169,14 +4896,23 @@ function exportData(name, text) {
  * * WAIT UNTIL PAGE IS LOADED
  */
 
-$(document).ready(function () {
-    $(".container").hover(function () {
+$(document).ready(function() {
+
+
+    $(".container").hover(function() {
         container_hover = true;
-    }, function () {
+    }, function() {
         container_hover = false;
     });
+
+
+
     init()
     animate()
     render()
-    // asyncCall(false)
+        // asyncCall(false)
+        // 
+
+
 })
+

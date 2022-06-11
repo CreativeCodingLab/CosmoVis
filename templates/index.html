@@ -283,11 +283,16 @@
                         if(field_list[i][0] == 'PartType0'){
                             console.log(field_list[i])
                             if( (field_list[i][1] == 'Temperature') ||
-                                (field_list[i][1] == 'Entropy') || 
+                                (field_list[i][1] == 'Entropy') ||
                                 (field_list[i][1] == 'Metallicity') ||
                                 (field_list[i][1] == 'Density') ||
-                                (field_list[i][1] == 'Carbon') ||
-                                (field_list[i][1] == 'Oxygen') ){
+                                (field_list[i][1] == 'Pressure') ||
+                                (field_list[i][1] == 'Mach_number') ||
+                                (field_list[i][1] == 'tcool_tff') ||
+                                (field_list[i][1] == 'xray_luminosity_0.1_2_keV')
+                                // (field_list[i][1] == 'Carbon') ||
+                                // (field_list[i][1] == 'Oxygen') 
+                                ){
                                 var select = document.getElementById("gas_select"); 
                                 var option = document.createElement("option");
                                 option.text = field_list[i][1];
@@ -460,13 +465,6 @@
                 createColumnDensityInfoPanel(msg)
             });
 
-            socket.on('plot_made',function(msg){
-                console.log(msg)
-                console.log('yt plots received')
-
-                receiveYTPlots(msg)
-            });
-
             socket.on('processingRay',function(msg){
                 idx = msg.index
                 buttonId = 'request-button-' + idx + ''
@@ -525,6 +523,7 @@
     <script type="text/javascript" src="{{ url_for('static', filename='libs/OrbitControls.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='libs/TrackballControls.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/cosmo-vis.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/require.js') }}"></script>
     <script>
 
         function toggleLayer( l ){
@@ -651,15 +650,33 @@
             updateUniforms()
         }
 
-        async function requestPoints(size,type,attr){
+        //OG async requestPoints fn:
+        // async function requestPoints(size,type,attr){
+        //     if(attr != 'Select an attribute'){
+        //         if(type == 'PartType0'){
+        //             var gas = await loadGas(size,attr,false)
+        //             var update = await update3dDataTexture()
+        //         }
+        //     }
+        // }
+        
+        //FH async requestPoints fn:
+        async function requestPoints(zoom_bool,size,type,attr,halos){
             if(attr != 'Select an attribute'){
                 if(type == 'PartType0'){
+                    if (zoom_bool) {                    
+                    var zoomGas = await loadZoomGas(size, attr, false, halos)
+                    var zoomUpdate = await update3dDataTexture()
+                    }
+                    
+                    if (!zoom_bool) {
                     var gas = await loadGas(size,attr,false)
                     var update = await update3dDataTexture()
+                    }
+
                 }
             }
         }
-        
         function galaxylist(){ 
             var x = document.getElementById("galaxylist");
             if (x.style.display === "block") {
@@ -819,6 +836,21 @@
             }    
         }
 
+        function home(){
+            width_Mpc = (edges.right_edge[0] - edges.left_edge[0])
+
+            // window.addEventListener('dblclick', (e) => {
+            // // updateXYZDomain('x',0.0,1.0) 
+            // // updateXYZDomain('y',0.0,1.0) 
+            // // updateXYZDomain('z',0.0,1.0)
+            // // console.log('dblclk',width_Mpc/2)
+            goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
+            camera.zoom = 1.0
+            camera.updateProjectionMatrix()
+            updateUniforms() 
+            // })
+        }
+
         function gui(){
             var x = document.getElementById("my-gui-container");
             if (x.style.display === "block") {
@@ -885,7 +917,7 @@
         $
     </script>
 
-    <div class="title">cosmovis</div>
+    <div class="title">CosmoVis</div>
     
     <div id="icon_container">
         <div id="terminal_icon" class="icon_caption"><img 
@@ -924,6 +956,12 @@
             alt="share the current view"
             role="button"
             onclick="share()"/>share</div>
+        <!-- <div id="home" class="icon_caption"><img 
+            class="icon"
+            src="static/assets/home.svg" 
+            alt="go back to home view"
+            role="button"
+            onclick="home()"/>home</div> -->
     </div>
 
     <div id="containers">
@@ -932,56 +970,57 @@
             
             <h3>Galaxy Filters</h3>
 
-            <div id = "galaxy-filter-and-plots">
-                <div id="galaxy-filter-criteria"></div>
-                <div id = "YTPlots"></div>
+            <div id="galaxy-filter-criteria">
             </div>
-            <caption> <h3>Galaxy Query Results</h3></caption>
-
             <div id="galaxy-filter-results">
                 <table>
+                    <caption> <h3>Galaxy Query Results</h3></caption>
                     <thead>
                         <tr>
                             <td> Galaxy ID</td> 
                             <td> Halo ID</td> 
-                            <td> Stellar Mass (M<sub>&#9737;</sub>)</td>
                             <td> Halo Mass (M<sub>&#9737;</sub>) </td>
+                            <td> Stellar Mass (M<sub>&#9737;</sub>)</td>
                             <td> SFR (M<sub>&#9737;</sub>/yr)</td>
                             <td> Gas Mass (M<sub>&#9737;</sub>)</td>
+                            <td> BH Mass (M<sub>&#9737;</sub>)</td>
+                            <td> M<sub>&#9733;</sub> > 10<sup>8</sup> M<sub>&#9737;</sub> galaxies</td>
 
                         </tr>
                     </thead>
                     <tbody id="gal-tbody">
                         <tr id='galdata'>
                             <td>
-                                <ul id='galid' style="list-style-type:none;"> </ul>
+                            <ul id='galid' style="list-style-type:none;"> </ul>
                             </td>
                             <td>
                             <ul id='haloid' style="list-style-type:none;"> </ul>
                             </td>
                             <td>
+                            <ul id='mh' style="list-style-type:none;"> </ul> 
+                            </td> 
+                            <td>
                             <ul id='ms' style="list-style-type:none;"> </ul>    
                             </td>                    
-                            <td>
-                            <ul id='mh' style="list-style-type:none;"> </ul> 
-                            </td>                        
                             <td>
                             <ul id='sfr' style="list-style-type:none;"> </ul>
                             </td> 
                             <td>
                             <ul id='mg' style="list-style-type:none;"> </ul>
                             </td> 
+                            <td>
+                            <ul id='mbh' style="list-style-type:none;"> </ul>
+                            </td> 
+                            <td>
+                            <ul id='num_gal' style="list-style-type:none;"> </ul>
+                            </td> 
                         </tr>
                     </tbody>
                 </table>
+                <!-- <button type="submit" class="request-button" onclick="window.open('{{ url_for('static', filename='data/plotxy.fits')}}')"  >download plots</button> -->
+             <div id='galPropPlot'></div>
             </div>
             <br>
-            
-             <div id = "galaxy-property-plots">
-                <div id='galPropX'></div>
-                <div id='galPropY'></div>
-                <div id='galPropPlot'></div>
-            </div>
             
         </div>  
               
@@ -1011,7 +1050,7 @@
             <div id="gas-data-details" class="data-details">
                 <hr>
                 select attribute:
-                <select class="data_select" id="gas_select" onchange="requestPoints(gridsize,'PartType0', document.getElementById('gas_select').value)">
+                <select class="data_select" id="gas_select" onchange="requestPoints(zoom_bool,gridsize,'PartType0', document.getElementById('gas_select').value,halos)">
                     <option selected="selected" disabled="disabled">Select an attribute</option></select>
                 filter values:
                 <br>
@@ -1035,7 +1074,7 @@
                 adjust color & alpha values:
 
                 <div id=gas-colorscale>
-                    <input type="color" class="color-picker" value="#2a1bf3" id="gasMinCol" oninput="changeColor()"><input type="color" class="color-picker" value="#ffdd00" id="gasMidCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol" oninput="changeColor()">
+                    <input type="color" class="color-picker" value="#2a1bf3" id="gasMinCol" oninput="changeColor()"><input type="color" class="color-picker" value="#ffff00" id="gasMidCol" oninput="changeColor()"><input type="color" class="color-picker"  value="#ff0000" id="gasMaxCol" oninput="changeColor()">
                     <!-- <br> -->
                 </div>
                 <div id=gas-colorscale-alpha>
@@ -1072,7 +1111,8 @@
                 alt="dark matter hidden"
                 role="button"
                 onclick="toggleLayer( 1 )"/>
-                <div style="display: inline;" onclick="hideDetails('dm')" class="layers-details">dark matter</div></h3></label>
+                <div style="display: inline;" onclick="hideDetails('dm')" class="layers-details">dark matter</div>
+            </h3></label>
             
             <!-- <br> -->
             <div id="dm-data-details" class="data-details">
@@ -1329,10 +1369,10 @@
                 <option value="TNG100_z0.0">100 Mpc box, z = 0.0 (TNG)</option>
                 <option value="TNG100_z2.3">100 Mpc box, z = 2.3 (TNG)</option>
             </select></p>
-
+            <!-- onchange="updateSize()" -->
             <div id="grid-options">
                 select grid resolution
-                <p><select class="data_select" id="size_select" onchange="updateSize()">
+                <p><select class="data_select" id="size_select" onchange="updateSize(zoom_bool,halos)">
                     <option disabled="disabled">Select voxel grid size (n&sup3;)</option>
                     <option selected="selected" value="64">64&sup3;</option>
                     <option value="128">128&sup3;</option>

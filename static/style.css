@@ -475,33 +475,6 @@ h3 {
     text-align: center;
 }
 
-#galaxy-filter-criteria{
-    max-width: 50%;
-    float: left;
-}
-
-#YTPlots{
-    max-width: 50%;
-    /* display: flex; */
-    float: right;
-    position: relative;
-    display: block;
-    margin: 0;
-    padding: 0;
-}
-
-#YTPlots img{
-    width: 384px;
-    height: auto;
-    position: fixed;
-    display: block;
-    padding-top: 2vh;
-}
-
-#galaxy-filter-and-plots{
-    display: flex;
-}
-
 #galaxy-filter-results{
     overflow-y: auto;
     height: 20vh;
@@ -982,11 +955,7 @@ h3 {
 
 table {
     border-collapse: collapse;
-    width: 23rem;
-    table-layout: auto;
-    /* display: table-cell; */
-    /* border-collapse: collapse;
-    width: 20vw; */
+    width: 20vw;
 }
 table.center {
     margin-left: auto;
@@ -998,13 +967,6 @@ thead {
 th,td {
     border: 1px solid black;
     padding: 10px 15px;
-}
-
-tbody {
-
-    height: 100px;      
-    overflow-y: scroll;  
-
 }
 
 #star-details{
@@ -1025,7 +987,7 @@ tbody {
     background: rgba(20,150,130,.4);
     text-align: center;
     padding: 1%;
-    /* width: 20vw; */
+    width: 20vw;
 }
 .d1{
     width: 4vw;
