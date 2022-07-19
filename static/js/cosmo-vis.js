@@ -1137,12 +1137,26 @@ function loadGas(size, attr, resolution_bool) {
                     maxval.value = -1.0 //Math.log10(0.16250114)
                     gasUnpackDomain = [min, max]
                 }
-                if (attr == "Masses") {
-                    min = Math.log10(3.11659301e-06)
-                    minval.value = Math.log10(3.11659301e-06)
-                    max = Math.log10(0.00150664)
-                    maxval.value = Math.log10(0.00150664)
-                    gasUnpackDomain = [min, max]
+                // if (attr == "Masses") {
+                //     min = Math.log10(3.11659301e-06)
+                //     minval.value = Math.log10(3.11659301e-06)
+                //     max = Math.log10(0.00150664)
+                //     maxval.value = Math.log10(0.00150664)
+                //     gasUnpackDomain = [min, max]
+                // }
+                if (attr == "Entropy") {
+                    min = 1.0
+                    minval.value = 1.0
+                    max = 6.0
+                    maxval.value = 6.0
+                    gasUnpackDomain = [0.0, 6.0]
+                }
+                if (attr == "Machnumber") {
+                    min = -3.0
+                    minval.value = -2.0
+                    max = 3.0
+                    maxval.value = 3.0
+                    gasUnpackDomain = [-3.0, 3.0]
                 }
             } else if (simID == 'TNG100_z2.3') {
                 // set some default values
@@ -2167,8 +2181,97 @@ function loadStars() {
     })
 }
 
+// OG starcaster
+// function starCaster() {
 
-function starCaster() {
+//     starcaster.setFromCamera(mouse, camera);
+//     // starcaster.layers.enableAll()
+//     intersects = []
+//     // intersects = starcaster.intersectObjects(boxOfStarPoints, true);
+//     boxOfStarPoints.raycast(starcaster, intersects);
+//     // console.log('intersects',intersects)
+//     // intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
+//     if (intersects.length > 0) {
+//         star = starData[intersects[0].index]
+//         let div = document.getElementById("star-details")
+//         div.innerHTML = `
+//         <h3>star particle details</h3>\n
+//         <table>
+//         <tr>
+//             <td class="d1">
+//                 group id
+//             </td>
+//             <td class="d2">
+//                 ` + star[3] + `
+//             </td>
+//             <td class="d3">
+//             </td>
+//         </tr>
+//         <tr>
+//             <td class="d1">
+//                 mass
+//             </td>
+//             <td class="d2">
+//                 ` + star[4] + `
+//             </td>
+//             <td class="d3">
+//                 M<sub>&#9737;</sub>              
+//             </td>
+//         </tr>
+//         <tr>
+//             <td class="d1">
+//                 x
+//             </td>
+//             <td class="d2">
+//                 ` + star[0] + `
+//             </td>
+//             <td class="d3">
+//                 Mpc</sub>              
+//             </td>
+//         </tr>
+//         <tr>
+//             <td class="d1">
+//                 y
+//             </td>
+//             <td class="d2">
+//                 ` + star[1] + `
+//             </td>
+//             <td class="d3">
+//                 Mpc</sub>              
+//             </td>
+//         </tr>
+//         <tr>
+//             <td class="d1">
+//                 z
+//             </td>
+//             <td class="d2">
+//                 ` + star[2] + `
+//             </td>
+//             <td class="d3">
+//                 Mpc</sub>              
+//             </td>
+//         </tr>
+        
+//     </table>`
+//             //"<h4></h4>\n : " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
+//     }
+// }
+
+//FH starcaster
+async function starCaster() {
+
+    // console.log('starcaster',simID)
+
+    //load in galaxies data:
+    const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
+
+    // console.log('filterGalaxies function',sim,'static/data/' + sim + '/galaxies_' + sim + '.json')
+
+    var filteredData = data.slice() //slice of data
+
+    var groupNums = filteredData.map(d => d.groupNum)
+    var haloIDs = filteredData.map(d => d.haloID)
+    var groupMasses = filteredData.map(d => d['mh'])
 
     starcaster.setFromCamera(mouse, camera);
     // starcaster.layers.enableAll()
@@ -2180,12 +2283,91 @@ function starCaster() {
     if (intersects.length > 0) {
         star = starData[intersects[0].index]
         let div = document.getElementById("star-details")
+
+        //find index of the intersecting star particle
+        var index = groupNums.indexOf(star[3])
+
+        // console.log('HEY',index)
+        if (index != -1) {
+
+        //find group mass from this index
+        var groupMass = groupMasses[index].toExponential(3)
+
+        var haloID = haloIDs[index]
+
+        // console.log('starcaster',groupMass)
+
+        // const found = groupNums.find(id => id === star[3]);
+
         div.innerHTML = `
         <h3>star particle details</h3>\n
         <table>
         <tr>
             <td class="d1">
-                group id
+                halo ID
+            </td>
+            <td class="d2">
+                ` + haloID + `
+            </td>
+            <td class="d3">
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                halo mass
+            </td>
+            <td class="d2">
+                ` + groupMass + `
+            </td>
+            <td class="d3">
+                M<sub>&#9737;</sub>              
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                x
+            </td>
+            <td class="d2">
+                ` + star[0] + `
+            </td>
+            <td class="d3">
+                Mpc</sub>              
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                y
+            </td>
+            <td class="d2">
+                ` + star[1] + `
+            </td>
+            <td class="d3">
+                Mpc</sub>              
+            </td>
+        </tr>
+        <tr>
+            <td class="d1">
+                z
+            </td>
+            <td class="d2">
+                ` + star[2] + `
+            </td>
+            <td class="d3">
+                Mpc</sub>              
+            </td>
+        </tr>
+        
+    </table>`
+            //"<h4></h4>\n : " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
+        }
+
+        else {
+            div.innerHTML = `
+        <h3>star particle details</h3>\n
+        <table>
+        <tr>
+            <td class="d1">
+                group ID
             </td>
             <td class="d2">
                 ` + star[3] + `
@@ -2195,7 +2377,7 @@ function starCaster() {
         </tr>
         <tr>
             <td class="d1">
-                mass
+                particle mass
             </td>
             <td class="d2">
                 ` + star[4] + `
@@ -2239,9 +2421,10 @@ function starCaster() {
         </tr>
         
     </table>`
-            //"<h4></h4>\n : " + star[3] + "<br> Mass: " + star[4] + " (Msun)<br> x: " + star[0] + " (Mpc)<br> y: " + star[1] + " (Mpc)<br> z: " + star[2] + " (Mpc)"
+        }
     }
 }
+
 
 function disposeArray() {
     this.array = null;
@@ -4207,6 +4390,7 @@ function checkSelectedSimID() {
                         (field_list[i][1] == 'Density') ||
                         (field_list[i][1] == 'Pressure') ||
                         (field_list[i][1] == 'Mach_number') ||
+                        (field_list[i][1] == 'Machnumber') ||
                         (field_list[i][1] == 'tcool_tff') ||
                         (field_list[i][1] == 'xray_luminosity_0.1_2_keV')
                         // these feel pretty useless to me: 
