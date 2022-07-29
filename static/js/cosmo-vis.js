@@ -1050,9 +1050,9 @@ function loadGas(size, attr, resolution_bool) {
                 }
                 if (attr == "Density") {
                     min = -33.0
-                    minval.value = -32.0
+                    minval.value = -31.0
                     max = -27.0
-                    maxval.value = -26.0
+                    maxval.value = -24.0
                     gasUnpackDomain = [-33.0, -23.0]
                 }
                 if (attr == "Entropy") {
@@ -1069,19 +1069,19 @@ function loadGas(size, attr, resolution_bool) {
                     maxval.value = 0
                     gasUnpackDomain = [-5.0, 1.0]
                 }
-                if (attr == "Pressure") {
+                if (attr == "pressure") {
                     min = -4.0
-                    minval.value = -4.0
+                    minval.value = -1.0
                     max = 7.0
-                    maxval.value = 2.0
+                    maxval.value = 3.0
                     gasUnpackDomain = [-4.0, 7.0]
                 }
-                if (attr == "Mach_number") {
+                if (attr == "Machnumber") {
                     min = -3.0
-                    minval.value = -2.0
+                    minval.value = -1.0
                     max = 3.0
                     maxval.value = 3.0
-                    gasUnpackDomain = [-3.0, 3.0]
+                    gasUnpackDomain = [-3.0, 4.0]
                 }
                 if (attr == "tcool_tff") {
                     min = -3.0
@@ -1125,9 +1125,9 @@ function loadGas(size, attr, resolution_bool) {
                 }
                 if (attr == "Density") {
                     min = Math.log10(3.22215222e-31)
-                    minval.value = Math.log10(3.22215222e-31)
-                    max = Math.log10(4.31157793e-19)
-                    maxval.value = Math.log10(4.31157793e-19)
+                    minval.value = -31.0
+                    max = -27.0
+                    maxval.value = -20.0
                     gasUnpackDomain = [min, max]
                 }
                 if (attr == "Metallicity") {
@@ -1151,12 +1151,33 @@ function loadGas(size, attr, resolution_bool) {
                     maxval.value = 6.0
                     gasUnpackDomain = [0.0, 6.0]
                 }
+                if (attr == "pressure") {
+                    min = -4.0
+                    minval.value = -1.0
+                    max = 7.0
+                    maxval.value = 3.0
+                    gasUnpackDomain = [-4.0, 7.0]
+                }
                 if (attr == "Machnumber") {
                     min = -3.0
-                    minval.value = -2.0
+                    minval.value = -1.0
                     max = 3.0
                     maxval.value = 3.0
-                    gasUnpackDomain = [-3.0, 3.0]
+                    gasUnpackDomain = [-3.0, 4.0]
+                }
+                if (attr == "tcool_tff") {
+                    min = -3.0
+                    minval.value = -2.0
+                    max = 4.0
+                    maxval.value = 2.0
+                    gasUnpackDomain = [-3.0, 4.0]
+                }
+                if (attr == "xray_luminosity_0.1_2_keV") {
+                    min = 26.0
+                    minval.value = 30.0
+                    max = 44.0
+                    maxval.value = 40.0
+                    gasUnpackDomain = [24.0,44.0]
                 }
             } else if (simID == 'TNG100_z2.3') {
                 // set some default values
@@ -1216,7 +1237,7 @@ function loadGas(size, attr, resolution_bool) {
                     gasUnits[i].innerHTML = 'log(g/cm<sup>3</sup>)'
                 } else if (attr == "InternalEnergy") {
                     gasUnits[i].innerHTML = "log(erg/g)"
-                } else if (attr == "Pressure") {
+                } else if (attr == "pressure") {
                     gasUnits[i].innerHTML = "log(K/cm<sup>3)"
                 } else if (attr == "xray_luminosity_0.1_2_keV") {
                     gasUnits[i].innerHTML = "log(erg/s)"
@@ -4388,8 +4409,9 @@ function checkSelectedSimID() {
                         (field_list[i][1] == 'Entropy') ||
                         (field_list[i][1] == 'Metallicity') ||
                         (field_list[i][1] == 'Density') ||
-                        (field_list[i][1] == 'Pressure') ||
-                        (field_list[i][1] == 'Mach_number') ||
+                        // (field_list[i][1] == 'Pressure') ||
+                        (field_list[i][1] == 'pressure') ||
+                        // (field_list[i][1] == 'Mach_number') ||
                         (field_list[i][1] == 'Machnumber') ||
                         (field_list[i][1] == 'tcool_tff') ||
                         (field_list[i][1] == 'xray_luminosity_0.1_2_keV')
