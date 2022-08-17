@@ -360,10 +360,12 @@ function toggleXYZGuide() {
 function updateSkewerEndpoints(size) {
     //console.log('update skewer endpoints')
     for (i = 0; i < lines.length; i++) {
+        const mat = lines[i].material.clone()
+        console.log(mat)
         skewerScene.remove(lines[i])
 
-        point1 = new THREE.Vector3(skewer_endpoints[idx][0][0], skewer_endpoints[idx][0][1], skewer_endpoints[idx][0][2])
-        point2 = new THREE.Vector3(skewer_endpoints[idx][1][0], skewer_endpoints[idx][1][1], skewer_endpoints[idx][1][2])
+        point1 = new THREE.Vector3(skewer_endpoints[i][0][0], skewer_endpoints[i][0][1], skewer_endpoints[i][0][2])
+        point2 = new THREE.Vector3(skewer_endpoints[i][1][0], skewer_endpoints[i][1][1], skewer_endpoints[i][1][2])
         skewerGeometry = cylinderMesh(point1.multiplyScalar(size), point2.multiplyScalar(size))
         skewerGeometry.DefaultUp = new THREE.Vector3(0, 0, 1);
 
@@ -382,7 +384,7 @@ function updateSkewerEndpoints(size) {
 
         // lines[idx] = new THREE.Line2( geometry, material );
         lines[i] = skewerGeometry
-
+        lines[i].material = mat
         lines[i].layers.set(4)
         skewerScene.add(lines[i]);
 
@@ -532,6 +534,12 @@ function updateUniforms() {
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
         volMaterial.uniforms["u_screenWidth"].value = window.innerWidth
 
+
+        for (i = 0; i < lines.length; i++) {
+            lines[i].material.uniforms["u_xyzMin"].value = new THREE.Vector3(domainXYZ[0], domainXYZ[2], domainXYZ[4])
+            lines[i].material.uniforms["u_xyzMax"].value = new THREE.Vector3(domainXYZ[1], domainXYZ[3], domainXYZ[5])
+        }
+
         //check if grayscale depth is enabled
         // g_mod = (document.getElementById("grayscale-mod-check").checked ? 1.0 : 0.0);
         // volMaterial.uniforms[ "u_grayscaleDepthMod" ].value = g_mod;
@@ -543,6 +551,10 @@ function updateUniforms() {
         //cutting sliders
         volMaterial.uniforms["u_xyzMin"].value = new THREE.Vector3(domainXYZ[0], domainXYZ[2], domainXYZ[4])
         volMaterial.uniforms["u_xyzMax"].value = new THREE.Vector3(domainXYZ[1], domainXYZ[3], domainXYZ[5])
+
+        skewerMaterial.uniforms["u_xyzMin"].value = new THREE.Vector3(domainXYZ[0], domainXYZ[2], domainXYZ[4])
+        skewerMaterial.uniforms["u_xyzMax"].value = new THREE.Vector3(domainXYZ[1], domainXYZ[3], domainXYZ[5])
+
 
         // volMaterial.uniforms[ "u_distModI" ].value = (document.getElementById("dist-mod-intensity")).value
         volMaterial.uniforms["u_valModI"].value = (document.getElementById("val-mod-intensity")).value
@@ -702,6 +714,10 @@ function updateUniforms() {
 
 function updateSkewerWidths() {
     updateSkewerEndpoints(gridsize)
+    // for (i = 0; i < lines.length; i++) {
+    //     const mat = lines[i].material
+    //     skewerScene.remove(lines[i])
+    // }
 }
 
 function updateSkewerBrightness() {
@@ -1369,7 +1385,14 @@ function starCaster() {
         star = starData[intersects[0].index]
         let div = document.getElementById("star-details")
         div.innerHTML = `
-        <h3>star particle details</h3>\n
+        <div class="panel-header">
+            Star particle details
+
+            <img class="close-icon" src="static/assets/close_icon.svg"
+            alt="close panel" role="button" onclick="hidePanel('star-details')" />
+
+        </div>
+        \n
         <table>
         <tr>
             <td class="d1">
@@ -1450,7 +1473,9 @@ function stopLoadingAnimation() {
 function setupStarScene() {
     starScene = new THREE.Scene();
     starScene.background = new THREE.Color("rgb(0,0,0)")
-    starCol = new THREE.Color(0.8, 0.8, 0.0)
+    // starCol = new THREE.Color(0.8, 0.8, 0.0)
+    starCol = new THREE.Color(1.0, 1.0, 1.0)
+
     // //console.log(starCol)
     starMaterial = new THREE.ShaderMaterial({
 
@@ -1477,7 +1502,7 @@ function setupStarScene() {
         precision: 'highp',
         dithering: true,
         side: THREE.DoubleSide,
-        clipping: true
+        clipping: false
         // alphaTest:      0.3
     });
 }
@@ -1488,11 +1513,11 @@ function setupStarSaoScene() {
     starSaoMaterial = new THREE.ShaderMaterial({
         uniforms: {
             tDiffuse: { value: starTarget.texture },
-            starDepth: {value: starTarget.depthTexture},
-            u_screenHeight: {value: window.innerHeight},
-            u_screenWidth: {value: window.innerWidth},
-            u_cameraNear: {value: camera.near},
-            u_cameraFar: {value: camera.far}
+            starDepth: { value: starTarget.depthTexture },
+            u_screenHeight: { value: window.innerHeight },
+            u_screenWidth: { value: window.innerWidth },
+            u_cameraNear: { value: camera.near },
+            u_cameraFar: { value: camera.far }
         },
         vertexShader: document.getElementById('vertexshader-starSAO').textContent,
         fragmentShader: document.getElementById('fragmentshader-starSAO').textContent,
@@ -1517,10 +1542,10 @@ function setupStarSaoScene() {
     var quad = new THREE.Mesh(
         new THREE.PlaneGeometry(2, 2),
         starSaoMaterial
-      );
-      quad.frustumCulled = false;
+    );
+    quad.frustumCulled = false;
 
-      starSaoScene.add(quad);
+    starSaoScene.add(quad);
 }
 
 function setupSkewerScene() {
@@ -1578,7 +1603,7 @@ function setupRenderTarget() {
     starTarget.texture.generateMipMaps = false
     starTarget.stencilBuffer = (format === THREE.DepthStencilFormat) ? true : false;
     starTarget.depthBuffer = true;
-    starTarget.depthTexture = new THREE.DepthTexture(size.x, size.y);
+    starTarget.depthTexture = new THREE.DepthTexture();
     starTarget.depthTexture.format = format
     starTarget.depthTexture.type = type;
     starTarget.scissorTest = true;
@@ -1664,18 +1689,18 @@ function goToPoint(x, y, z, delta = 0.1) {
     updateXYZDomain('y', domainXYZ[2], domainXYZ[3])
     updateXYZDomain('z', domainXYZ[4], domainXYZ[5])
 
-    
-     /////////////// forcing the domains to be within the voxelized volume!
+
+    /////////////// forcing the domains to be within the voxelized volume!
     /// - to remove edge effects for example
 
-    domainXYZ[0] = Math.max(domainXYZ[0],0)
-    domainXYZ[2] = Math.max(domainXYZ[2],0)
-    domainXYZ[4] = Math.max(domainXYZ[4],0)
-    
-    domainXYZ[1] = Math.min(domainXYZ[1],1)
-    domainXYZ[3] = Math.min(domainXYZ[3],1)
-    domainXYZ[5] = Math.min(domainXYZ[5],1)
- 
+    domainXYZ[0] = Math.max(domainXYZ[0], 0)
+    domainXYZ[2] = Math.max(domainXYZ[2], 0)
+    domainXYZ[4] = Math.max(domainXYZ[4], 0)
+
+    domainXYZ[1] = Math.min(domainXYZ[1], 1)
+    domainXYZ[3] = Math.min(domainXYZ[3], 1)
+    domainXYZ[5] = Math.min(domainXYZ[5], 1)
+
     ////////////////
 
 
@@ -1877,12 +1902,31 @@ function animate() {
     // renderer.render( scene, camera );
 }
 
+function updateCameraNearAndFar() {
+    let dist = Math.sqrt((camera.position.x - (gridsize / 2)) ** 2 + (camera.position.y - (gridsize / 2)) ** 2 + (camera.position.z - (gridsize / 2)) ** 2)
+    let sigma = ((gridsize) / 2) * Math.sqrt(3) //radius of imaginary sphere surrounding the volume cube. it is centered at 0
+    camera.near = Math.max(dist - sigma, 0.01)
+    camera.far = Math.abs(dist + sigma)
+    if (starSaoMaterial) {
+        starSaoMaterial.uniforms["u_cameraNear"].value = camera.near
+        starSaoMaterial.uniforms["u_cameraFar"].value = camera.far
+        starSaoMaterial.needsUpdate = true
+
+    }
+    if (volMaterial) {
+        volMaterial.uniforms["u_cameraNear"].value = camera.near
+        volMaterial.uniforms["u_cameraFar"].value = camera.far
+        volMaterial.needsUpdate = true
+    }
+    camera.updateProjectionMatrix()
+}
+
 function render() {
     /**
      * * render()
      */
     // controls.update()
-
+    updateCameraNearAndFar()
     renderRequested = false;
     //render stars into target
     renderer.setRenderTarget(null)
@@ -1892,18 +1936,20 @@ function render() {
         renderer.setRenderTarget(starTarget)
         renderer.render(starScene, camera);
         if (volMaterial) {
-            starSaoMaterial.uniforms["tDiffuse"].value = starTarget.texture
             volMaterial.uniforms["u_starDiffuse"].value = starTarget.texture
-            starSaoMaterial.uniforms["starDepth"] = starTarget.depthTexture
             volMaterial.uniforms["u_starDepth"].value = starTarget.depthTexture
             // starSaoMaterial.needsUpdate = true
+        }
+        if (starSaoMaterial) {
+            starSaoMaterial.uniforms["tDiffuse"].value = starTarget.texture
+            starSaoMaterial.uniforms["starDepth"].value = starTarget.depthTexture
         }
         renderer.setRenderTarget(null)
     }
     // renderer.render(starScene, camera);
 
     // star particle ambient occlusion pass
-    if (starSaoTarget){
+    if (starSaoTarget) {
 
         renderer.setRenderTarget(starSaoTarget)
         renderer.render(starSaoScene, camera);
@@ -1961,9 +2007,15 @@ function toggleDrawSkewerMode() {
      */
     drawSkewers = !drawSkewers
     if (drawSkewers) {
-        document.getElementById('skewer-laser').style.filter = 'invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%)'
+        // document.getElementById('skewer-laser').style.filter = 'invert(98%) sepia(0%) saturate(51%) hue-rotate(144deg) brightness(117%) contrast(100%)'
+        document.getElementById('skewer-mode-button').style.backgroundColor = '#9F65BB'
+        document.getElementById('skewer-mode-button').innerHTML = '<img id="skewer-laser" class="laser-icon" src="static/assets/laser.svg"/> Exit skewer mode'
+        document.getElementById('skewer-mode-description').innerHTML = 'Click on the volume to place skewers. Exit skewer mode to rotate the volume.'
     } else {
-        document.getElementById('skewer-laser').style.filter = ''
+        // document.getElementById('skewer-laser').style.filter = ''
+        document.getElementById('skewer-mode-button').style.backgroundColor = '#CDA2E1'
+        document.getElementById('skewer-mode-button').innerHTML = '<img id="skewer-laser" class="laser-icon" src="static/assets/laser.svg"/> Enter skewer mode'
+        document.getElementById('skewer-mode-description').innerHTML = 'Use skewer mode to place skewers on the volume.'
     }
 }
 
@@ -2112,13 +2164,30 @@ function retryLine(idx) {
     requestSpectrum(idx)
 }
 
+function getDateDiff(a, b) {
+    diff = Math.abs(b - a)
+    diff = Math.ceil(diff / (1000));
+    return diff
+}
+
 function requestSimpleLineData(idx) {
-    pt1 = scalePointCoords(skewers[idx].point1.clone())
-    pt2 = scalePointCoords(skewers[idx].point2.clone())
+    pt1 = scalePointCoords(skewers[idx].point1)
+    pt2 = scalePointCoords(skewers[idx].point2)
+
+    skewers[idx].cdStart = new Date()
+
+    buttonId = 'p1-range-' + idx + ''
+    div = document.getElementById(buttonId)
+    div.disabled = true
+
+    buttonId = 'p2-range-' + idx + ''
+    div = document.getElementById(buttonId)
+    div.disabled = true
 
     buttonId = 'simple-line-request-button-' + idx + ''
     div = document.getElementById(buttonId)
     div.disabled = true
+
     //console.log(pt1, pt2)
     sendLine(idx, pt1, pt2)
     div.innerText = 'requesting skewer data . . . '
@@ -2200,26 +2269,30 @@ function createColumnDensityInfoPanel(msg) {
     // this function creates the dropdown menu containing column density information along with accompanying graph
 
     idx = msg.index
+
+
     divID = 'simple-line-status-skewer-coords-' + idx + ''
     div = document.getElementById(divID)
 
     let dwnld_btn = document.createElement("button");
-    dwnld_btn.innerHTML = "download skewer attributes";
+    dwnld_btn.className = 'download-skewer-button'
+    dwnld_btn.innerHTML = "Download attributes";
     dwnld_btn.addEventListener("click", function () {
         downloadSkewerTable(msg)
     });
-    div.appendChild(dwnld_btn)
-    div.appendChild(document.createElement("br"))
 
     // Lists for plotting (FH)
-    quanName = ['T', 'n_H', 'K', 'Z','v_los', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
-    unitName = ['K', 'cm^-3', 'keV cm^2', 'Zsun','km/s', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'N(N VII)', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2','cm^-2', 'cm^-2','cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2','cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2']
+    quanName = ['T', 'n_H', 'K', 'Z', 'v_los', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
+    unitName = ['K', 'cm^-3', 'keV cm^2', 'Zsun', 'km/s', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'N(N VII)', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2', 'cm^-2']
     //
-    
-    dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity', 'LOS velocity','N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
+
+
+
+    dropdown_elements = ['temperature', 'density', 'entropy', 'metallicity', 'LOS velocity', 'N(H I)', 'N(H II)', 'N(C I)', 'N(C II)', 'N(C III)', 'N(C IV)', 'N(C V)', 'N(C VI)', 'N(He I)', 'N(He II)', 'N(He III)', 'N(Mg I)', 'N(Mg II)', 'N(Mg X)', 'N(N II)', 'N(N III)', 'N(N IV)', 'N(N V)', 'N(N VI)', 'N(N VII)', 'N(Na I)', 'N(Na IX)', 'N(Ne III)', 'N(Ne IV)', 'N(Ne V)', 'N(Ne VI)', 'N(Ne VIII)', 'N(O I)', 'N(O II)', 'N(O III)', 'N(O IV)', 'N(O V)', 'N(O VI)', 'N(O VII)', 'N(O VIII)', 'N(S II)', 'N(S III)', 'N(S IV)', 'N(S V)', 'N(S VI)', 'N(Si II)', 'N(Si III)', 'N(Si IV)', 'N(Si XII)']
     var select = document.createElement("select")
     select.name = 'simple-line-results-' + idx + ''
     select.id = 'simple-line-results-' + idx + ''
+    select.className = 'data_select'
 
     for (const el of dropdown_elements) {
         var option = document.createElement("option")
@@ -2228,13 +2301,18 @@ function createColumnDensityInfoPanel(msg) {
         select.appendChild(option)
     }
 
+    var attributeSelectionDiv = document.createElement("div")
+    attributeSelectionDiv.id = 'skewer-attribute-selection-' + idx + ''
+    attributeSelectionDiv.className = 'skewer-attribute-selection'
+
     var label = document.createElement("label")
-    label.innerHTML = "Choose attribute:"
+    label.innerHTML = "<div class='input-label'>Choose attribute:</div>"
     label.htmlfor = 'simple-line-results-' + idx + ''
 
-    div.appendChild(label).appendChild(select).append("br")
-    var margin = { top: 10, right: 20, bottom: 30, left: 60 },
-        width = 300 - margin.left - margin.right,
+    div.appendChild(attributeSelectionDiv).appendChild(label).appendChild(select)
+    div.appendChild(dwnld_btn)
+    var margin = { top: 10, right: 20, bottom: 30, left: 50 },
+        width = 320 - margin.left - margin.right,
         height = 200 - margin.top - margin.bottom;
 
     s = document.getElementById('simple-line-results-' + idx + '')
@@ -2328,15 +2406,15 @@ function createColumnDensityInfoPanel(msg) {
             for (i = 0; i < msg.i_l.length; i++) {
                 scaled_data[i] = { 'l': (msg.i_l[i] - i_min_l) / (i_max_l - i_min_l), 'c': (Math.log10(msg["i_" + s.value][i]) - i_min_val) / (i_max_val - i_min_val) }
             }
-        } 
-        
-   ////////  FH: LOS velocity below    
+        }
+
+        ////////  FH: LOS velocity below    
         else if (s.value == 'LOS velocity') {
 
             // DATA FOR GRAPH
             min_l = d3.min(msg.l)
             max_l = d3.max(msg.l)
-            
+
             min_val = d3.min(msg[s.value])
             max_val = d3.max(msg[s.value])
 
@@ -2355,8 +2433,8 @@ function createColumnDensityInfoPanel(msg) {
                 scaled_data[i] = { 'l': (msg.i_l[i] - i_min_l) / (i_max_l - i_min_l), 'c': (msg["i_" + s.value][i] - i_min_val) / (i_max_val - i_min_val) }
             }
         }
-  //////// 
-        
+        //////// 
+
         else {
 
             // DATA FOR GRAPH
@@ -2410,38 +2488,24 @@ function createColumnDensityInfoPanel(msg) {
 
         domainL = d3.extent(msg.l)
         var xScale = d3.scaleLinear()
-            .range([0, width + margin.left + margin.right])
+            .range([0, width])
             .domain(domainL);
-        
-// FH - edits below:
-        
+
+        // FH - edits below:
+
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(xScale).ticks(8));
 
         svg.append("text")
+            .attr('class', 'graph-labels')
             .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 30) + ")")
             .style("text-anchor", "middle")
+            .style("fill", "white")
             .text("Distance (kpc)")
 
         if (s.value == 'LOS velocity') {
 
-        var yScale = d3.scaleLinear()
-            .range([height, 0])
-            .domain([min_val, max_val]);
-        svg.append("g")
-            .call(d3.axisLeft(yScale)
-                .tickFormat(d3.format("1")))
-        svg.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 0 - margin.left - 5)
-            .attr("x", 0 - (height / 2))
-            .attr("dy", "0.9em")
-            .style("text-anchor", "middle")
-            .text(quanName[s.selectedIndex] + "(" + unitName[s.selectedIndex] + ")")
-        }
-        else {
-        
             var yScale = d3.scaleLinear()
                 .range([height, 0])
                 .domain([min_val, max_val]);
@@ -2449,14 +2513,35 @@ function createColumnDensityInfoPanel(msg) {
                 .call(d3.axisLeft(yScale)
                     .tickFormat(d3.format("1")))
             svg.append("text")
+                .attr('class', 'graph-labels')
                 .attr("transform", "rotate(-90)")
-                .attr("y", 0 - margin.left - 5)
+                .attr("y", 0 - margin.left)
                 .attr("x", 0 - (height / 2))
                 .attr("dy", "0.9em")
                 .style("text-anchor", "middle")
-                .text("log(" + quanName[s.selectedIndex] + "/" + unitName[s.selectedIndex] + ")")
-    
-            }
+                .style("fill", "white")
+
+                .text(quanName[s.selectedIndex] + "( " + unitName[s.selectedIndex] + " )")
+        }
+        else {
+
+            var yScale = d3.scaleLinear()
+                .range([height, 0])
+                .domain([min_val, max_val]);
+            svg.append("g")
+                .call(d3.axisLeft(yScale)
+                    .tickFormat(d3.format("1")))
+            svg.append("text")
+                .attr('class', 'graph-labels')
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "0.9em")
+                .style("text-anchor", "middle")
+                .style("fill", "white")
+                .text("log( " + quanName[s.selectedIndex] + " / " + unitName[s.selectedIndex] + " )")
+
+        }
 
         var line = d3.line()
             .x(d => xScale(d.l))
@@ -2499,12 +2584,13 @@ function createColumnDensityInfoPanel(msg) {
 
     domainL = d3.extent(msg.l)
     var xScale = d3.scaleLinear()
-        .range([0, width + margin.left + margin.right])
+        .range([0, width])
         .domain(domainL);
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(xScale).ticks(6));
     svg.append("text")
+        .attr('class', 'graph-labels')
         .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 30) + ")")
         .style("text-anchor", "middle")
         .text("Distance (kpc)")
@@ -2515,6 +2601,7 @@ function createColumnDensityInfoPanel(msg) {
     svg.append("g")
         .call(d3.axisLeft(yScale));
     svg.append("text")
+        .attr('class', 'graph-labels')
         .attr("transform", "rotate(-90)")
         .attr("y", 0 - margin.left)
         .attr("x", 0 - (height / 2))
@@ -2537,11 +2624,19 @@ function requestSpectrum(idx) {
      * * requestSpectrum() prepares and sends the coordinates of a skewer to the python backend for processing 
      * ? pt values are scaled since the voxelization process distorts the physical distances
      */
-
-    pt1 = scalePointCoords(skewers[idx].point1.clone())
-    pt2 = scalePointCoords(skewers[idx].point2.clone())
+    skewers[idx].skewerStart = new Date()
+    pt1 = scalePointCoords(skewers[idx].point1)
+    pt2 = scalePointCoords(skewers[idx].point2)
 
     buttonId = 'request-button-' + idx + ''
+    div = document.getElementById(buttonId)
+    div.disabled = true
+
+    buttonId = 'p1-range-' + idx + ''
+    div = document.getElementById(buttonId)
+    div.disabled = true
+
+    buttonId = 'p2-range-' + idx + ''
     div = document.getElementById(buttonId)
     div.disabled = true
     sendLine(idx, pt1, pt2)
@@ -2607,7 +2702,7 @@ function updateGraph() {
         }
     }
 
-    d3.select("#spectrum").selectAll(".graph").remove()
+    d3.select("#spectra-panel").selectAll(".graph").remove()
 
     if (skewerData.length) {
         for (i = 0; i < skewerData.length; i++) {
@@ -2646,7 +2741,7 @@ function updateGraph() {
                     }
                 }
 
-                var svg = d3.select("#spectrum")
+                var svg = d3.select("#spectra-panel")
                     .append("svg")
                     .attr("class", "graph")
                     .attr("id", "graph-" + idx + '')
@@ -2661,6 +2756,7 @@ function updateGraph() {
                     .attr("width", width)
                     .attr("height", height);
                 svg.append("g")
+                    // .attr('class', 'graph-labels')
                     .attr("transform", "translate(0," + height + ")")
                     .call(d3.axisBottom(xScale).ticks(6));
 
@@ -2668,11 +2764,13 @@ function updateGraph() {
 
                 if (ele == "Velocity Space") {
                     svg.append("text")
+                        .attr('class', 'graph-labels')
                         .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 30) + ")")
                         .style("text-anchor", "middle")
                         .text("V (km/s)")
                 } else {
                     svg.append("text")
+                        .attr('class', 'graph-labels')
                         .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 30) + ")")
                         .style("text-anchor", "middle")
                         .text("λ")
@@ -2682,16 +2780,18 @@ function updateGraph() {
                     .range([height, 0])
                     .domain(d3.extent(skewers[idx].flux));
                 svg.append("g")
+                    // .attr('class', 'graph-labels')
                     .call(d3.axisLeft(yScale));
 
                 // text label for the y axis
                 svg.append("text")
+                    .attr('class', 'graph-labels')
                     .attr("transform", "rotate(-90)")
                     .attr("y", 0 - margin.left)
                     .attr("x", 0 - (height / 2))
                     .attr("dy", "0.9em")
                     .style("text-anchor", "middle")
-                    .text("flux");
+                    .text("Flux");
 
                 var line = d3.line()
                     .x(d => xScale(d.lambda))
@@ -2703,6 +2803,7 @@ function updateGraph() {
                     .attr("d", line)
 
                 svg.append("text")
+                    .attr('class', 'graph-labels')
                     .attr("transform", "translate(-40,10)")
                     .text(idx)
 
@@ -2726,8 +2827,8 @@ function updateGraph() {
 
 function createBrush() {
     // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js
-    d3.select('#spectrum').selectAll('#depth-brush').remove();
-    let svg = d3.select('#spectrum').append('div').attr('id', 'depth-brush').append('svg')
+    d3.select('#spectra-panel').selectAll('#depth-brush').remove();
+    let svg = d3.select('#spectra-panel').append('div').attr('id', 'depth-brush').append('svg')
 
     let margin = { top: 10, right: 15, bottom: 30, left: 30 };
     let axis = svg.append('g');
@@ -2855,15 +2956,15 @@ function downloadSpectra() {
 }
 
 //DA request & receive plots from yt/python via socketio
-function requestYTPlots(galaxyID,rvir,center_coord_mpc,plot_type){
-    socket.emit('makePlots',simID,plot_type,galaxyID, center_coord_mpc, rvir, camera )
+function requestYTPlots(galaxyID, rvir, center_coord_mpc, plot_type) {
+    socket.emit('makePlots', simID, plot_type, galaxyID, center_coord_mpc, rvir, camera)
 }
 var image_data
-function receiveYTPlots(msg){
+function receiveYTPlots(msg) {
     image_data = msg
     const image = document.createElement('img')
     //console.log(msg.image_url)
-    image.src  = msg.image_url
+    image.src = msg.image_url
     document.getElementById('YTPlots').innerHTML = ''
     document.getElementById('YTPlots').appendChild(image)
 
@@ -2879,28 +2980,30 @@ function receiveYTPlots(msg){
 //  .........FH create galaxy brush function.........
 async function createGalaxyFilteringBrushes(attr, field, sim) {
 
+    attrNoSpace = attr.replaceAll(' ', '-')
+
     sim = document.getElementById("sim_size_select").value
     //console.log('createGalaxyFilteringBrushes function', sim)
-
-    d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
-    let svg = d3.select('#galaxy-filter-criteria').append('div').attr('id', attr + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
+    d3.select('#galaxy-filter-criteria').append('div').attr('id', attrNoSpace + 'galaxy-brush-container').attr('class', 'galaxy-brush-container')
+    d3.select('#' + attrNoSpace + 'galaxy-brush-container').append('div').attr('id', attrNoSpace + 'galaxy-brush-label').attr('class', 'galaxy-brush').append('text').text(attr)
+    let svg = d3.select('#' + attrNoSpace + 'galaxy-brush-container').append('div').attr('id', attrNoSpace + 'galaxy-brush').attr('class', 'galaxy-brush').append('svg')
 
     var check = document.createElement("INPUT");
     check.setAttribute("type", "checkbox");
-    document.getElementById(attr + 'galaxy-brush-label').prepend(check)
+    document.getElementById(attrNoSpace + 'galaxy-brush-label').prepend(check)
 
 
     // checkState determines if checkbox is clicked
     check.addEventListener('change', e => {
         galaxyBrushHistory[attr].checkState = e.target.checked
-//         //console.log('new check', galaxyBrushHistory)
+        //         //console.log('new check', galaxyBrushHistory)
         // //console.log('new check 2',attr)
         filterGalaxies(sim)
     })
 
     // changing simulation changes the entire query
     document.getElementById("sim_size_select").addEventListener('change', e => {
-//         //console.log('inside sim select event listener', sim)
+        //         //console.log('inside sim select event listener', sim)
         galIds_doc.innerText = ''
         haloIds_doc.innerText = ''
 
@@ -2915,7 +3018,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
         filterGalaxies(sim)
     })
 
-    let margin = { top: 20, right: 15, bottom: 30, left: 20 };
+    let margin = { top: 20, right: 15, bottom: 30, left: 0 };
     let width = 300,
         height = 40
     let axis = svg.append('g');
@@ -2928,14 +3031,14 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
     if (sim) {
 
-       // need the big 100 Mpc box here!!
+        // need the big 100 Mpc box here!!
         const data = await d3.json('static/data/RefL0100N1504/galaxies_RefL0100N1504.json')
 
         // //console.log(data,'json response')
 
         if (data) {
 
-//             //console.log('eagle data', data)
+            //             //console.log('eagle data', data)
 
             // set the min and max:
             const data_length = data.length
@@ -3009,7 +3112,7 @@ async function createGalaxyFilteringBrushes(attr, field, sim) {
 
             galaxyBrushHistory[attr].ranges = ret.slice()
 
-//             ////console.log('brush history', galaxyBrushHistory)
+            //             ////console.log('brush history', galaxyBrushHistory)
             filterGalaxies(sim)
         }
 
@@ -3053,7 +3156,7 @@ async function filterGalaxies(sim) {
         }
     }
 
-//     //console.log('after filtering properly', filteredData)
+    //     //console.log('after filtering properly', filteredData)
 
     for (const attr in galaxyBrushHistory) {
 
@@ -3073,7 +3176,7 @@ async function filterGalaxies(sim) {
             var filteredGalIds = filteredData.map(d => d.galID)
             var filteredHaloIds = filteredData.map(d => d.haloID)
             var filteredProps = filteredData.map(d => d[field])
-            
+
             filteredProps.forEach(e => propList[attr].push(e)) //append to list for plotting
 
             var filteredX = filteredData.map(d => d['gal_x'])
@@ -3110,7 +3213,7 @@ async function filterGalaxies(sim) {
                     rvir = filteredrh[i] / 1000
                     galaxyID = filteredGalIds[i]
                     plot_type = "2D_phase"
-                    requestYTPlots(galaxyID,rvir,center_coord_mpc,plot_type)
+                    requestYTPlots(galaxyID, rvir, center_coord_mpc, plot_type)
                     // goToPoint(filteredX[i],filteredY[i],filteredZ[i],dl*5)
                 })
             }
@@ -3131,7 +3234,7 @@ async function filterGalaxies(sim) {
 
         }
     }
-    
+
     //console.log(propList)
     plotProps(propList)
 
@@ -3143,7 +3246,7 @@ async function filterGalaxies(sim) {
 function plotProps(alldata) {
 
     //console.log('in plotting fn',alldata)
-    
+
     // remove old dropdowns:
     d3.select('#galPropX').selectAll("*").remove()
     d3.select('#galPropY').selectAll("*").remove()
@@ -3152,7 +3255,7 @@ function plotProps(alldata) {
     dvx = document.getElementById('galPropX')
     dvy = document.getElementById('galPropY')
 
-    dropdown_elements = ['halo mass','stellar mass', 'sfr', 'gas mass']
+    dropdown_elements = ['halo mass', 'stellar mass', 'sfr', 'gas mass']
 
     var selectX = document.createElement("select")
     selectX.name = 'galaxy-prop-x'
@@ -3190,7 +3293,7 @@ function plotProps(alldata) {
 
     //make plots at change of dropdown option:
 
-    sx.onchange = function() {
+    sx.onchange = function () {
 
         attrx = sx.value
         attry = sy.value
@@ -3203,13 +3306,13 @@ function plotProps(alldata) {
         let minXScale, maxXScale, minYScale, maxYScale
 
         var margin = { top: 15, right: 25, bottom: 15, left: 85 },
-        width = 400 - margin.left - margin.right,
-        height = 200 - margin.top - margin.bottom;
-       
+            width = 400 - margin.left - margin.right,
+            height = 200 - margin.top - margin.bottom;
+
         datax = alldata[sx.value]
         datay = alldata[sy.value]
 
-//         //console.log('plot data',datax,datay)
+        //         //console.log('plot data',datax,datay)
 
         data = []
 
@@ -3219,42 +3322,44 @@ function plotProps(alldata) {
 
         const x_length = datax.length
         const y_length = datay.length
-        
-        minXScale = d3.min(datax) -  (0.1*d3.min(datax))  // just giving the axis limits a little wiggle room
-        maxXScale = d3.max(datax) +  (0.1*d3.max(datax))
 
-        minYScale = d3.min(datay) -  (0.1*d3.min(datay))
-        maxYScale = d3.max(datay) +  (0.1*d3.max(datay))
+        minXScale = d3.min(datax) - (0.1 * d3.min(datax))  // just giving the axis limits a little wiggle room
+        maxXScale = d3.max(datax) + (0.1 * d3.max(datax))
+
+        minYScale = d3.min(datay) - (0.1 * d3.min(datay))
+        maxYScale = d3.max(datay) + (0.1 * d3.max(datay))
 
         var svg = d3.select('#galPropPlot')
-        .append("svg")
-        .attr("class", "graph")
-        .attr("width", width + margin.right)
-        .attr("height", height + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .append("svg")
+            .attr("class", "graph")
+            .attr("width", width + margin.right)
+            .attr("height", height + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         // Set x and y-axis scales
         var xScale = d3.scaleLog()
-            .domain([minXScale,maxXScale])
+            .domain([minXScale, maxXScale])
             .range([0, width + margin.left + margin.right])
 
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(xScale).ticks(4));
         svg.append("text")
+            .attr('class', 'graph-labels')
             .attr("transform", "translate(" + (width / 2 + 50) + " ," + (height + margin.top + 20) + ")")
             .style("text-anchor", "middle")
             .text(attrx)
 
         var yScale = d3.scaleLog()
-            .domain([minYScale,maxYScale])
+            .domain([minYScale, maxYScale])
             .range([height, 0])
 
         svg.append("g")
             .call(d3.axisLeft(yScale).ticks(4));
 
         svg.append("text")
+            .attr('class', 'graph-labels')
             .attr("transform", "rotate(-90)")
             .attr("y", 0 - margin.left + 35)
             .attr("x", 0 - (height / 2))
@@ -3273,7 +3378,7 @@ function plotProps(alldata) {
 
     }
 
-    sy.onchange = function() {
+    sy.onchange = function () {
 
         attrx = sx.value
         attry = sy.value
@@ -3286,13 +3391,13 @@ function plotProps(alldata) {
         let minXScale, maxXScale, minYScale, maxYScale
 
         var margin = { top: 15, right: 25, bottom: 15, left: 85 },
-        width = 400 - margin.left - margin.right,
-        height = 200 - margin.top - margin.bottom;
-       
+            width = 400 - margin.left - margin.right,
+            height = 200 - margin.top - margin.bottom;
+
         datax = alldata[sx.value]
         datay = alldata[sy.value]
 
-//         //console.log('plot data',datax,datay)
+        //         //console.log('plot data',datax,datay)
 
         data = []
 
@@ -3303,41 +3408,43 @@ function plotProps(alldata) {
         const x_length = datax.length
         const y_length = datay.length
 
-        minXScale = d3.min(datax) -  (0.1*d3.min(datax))  // just giving the axis limits a little wiggle room
-        maxXScale = d3.max(datax) +  (0.1*d3.max(datax))
+        minXScale = d3.min(datax) - (0.1 * d3.min(datax))  // just giving the axis limits a little wiggle room
+        maxXScale = d3.max(datax) + (0.1 * d3.max(datax))
 
-        minYScale = d3.min(datay) -  (0.1*d3.min(datay))
-        maxYScale = d3.max(datay) +  (0.1*d3.max(datay))
+        minYScale = d3.min(datay) - (0.1 * d3.min(datay))
+        maxYScale = d3.max(datay) + (0.1 * d3.max(datay))
 
         var svg = d3.select('#galPropPlot')
-        .append("svg")
-        .attr("class", "graph")
-        .attr("width", width + margin.right)
-        .attr("height", height + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .append("svg")
+            .attr("class", "graph")
+            .attr("width", width + margin.right)
+            .attr("height", height + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         // Set x and y-axis scales
         var xScale = d3.scaleLog()
-            .domain([minXScale,maxXScale])
+            .domain([minXScale, maxXScale])
             .range([0, width + margin.left + margin.right])
 
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(xScale).ticks(4));
         svg.append("text")
+            .attr('class', 'graph-labels')
             .attr("transform", "translate(" + (width / 2 + 50) + " ," + (height + margin.top + 20) + ")")
             .style("text-anchor", "middle")
             .text(attrx)
 
         var yScale = d3.scaleLog()
-            .domain([minYScale,maxYScale])
+            .domain([minYScale, maxYScale])
             .range([height, 0])
 
         svg.append("g")
             .call(d3.axisLeft(yScale).ticks(4));
 
         svg.append("text")
+            .attr('class', 'graph-labels')
             .attr("transform", "rotate(-90)")
             .attr("y", 0 - margin.left + 35)
             .attr("x", 0 - (height / 2))
@@ -3361,11 +3468,11 @@ function plotProps(alldata) {
 
 function createXYZBrush(xyz) {
     // https://github.com/CreativeCodingLab/DynamicInfluenceNetworks/blob/master/src/js/focusSlider.js 
-    d3.select('#terminal').append('div').attr('id', xyz + '-depth-brush-label').attr('class', 'depth-brush').append('text').text(xyz)
-    let svg = d3.select('#terminal').append('div').attr('id', xyz + '-depth-brush').attr('class', 'depth-brush').append('svg')
+    d3.select('#navigation').append('div').attr('id', xyz + '-depth-brush-label').attr('class', 'depth-brush').append('text').text(xyz)
+    let svg = d3.select('#navigation').append('div').attr('id', xyz + '-depth-brush').attr('class', 'depth-brush').append('svg')
 
     let margin = { top: 20, right: 15, bottom: 30, left: 20 };
-    let width = 300,
+    let width = 343,
         height = 40
 
     let axis = svg.append('g');
@@ -3592,28 +3699,28 @@ function checkSelectedSimID() {
     }
 }
 
-function getDate(){
+function getDate() {
     var objToday = new Date(),
-	weekday = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'),
-	dayOfWeek = weekday[objToday.getDay()],
-	domEnder = function() { var a = objToday; if (/1/.test(parseInt((a + "").charAt(0)))) return "th"; a = parseInt((a + "").charAt(1)); return 1 == a ? "st" : 2 == a ? "nd" : 3 == a ? "rd" : "th" }(),
-	dayOfMonth = today + ( objToday.getDate() < 10) ? '0' + objToday.getDate() + domEnder : objToday.getDate() + domEnder,
-	months = new Array('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'),
-	curMonth = months[objToday.getMonth()],
-	curYear = objToday.getFullYear(),
-	curHour = objToday.getHours() > 12 ? objToday.getHours() - 12 : (objToday.getHours() < 10 ? "0" + objToday.getHours() : objToday.getHours()),
-	curMinute = objToday.getMinutes() < 10 ? "0" + objToday.getMinutes() : objToday.getMinutes(),
-	curSeconds = objToday.getSeconds() < 10 ? "0" + objToday.getSeconds() : objToday.getSeconds(),
-	curMeridiem = objToday.getHours() > 12 ? "PM" : "AM";
+        weekday = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'),
+        dayOfWeek = weekday[objToday.getDay()],
+        domEnder = function () { var a = objToday; if (/1/.test(parseInt((a + "").charAt(0)))) return "th"; a = parseInt((a + "").charAt(1)); return 1 == a ? "st" : 2 == a ? "nd" : 3 == a ? "rd" : "th" }(),
+        dayOfMonth = today + (objToday.getDate() < 10) ? '0' + objToday.getDate() + domEnder : objToday.getDate() + domEnder,
+        months = new Array('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'),
+        curMonth = months[objToday.getMonth()],
+        curYear = objToday.getFullYear(),
+        curHour = objToday.getHours() > 12 ? objToday.getHours() - 12 : (objToday.getHours() < 10 ? "0" + objToday.getHours() : objToday.getHours()),
+        curMinute = objToday.getMinutes() < 10 ? "0" + objToday.getMinutes() : objToday.getMinutes(),
+        curSeconds = objToday.getSeconds() < 10 ? "0" + objToday.getSeconds() : objToday.getSeconds(),
+        curMeridiem = objToday.getHours() > 12 ? "PM" : "AM";
     var today = curHour + ":" + curMinute + "." + curSeconds + curMeridiem + " " + dayOfWeek + " " + dayOfMonth + " of " + curMonth + ", " + curYear;
     return objToday
 }
 
-function checkMobile(){
+function checkMobile() {
     var isMobile = false; //initiate as false
     // device detection
-    if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(navigator.userAgent) 
-        || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(navigator.userAgent.substr(0,4))) { 
+    if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(navigator.userAgent)
+        || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(navigator.userAgent.substr(0, 4))) {
         isMobile = true;
     }
     return isMobile;
@@ -3621,39 +3728,39 @@ function checkMobile(){
 
 var logs = []
 // PREFERRED METHOD FOR LOGGING -- CONSOLE.LOG() BAD
-function write2Log(msg, lvl, cmnt, tag ){
+function write2Log(msg, lvl, cmnt, tag) {
     // msg == can be any variable type, ideally a string for readability.
     // lvl == log level [ 0 DEBUG, 1 ERROR, 2 INFO, 3 WARN ]
     // cmnt == any string comment to go along with the message
     // tag == a string, or list of strings, describing the context for the error. (ex: [ skewer, ui ] )
-    
+
     // push message to global 'logs' variable along with some metadata
     logs.header = ['message', 'log_level', 'comments', 'tags', 'simID', 'grid_size', 'timestamp', 'browser_info', 'isMobile?']
     logs.push(
-        [msg,lvl,cmnt,tag,simID,gridsize,getDate(),navigator,checkMobile()]
+        [msg, lvl, cmnt, tag, simID, gridsize, getDate(), navigator, checkMobile()]
     )
 
     // print to console based on set Logger.level. Default is off
-    if      ( lvl == 0 || lvl == 'DEBUG' ){
+    if (lvl == 0 || lvl == 'DEBUG') {
         Logger.trace(msg)
     }
-    else if ( lvl == 1 || lvl == 'ERROR' ){
+    else if (lvl == 1 || lvl == 'ERROR') {
         Logger.error(msg)
     }
-    else if ( lvl == 2 || lvl == 'INFO' ){
+    else if (lvl == 2 || lvl == 'INFO') {
         Logger.info(msg)
     }
-    else if ( lvl == 3 || lvl == 'WARN' ){
+    else if (lvl == 3 || lvl == 'WARN') {
         Logger.warn(msg)
     }
 }
 
 // send logs to Flask server when user navigates away from screen
-document.addEventListener('visibilitychange', function() {
-    write2Log('send log to server', 'INFO', null, 'log' )
+document.addEventListener('visibilitychange', function () {
+    write2Log('send log to server', 'INFO', null, 'log')
     console.log(logs)
-    if (document.visibilityState == 'hidden') { 
-        socket.emit("js_logs", {'log': JSON.stringify(logs), 'header':JSON.stringify(logs.header) });
+    if (document.visibilityState == 'hidden') {
+        socket.emit("js_logs", { 'log': JSON.stringify(logs), 'header': JSON.stringify(logs.header) });
     }
 });
 
@@ -3676,7 +3783,7 @@ function init() {
     scene.background = new THREE.Color("rgb(4,6,23)")
 
     // camera = new THREE.OrthographicCamera( window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 0.0001, 10000 );
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 4000);
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
 
     camera.layers.enable(0);
     camera.layers.enable(1);
@@ -3689,7 +3796,7 @@ function init() {
     renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(1);
-    
+
     renderer.antialias = true;
     renderer.precision = 'highp';
     renderer.powerPreference = 'high-performance'
@@ -3697,6 +3804,7 @@ function init() {
     renderer.gammaFactor = 4.2;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.logarithmicDepthBuffer = true
+    renderer.localClippingEnabled = true;
 
     // renderer.context.canvas.addEventListener("webglcontextlost", function(event) {
     //     event.preventDefault();
@@ -3722,13 +3830,13 @@ function init() {
     controls.rotateSpeed = 10.0;
     controls.zoomSpeed = 1.0;
     controls.panSpeed = 5.0;
-    controls.staticMoving = false
+    controls.staticMoving = true
     controls.dynamicDampingFactor = 0.5
     // controls.keys
     // controls.enableDamping = true
     // controls.panSpeed = 0.1
     controls.rotateSpeed = 4;
-    controls.dampingFactor = 0.2;
+    controls.dampingFactor = 1;
     controls.addEventListener('change', requestRenderIfNotRequested)
     controls.enableKeys = true
     controls.update()
@@ -3744,6 +3852,7 @@ function init() {
                 camera.zoom = 0.1
             }
         }
+        updateCameraNearAndFar()
         // var x = ( event.clientX / window.innerWidth ) * 2 - 1,
         // y = - ( event.clientY / window.innerHeight ) * 2 + 1,
         // vector = new THREE.Vector3(x, y, 1),
@@ -3756,16 +3865,16 @@ function init() {
         camera.updateProjectionMatrix();
     })
 
-// for going back to full box view:
-//     window.addEventListener('dblclick', (e) => {
-//         // updateXYZDomain('x',0.0,1.0) 
-//         // updateXYZDomain('y',0.0,1.0) 
-//         // updateXYZDomain('z',0.0,1.0)
-//         // //console.log('dblclk',width_Mpc/2)
-//         goToPoint(width_Mpc / 2, width_Mpc / 2, width_Mpc / 2, 0.5)
-//         camera.zoom = 1.0
-//     })
-    
+    // for going back to full box view:
+    //     window.addEventListener('dblclick', (e) => {
+    //         // updateXYZDomain('x',0.0,1.0) 
+    //         // updateXYZDomain('y',0.0,1.0) 
+    //         // updateXYZDomain('z',0.0,1.0)
+    //         // //console.log('dblclk',width_Mpc/2)
+    //         goToPoint(width_Mpc / 2, width_Mpc / 2, width_Mpc / 2, 0.5)
+    //         camera.zoom = 1.0
+    //     })
+
 
     // document.onkeydown = onKeyDown
     document.addEventListener('keyup', onKeyUp, false)
@@ -3834,6 +3943,7 @@ function onMouseMove(event) {
     // mouse.y = ( event.clientY - windowHalf.x );
     mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
     mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+    updateCameraNearAndFar()
 
     starCaster()
 
@@ -3972,21 +4082,27 @@ function onMouseClick(event) {
         div = document.getElementById(id)
         id = 'skewer-coords-pt1-range-' + idx + ''
         id_range = "p1-range-" + idx + ''
-        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id=' + id + '>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
+        // div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id=' + id + '>point 1:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt1-range" id=' + id + '>point 1:</div>')
         div = document.getElementById(id)
+
         id = "skewer-coords-point1-" + idx + ''
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id=' + id + '> ( ' + round(point1.x * (edges.right_edge[0] / gridsize), 3) + ', ' + round(point1.y * (edges.right_edge[1] / gridsize), 3) + ', ' + round(point1.z * (edges.right_edge[0] / gridsize), 3) + ' ) Mpc </div>')
-        //console.log(point1)
-        //console.log(point1.x * (edges.right_edge[0] / gridsize))
+
+        div.insertAdjacentHTML('beforeend', '<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div>')
+
         //create div to show pt2 details and range slider
         id = 'skewer-coords-' + idx
         div = document.getElementById(id)
         id = 'skewer-coords-pt2-range-' + idx + ''
         id_range = "p2-range-" + idx + ''
-        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="' + id + '">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
+        // div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="' + id + '">point 2:<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div></div>')
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-pt skewer-coords-pt2-range" id="' + id + '">point 2:</div>')
+
         div = document.getElementById(id)
         id = "skewer-coords-point2-" + idx + ''
         div.insertAdjacentHTML('beforeend', '<div class="skewer-coords skewer-coords-values" id="' + id + '">( ' + round(point2.x * (edges.right_edge[0] / gridsize), 3) + ', ' + round(point2.y * (edges.right_edge[1] / gridsize), 3) + ', ' + round(point2.z * (edges.right_edge[0] / gridsize), 3) + ' ) Mpc </div>')
+        div.insertAdjacentHTML('beforeend', '<div class="slider-wrapper"><input type="range" id="' + id_range + '" class="pt-range" min="0" max="' + dist + '" step="0.00000001" value="0.0" onChange="updateUniforms()"></div>')
 
         //create event listeners for the range sliders
         p1slider = document.getElementById('p1-range-' + idx + '')
@@ -4037,14 +4153,14 @@ function onMouseClick(event) {
         // button for requesting column density data
         id = 'skewer-coords-' + idx
         div = document.getElementById(id)
-        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords simple-line-status" id="simple-line-status-' + id + '">   <button type="button" onclick="requestSimpleLineData(' + idx + ')" class="request-button button simple-line-status" id="simple-line-request-button-' + idx + '">request skewer attributes</button> </div>');
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords simple-line-status" id="simple-line-status-' + id + '">   <button type="button" onclick="requestSimpleLineData(' + idx + ')" class="request-button button simple-line-status" id="simple-line-request-button-' + idx + '">Request skewer attributes</button> </div>');
 
         // hook for plotting that graph + dropdown
 
         //create div for REQUEST button and STATUS message below skewer details
         id = 'skewer-coords-' + idx
         div = document.getElementById(id)
-        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum(' + idx + ')" class="request-button button spectra-status" id="request-button-' + idx + '">request spectrum</button> <hr> </div>');
+        div.insertAdjacentHTML('beforeend', '<div class="skewer-coords spectra-status" id="spectra-status-' + id + '">   <button type="button" onclick="requestSpectrum(' + idx + ')" class="request-button button spectra-status" id="request-button-' + idx + '">Request spectrum</button> </div>');
     }
 
     function saveLine(idx, point1, point2) {
@@ -4064,7 +4180,7 @@ function onMouseClick(event) {
 
 function cylinderMesh(pointX, pointY) {
     // edge from X to Y
-
+    console.log(pointX, pointY)
     let direction = new THREE.Vector3().subVectors(pointY, pointX);
     // let skewerMaterial = new THREE.MeshBasicMaterial({ color: 0x5B5B5B });
 
@@ -4084,6 +4200,7 @@ function cylinderMesh(pointX, pointY) {
             u_low_col: { value: new THREE.Vector4(low_col.r, low_col.g, low_col.b, 1.0) },
             u_high_col: { value: new THREE.Vector4(high_col.r, high_col.g, high_col.b, 1.0) },
             skewer_tex: { value: emptyTexture },
+            u_size: { value: new THREE.Vector3(gridsize, gridsize, gridsize) }
         },
         vertexShader: document.getElementById('vertexshader-skewer').textContent,
         fragmentShader: document.getElementById('fragmentshader-skewer').textContent,
@@ -4094,6 +4211,7 @@ function cylinderMesh(pointX, pointY) {
         depthTest: true,
         depthWrite: true,
         transparent: false,
+        blending: THREE.NormalBlending,
         // dithering: true,
         // vertexColors: false,
         // morphTargets: true,
@@ -4215,6 +4333,14 @@ function initColor() {
     changeColor()
 }
 
+function reloadCss() {
+    var links = document.getElementsByTagName("link");
+    for (var cl in links) {
+        var link = links[cl];
+        if (link.rel === "stylesheet")
+            link.href += "";
+    }
+}
 
 function onWindowResize() {
     camera.left = window.innerWidth / -2

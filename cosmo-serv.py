@@ -27,8 +27,8 @@ app = Flask(__name__)
 #Start SocketIO
 async_mode = 'eventlet'
 # amqp://cosmovis:sivomsoc@localhost:5672//
-socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
-# socketio = SocketIO(app,message_queue='amqp://cosmovis:sivomsoc@localhost:5672',cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000)#,logger=True, engineio_logger=True)
+socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=False, engineio_logger=False)
+# socketio = SocketIO(app,message_queue='amqp://cosmovis:sivomsoc@localhost:5672',cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=False, engineio_logger=False)
 
 # import pdb; pdb.set_trace()
 
@@ -55,7 +55,7 @@ def before_first_request():
 def webhook():
     if request.headers['Content-Type'] == 'application/json':
         info = json.dumps(request.json)
-        print(info)
+        # print(info)
 #         threading.Thread(target=lambda: [time.sleep(2), os.system('systemctl restart cosmovis.service')]).start()
         os.system('/bin/bash update.sh')
         return info
@@ -64,7 +64,7 @@ js_logs = []
 # @app.route('/js_logs', methods=['POST'])
 @socketio.on('js_logs',namespace="/test")
 def logs(incoming_log):
-    print("received log")
+    # print("received log")
     # print(incoming_log)
     js_logs.append(incoming_log)
     # save logs to new json file
@@ -72,8 +72,8 @@ def logs(incoming_log):
     with open('logs/js_logs_' + datetime.now().strftime("%d%b%Y_%Hh%Mm%Ss") +'.json', 'a+') as f:
         json.dump(incoming_log, f)
     # import pdb; pdb.set_trace()
-    print(json.loads(incoming_log['header']))
-    print(json.loads(incoming_log['log']))
+    # print(json.loads(incoming_log['header']))
+    # print(json.loads(incoming_log['log']))
     return incoming_log
 
 # route() decorator is used to define the URL where index() function is registered for
@@ -100,7 +100,7 @@ def handle_ray_selection(simID,idx, start, end):
     if path.exists('static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json'):
         socketio.emit( 'synthetic_spectrum_saved', {'index': 'static/data/skewers/'+simID+'_'+str(idx)+'_'+str(start)+'_'+str(end)+'.json'}, namespace = '/test' )
     else:
-        print(simID,idx, start, end)
+        # print(simID,idx, start, end)
          # the actual code for computing the spectra can be found in 'celery_tasks.py', which is imported in this script
          # '.delay()' is used to have the task run by celery async in the background
         result = celery_tasks.make_synthetic_spectrum.delay(simID,idx, start, end)
@@ -154,8 +154,8 @@ def updateSimID(simID):
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
-    print("connected")
+    # print("connected")
     emit('my_response', {'data': 'Connected', 'count': 0})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
