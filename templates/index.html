@@ -28,6 +28,7 @@
     <script type="text/javascript" src="{{ url_for('static', filename='libs/LineSegments2.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='libs/Line2.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='shaders/VolumeShader.js') }}"></script>
+    
 
 
     <!-- DOM manipulation -- makes containers dragable -->
@@ -243,13 +244,20 @@
                     for (i = 0; i < field_list.length; i++) {
                         if (field_list[i][0] == 'PartType0') {
                             console.log(field_list[i])
-                            if ((field_list[i][1] == 'Temperature') ||
+                            if( (field_list[i][1] == 'Temperature') ||
                                 (field_list[i][1] == 'Entropy') ||
                                 (field_list[i][1] == 'Metallicity') ||
                                 (field_list[i][1] == 'Density') ||
-                                (field_list[i][1] == 'Carbon') ||
-                                (field_list[i][1] == 'Oxygen')) {
-                                var select = document.getElementById("gas_select");
+                                // (field_list[i][1] == 'Pressure') ||
+                                (field_list[i][1] == 'pressure') ||
+                                // (field_list[i][1] == 'Mach_number') ||
+                                (field_list[i][1] == 'Machnumber') ||
+                                (field_list[i][1] == 'tcool_tff') ||
+                                (field_list[i][1] == 'xray_luminosity_0.1_2_keV')
+                                // (field_list[i][1] == 'Carbon') ||
+                                // (field_list[i][1] == 'Oxygen') 
+                                ){
+                                var select = document.getElementById("gas_select"); 
                                 var option = document.createElement("option");
                                 option.text = field_list[i][1];
                                 select.add(option);
@@ -322,7 +330,6 @@
             socket.on('plot_made', function (msg) {
                 console.log(msg)
                 console.log('yt plots received')
-
                 receiveYTPlots(msg)
             });
 
@@ -387,6 +394,7 @@
     <script type="text/javascript" src="{{ url_for('static', filename='libs/OrbitControls.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='libs/TrackballControls.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/cosmo-vis.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='libs/require.js') }}"></script>
     <script>
 
         function toggleLayer(l) {
@@ -513,11 +521,30 @@
             updateUniforms()
         }
 
-        async function requestPoints(size, type, attr) {
-            if (attr != 'Select an attribute') {
-                if (type == 'PartType0') {
-                    var gas = await loadGas(size, attr, false)
+        //OG async requestPoints fn:
+        // async function requestPoints(size,type,attr){
+        //     if(attr != 'Select an attribute'){
+        //         if(type == 'PartType0'){
+        //             var gas = await loadGas(size,attr,false)
+        //             var update = await update3dDataTexture()
+        //         }
+        //     }
+        // }
+        
+        //FH async requestPoints fn:
+        async function requestPoints(zoom_bool,size,type,attr,halos){
+            if(attr != 'Select an attribute'){
+                if(type == 'PartType0'){
+                    if (zoom_bool) {                    
+                    var zoomGas = await loadZoomGas(size, attr, false, halos)
+                    var zoomUpdate = await update3dDataTexture()
+                    }
+                    
+                    if (!zoom_bool) {
+                    var gas = await loadGas(size,attr,false)
                     var update = await update3dDataTexture()
+                    }
+
                 }
             }
         }
@@ -681,7 +708,22 @@
             }
         }
 
-        function gui() {
+        function home(){
+            width_Mpc = (edges.right_edge[0] - edges.left_edge[0])
+
+            // window.addEventListener('dblclick', (e) => {
+            // // updateXYZDomain('x',0.0,1.0) 
+            // // updateXYZDomain('y',0.0,1.0) 
+            // // updateXYZDomain('z',0.0,1.0)
+            // // console.log('dblclk',width_Mpc/2)
+            goToPoint(width_Mpc/2,width_Mpc/2,width_Mpc/2,0.5)
+            camera.zoom = 1.0
+            camera.updateProjectionMatrix()
+            updateUniforms() 
+            // })
+        }
+
+        function gui(){
             var x = document.getElementById("my-gui-container");
             if (x.style.display === "block") {
                 x.style.display = "none";
@@ -1219,34 +1261,42 @@
                 <table>
                     <thead>
                         <tr>
-                            <td> Galaxy ID</td>
-                            <td> Halo ID</td>
-                            <td> Stellar Mass (M<sub>&#9737;</sub>)</td>
+                            <td> Galaxy ID</td> 
+                            <td> Halo ID</td> 
                             <td> Halo Mass (M<sub>&#9737;</sub>) </td>
+                            <td> Stellar Mass (M<sub>&#9737;</sub>)</td>
                             <td> SFR (M<sub>&#9737;</sub>/yr)</td>
                             <td> Gas Mass (M<sub>&#9737;</sub>)</td>
+                            <td> BH Mass (M<sub>&#9737;</sub>)</td>
+                            <td> M<sub>&#9733;</sub> > 10<sup>8</sup> M<sub>&#9737;</sub> galaxies</td>
                         </tr>
                     </thead>
                     <tbody id="gal-tbody">
                         <tr id='galdata'>
                             <td>
                                 <ul id='galid' style="list-style-type:none;"> </ul>
-                            </td>
-                            <td>
+                                </td>
+                                <td>
                                 <ul id='haloid' style="list-style-type:none;"> </ul>
-                            </td>
-                            <td>
-                                <ul id='ms' style="list-style-type:none;"> </ul>
-                            </td>
-                            <td>
-                                <ul id='mh' style="list-style-type:none;"> </ul>
-                            </td>
-                            <td>
+                                </td>
+                                <td>
+                                <ul id='mh' style="list-style-type:none;"> </ul> 
+                                </td> 
+                                <td>
+                                <ul id='ms' style="list-style-type:none;"> </ul>    
+                                </td>                    
+                                <td>
                                 <ul id='sfr' style="list-style-type:none;"> </ul>
-                            </td>
-                            <td>
+                                </td> 
+                                <td>
                                 <ul id='mg' style="list-style-type:none;"> </ul>
-                            </td>
+                                </td> 
+                                <td>
+                                <ul id='mbh' style="list-style-type:none;"> </ul>
+                                </td> 
+                                <td>
+                                <ul id='num_gal' style="list-style-type:none;"> </ul>
+                                </td> 
                         </tr>
                     </tbody>
                 </table>

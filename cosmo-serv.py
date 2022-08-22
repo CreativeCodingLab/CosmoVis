@@ -1,15 +1,27 @@
-#Start celery_tasks.py first: `celery worker -A celery_tasks.celery --loglevel=info -P eventlet` 
-#Then run this: python cosmo-serv.py in a different terminal window
-
 import eventlet
-eventlet.monkey_patch(os=False)
+eventlet.monkey_patch()
+
+# app.py
+import multiprocessing
+import threading
 from flask import Flask, jsonify, request, render_template, session, copy_current_request_context
 from flask_compress import Compress
+import yt
+from yt import YTArray
+import trident
+import numpy as np
+from astropy.io import fits
+from astropy.table import Table
 import json
+import yt.units as units
+from yt.visualization.volume_rendering.api import PointSource
+from yt.units import kpc
+import pylab
 from itertools import product
 from flask import Response, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, close_room, rooms, disconnect
 import random
+import mpi4py
 from mpi4py import MPI
 import os.path
 from os import path
@@ -22,6 +34,8 @@ from datetime import datetime
 #Flask-io / socketio :  gives Flask applications 
 # access to low latency bi-directional communications
 # between the clients and the server.
+ 
+async_mode = 'eventlet'
 app = Flask(__name__)
 
 #Start SocketIO
@@ -29,9 +43,6 @@ async_mode = 'eventlet'
 # amqp://cosmovis:sivomsoc@localhost:5672//
 socketio = SocketIO(app, message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=False, engineio_logger=False)
 # socketio = SocketIO(app,message_queue='amqp://cosmovis:sivomsoc@localhost:5672',cors_allowed_origins="https://cosmovis-dev.nrp-nautilus.io", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=False, engineio_logger=False)
-
-# import pdb; pdb.set_trace()
-
 @app.before_first_request
 def before_first_request():
     #Flask-Compress extension automatically compresses static files
@@ -66,14 +77,14 @@ js_logs = []
 def logs(incoming_log):
     # print("received log")
     # print(incoming_log)
-    js_logs.append(incoming_log)
-    # save logs to new json file
-    datetime.now()
-    with open('logs/js_logs_' + datetime.now().strftime("%d%b%Y_%Hh%Mm%Ss") +'.json', 'a+') as f:
-        json.dump(incoming_log, f)
-    # import pdb; pdb.set_trace()
-    # print(json.loads(incoming_log['header']))
-    # print(json.loads(incoming_log['log']))
+    # js_logs.append(incoming_log)
+    # # save logs to new json file
+    # datetime.now()
+    # with open('logs/js_logs_' + datetime.now().strftime("%d%b%Y_%Hh%Mm%Ss") +'.json', 'a+') as f:
+    #     json.dump(incoming_log, f)
+    # # import pdb; pdb.set_trace()
+    # # print(json.loads(incoming_log['header']))
+    # # print(json.loads(incoming_log['log']))
     return incoming_log
 
 # route() decorator is used to define the URL where index() function is registered for

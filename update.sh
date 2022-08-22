@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /cv-vol/dev-repo/CosmoVis
+cd /cv-vol/scidev-repo/CosmoVis
 git-lfs stash
 
 git-lfs fetch
