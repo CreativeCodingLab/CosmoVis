@@ -68,13 +68,15 @@ raycaster.layers.set(8)
 var starcaster = new THREE.Raycaster();
 starcaster.params.Points.threshold = 1;
 starcaster.layers.set(3);
+var starGalaxyInfo
 var plane = new THREE.Plane();
 var planeNormal = new THREE.Vector3();
 var point = new THREE.Vector3();
 var edges = []
 // for zooming in:
 var zoomEdges = []
-var zoom_bool, halos
+var zoom_bool = false
+var halos
 // //
 var skewers = []
 var drawSkewers = false
@@ -690,7 +692,6 @@ function updateUniforms() {
         starSaoMaterial.uniforms["u_screenHeight"].value = window.innerHeight
         starSaoMaterial.uniforms["u_screenWidth"].value = window.innerWidth
 
-        // volMaterial.uniforms["u_dmVisibility"].value = false        
         volMaterial.uniforms["u_screenHeight"].value = window.innerHeight
         volMaterial.uniforms["u_screenWidth"].value = window.innerWidth
 
@@ -1332,7 +1333,7 @@ function loadDarkMatter(size) {
                 x.style.display = "none";
                 var y = document.getElementById("dm-eye-closed");
                 y.style.display = "inline-block";
-                volMaterial.uniforms["u_dmVisibility"].value = true
+                volMaterial.uniforms["u_dmVisibility"].value = false
 
                 // if(localStorage.getItem('dmMinVal') != ""){
                 //     min = localStorage.getItem('dmMinVal')
@@ -1409,7 +1410,7 @@ function loadDarkMatter(size) {
                 }
 
                 volMaterial.uniforms["u_darkmatterUnpackDomain"].value.set(darkmatterUnpackDomain[0], darkmatterUnpackDomain[1])
-                volMaterial.uniforms["u_dmVisibility"].value = true
+                volMaterial.uniforms["u_dmVisibility"].value = false
                 volMaterial.needsUpdate = true
 
                 initColor('PartType1')
@@ -1917,7 +1918,10 @@ async function asyncCall(resolution_bool) {
     densityMin = dens[0]
     densityMax = dens[1]
     // if(!resolution_bool){
+    
     var stars = await loadStars()
+    var starInfo = await loadStarGalaxyInfo()
+
     // }
     var gas = await loadGas(gridsize, gasAttr, resolution_bool)
     //
@@ -2226,6 +2230,21 @@ function loadStars() {
     })
 }
 
+async function loadStarGalaxyInfo(){
+    starGalaxyInfo = await d3.json('static/data/' + simID + '/galaxies_' + simID + '.json')
+
+    // console.log('filterGalaxies function',sim,'static/data/' + sim + '/galaxies_' + sim + '.json')
+
+    // var filteredData = starGalaxyInfo.slice() //slice of data
+
+    // var groupNums = filteredData.map(d => d.groupNum)
+    // var haloIDs = filteredData.map(d => d.haloID)
+    // var groupMasses = filteredData.map(d => d['mh'])
+
+
+
+}
+
 // OG starcaster
 // function starCaster() {
 
@@ -2308,11 +2327,11 @@ async function starCaster() {
     // console.log('starcaster',simID)
 
     //load in galaxies data:
-    const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
+    // const data = await d3.json('static/data/' + simID + '/galaxies_' + simID + '.json')
 
     // console.log('filterGalaxies function',sim,'static/data/' + sim + '/galaxies_' + sim + '.json')
 
-    var filteredData = data.slice() //slice of data
+    var filteredData = starGalaxyInfo.slice() //slice of data
 
     var groupNums = filteredData.map(d => d.groupNum)
     var haloIDs = filteredData.map(d => d.haloID)
@@ -4050,7 +4069,7 @@ async function createGalaxyFilteringBrushes(attr, field) {
     if (sim) {
 
         const data = await d3.json('static/data/RefL0100N1504/galaxies_RefL0100N1504.json')
-
+        // let data = starGalaxyInfo
         if (data) {
 
             // console.log('eagle 100 data',data.length)
@@ -4153,8 +4172,8 @@ async function filterGalaxies(sim) {
     galIds_doc = document.getElementById('galid')
     haloIds_doc = document.getElementById('haloid')
 
-    const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
-
+    // const data = await d3.json('static/data/' + sim + '/galaxies_' + sim + '.json')
+    let data = starGalaxyInfo
     // console.log('filterGalaxies function',sim,'static/data/' + sim + '/galaxies_' + sim + '.json')
 
     var filteredData = data.slice() //slice of data
@@ -4893,10 +4912,10 @@ function init() {
     smxc = document.querySelector("#starMaxCol")
     smxc.addEventListener('change', changeColor, false);
 
-    bmc = document.querySelector("#bhMinCol")
-    bmc.addEventListener('change', changeColor, false);
-    bmxc = document.querySelector("#bhMaxCol")
-    bmxc.addEventListener('change', changeColor, false);
+    // bmc = document.querySelector("#bhMinCol")
+    // bmc.addEventListener('change', changeColor, false);
+    // bmxc = document.querySelector("#bhMaxCol")
+    // bmxc.addEventListener('change', changeColor, false);
 
     createXYZBrush('x')
     createXYZBrush('y')
@@ -4973,7 +4992,6 @@ function onMouseClick(event) {
             //runs algorithm that finds two end points on surface of the cube
             // findLineEnds(ray1,cd)    
         }
-
 
         dir = new THREE.Vector3(points[1].x - points[0].x, points[1].y - points[0].y, points[1].z - points[0].z)
         dir.normalize()

@@ -533,6 +533,8 @@
         
         //FH async requestPoints fn:
         async function requestPoints(zoom_bool,size,type,attr,halos){
+            console.log(zoom_bool)
+
             if(attr != 'Select an attribute'){
                 if(type == 'PartType0'){
                     if (zoom_bool) {                    
@@ -862,7 +864,7 @@
                     <div class="input-label">
                         Grid resolution
                     </div>
-                    <p><select class="data_select" id="size_select" onchange="updateSize()">
+                    <p><select class="data_select" id="size_select" onchange="updateSize(zoom_bool,halos)">
                             <option disabled="disabled">Select voxel grid size (n&sup3;)</option>
                             <option selected="selected" value="64">64&sup3;</option>
                             <option value="128">128&sup3;</option>
@@ -939,7 +941,7 @@
                     </div>
 
                     <select class="data_select" id="gas_select"
-                        onchange="requestPoints(gridsize,'PartType0', document.getElementById('gas_select').value)">
+                        onchange="requestPoints(zoom_bool,gridsize,'PartType0', document.getElementById('gas_select').value,halos)">
                         <option selected="selected" disabled="disabled">Select an attribute</option>
                     </select>
 
