@@ -1,4 +1,5 @@
 celery==4.4.7
+cython
 eagleSqlTools==2.0.0
 eventlet==0.25.2
 Flask==1.1.2
@@ -12,7 +13,6 @@ psutil
 pillow
 python-engineio==3.13.0
 python-socketio==4.6.0
--e git://github.com/trident-project/trident.git#egg=trident
+trident
 websockets>=9.1
--e git://github.com/yt-project/yt.git#egg=yt
--e git://github.com/yt-project/yt_astro_analysis.git#egg=yt_astro_analysis
+yt

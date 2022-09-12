@@ -40,7 +40,7 @@ celery = Celery('cosmo-veg',broker='amqp://cosmovis:sivomsoc@localhost:5672', ba
     task_track_started = True,
     broker_heartbeat = 0)
 
-socketio = SocketIO(message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=True, engineio_logger=True)
+socketio = SocketIO(message_queue='amqp://cosmovis:sivomsoc@localhost:5672', cors_allowed_origins="*", async_mode=async_mode,async_handlers=True,upgradeTimeout=240000,logger=False, engineio_logger=False)
 
 multiprocessing.set_start_method('spawn')
 
@@ -130,7 +130,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     # sys.stdout.flush()
     # print('mpi parallelism: ' + str(yt.enable_parallelism()))
     sys.stdout.flush()
-    print('received simple ray request')
+    # print('received simple ray request')
     socketio.emit( 'retrievingLineData', {'index': idx}, namespace = '/test' )
     socketio.sleep(0)
     fn = ''
@@ -152,12 +152,12 @@ def handle_skewer_simple_ray(simID,idx,start,end):
         # if 'TNG' in simID:
         #     fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
         # print("loading" + str(fn))
-        print(fn)
+        # print(fn)
         ds = yt.load(fn)
     socketio.sleep(0)
     ad = ds.all_data()
     socketio.sleep(0)
-    print(simID)
+    # print(simID)
 
     socketio.sleep(0)
 
@@ -176,8 +176,8 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     # ray_start = ds.arr(ray_start, 'Mpc')/sim_width #list(np.float_(start))
     # ray_end   = ds.arr(ray_end, 'Mpc')/sim_width  #list(np.float_(end))
 
-    print(ray_start.in_units('Mpc'))
-    print(ray_end.in_units('Mpc'))
+    # print(ray_start.in_units('Mpc'))
+    # print(ray_end.in_units('Mpc'))
     line_list = ['H', 'C', 'N', 'O', 'Mg']
     socketio.sleep(0)
     # This LightRay object is a yt dataset of a 1D data structure representing the skewer path as it traverses the dataset. 
@@ -859,7 +859,7 @@ def handle_skewer_simple_ray(simID,idx,start,end):
     socketio.sleep(0)
     # print((ray.r[('gas', 'H_p0_number_density')])[0].units)
 
-    print('sent simple ray data')
+    # print('sent simple ray data')
 
 @celery.task()
 def make_synthetic_spectrum(simID,idx,start,end):
@@ -894,12 +894,12 @@ def make_synthetic_spectrum(simID,idx,start,end):
         # if 'TNG' in simID:
         #     fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
         # print("loading" + str(fn))
-        print(fn)
+        # print(fn)
         ds = yt.load(fn)
     ad = ds.all_data()
-    print(simID)
+    # print(simID)
 
-    print('received args: ' + str(start) + str(end))
+    # print('received args: ' + str(start) + str(end))
     ray_start = np.float_(start)
     ray_end = np.float_(end)
 
@@ -910,8 +910,8 @@ def make_synthetic_spectrum(simID,idx,start,end):
     ray_start = ds.arr(ray_start/sim_width * np.float(ds.domain_right_edge[0]), 'code_length') #list(np.float_(start))
     ray_end   = ds.arr(ray_end/sim_width * np.float(ds.domain_right_edge[0]), 'code_length')   #list(np.float_(end))
 
-    print(ray_start.in_units('Mpc'))
-    print(ray_end.in_units('Mpc'))
+    # print(ray_start.in_units('Mpc'))
+    # print(ray_end.in_units('Mpc'))
     line_list = ['H', 'C', 'N', 'O', 'Mg']
 
     instrument = 'COS'
@@ -952,7 +952,7 @@ def make_synthetic_spectrum(simID,idx,start,end):
     lines_data.close()
     lines_subset_test.close()
 
-    print("making simple ray")
+    # print("making simple ray")
     socketio.sleep(0)
     ray = trident.make_simple_ray(ds, start_position=ray_start,
                                end_position=ray_end,
@@ -964,7 +964,7 @@ def make_synthetic_spectrum(simID,idx,start,end):
     
     # emit('my_response', {'data': 'Connected', 'count': -1})
     socketio.sleep(0)
-    print('making spectrum')
+    # print('making spectrum')
     sg.make_spectrum(ray, lines=line_list) #spitting information through std_out, scrape information
     socketio.sleep(0)
     # sg.add_qso_spectrum(emitting_redshift=0.5)
@@ -988,11 +988,11 @@ def make_synthetic_spectrum(simID,idx,start,end):
     socketio.sleep(0)
     socketio.emit( 'sentRay', {'index': idx}, namespace = '/test' )
     socketio.sleep(0)
-    print('emitting spectrum')
+    # print('emitting spectrum')
     socketio.sleep(0)
     socketio.emit('synthetic_spectrum',{'index':idx,'start':start,'end':end,'lambda':sgs[-1][2].lambda_field.tolist(),'flux':sgs[-1][2].flux_field.tolist()}, namespace='/test')
     socketio.sleep(0)
-    print('sent spectrum')
+    # print('sent spectrum')
 
     # sg.save_spectrum('spec_raw.txt')
     # sg.plot_spectrum('spec_raw.png')
@@ -1082,10 +1082,10 @@ def make_plots(simID,plot_type,galaxyID, center_coord_mpc, rvir, camera ):
         # if 'TNG' in simID:
         #     fn = 'static/data/'+simID+'/snapshot/snap_030.0.hdf5'
         # print("loading" + str(fn))
-        print(fn)
+        # print(fn)
         ds = yt.load(fn)
     ad = ds.all_data()
-    print(simID)
+    # print(simID)
 
     # import pdb; pdb.set_trace()
 
@@ -1128,8 +1128,8 @@ def make_plots(simID,plot_type,galaxyID, center_coord_mpc, rvir, camera ):
         # might be easier to start with
         # zlim scaling 
         #https://yt-project.org/doc/visualizing/plots.html#d-phase-plots
-        print(center_coord_mpc)
-        print(rvir)
+        # print(center_coord_mpc)
+        # print(rvir)
         center = ds.arr(center_coord_mpc,"Mpc")# ds.arr([64.0, 64.0, 64.0], "code_length")
         rvir = ds.quan(rvir, "Mpc")
         sph = ds.sphere(center, rvir)
