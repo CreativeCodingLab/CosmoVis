@@ -1,8 +1,7 @@
-
 server {
         listen 5000;
         listen [::]:5000;
-        server_name https://cosmovis-dev.nrp-nautilus.io/;
+        server_name cosmovis-dev.nrp-nautilus.io;
 
         location / {
                 include proxy_params;

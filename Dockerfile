@@ -50,7 +50,6 @@ RUN pip install -r requirements.txt
 COPY scripts/default /etc/nginx/sites-enabled/
 COPY scripts/cosmovis.service /etc/systemd/system/
 
-
 WORKDIR /cv-docker
 RUN systemctl daemon-reload
 RUN systemctl restart nginx
@@ -59,6 +58,6 @@ RUN systemctl enable cosmovis
 EXPOSE 5000 4369 5671 5672 15691 15692 25672
 
 # CMD [ "python", "./cosmo-serv.py" ]
-
+RUN cd /
 COPY container_startup.sh /
-CMD [ "bash", "./container_startup.sh" ]
+# CMD [ "bash", "./container_startup.sh" ]
